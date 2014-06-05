@@ -1,0 +1,1 @@
+These files were created by the Codesign 2013 students to debug libCoMD. They are not required for CoHMM.

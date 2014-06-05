@@ -1,0 +1,22 @@
+CoMD 1 Analytical 0 0
+Number of HMM time steps 80000
+Number of HMM grid points 80000
+HMM print rate 1
+HMM spatial resolution dx in A 1000
+HMM time resolution dt in fs 15000
+Initial deformation 0.1
+Initial energy density where undeformed in eV per A cube -0.295953
+Energy added with deformation in eV per A cube 0.00502
+Deformation start and end in percentage of HMM mesh 40.0 50.0
+CoMD parameters:
+Temperature 263.45
+Lattice parameter in A 3.618645
+Number of lattices nx ny nz 12 12 12
+Time resolution dt in fs 2.5
+Number of MD time steps 1000
+Spatial adaptive sampling parameters:
+Refinement threshold 0.001
+Coarsening threshold 0.01
+Interpolation: linear 0 Akima splines 1 1
+Plot the CoHMM trajectory 0 no 1 yes 0
+Avoid using the adaptive sampling 1 yes 0 no 0

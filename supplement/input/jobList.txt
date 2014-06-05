@@ -1,0 +1,11 @@
+
+- Inputs 3 -- 11 : For Fig. 4.  N=100, eps_r=0.001, eps_c=10^{-6} to 10^2
+
+- Inputs 12 -- 21 : For Fig. 5: N=100, eps_r=10^{-8} to 10, eps_c=10^{-2}
+
+- Inputs 119 -- 131 : For Fig. 6. Analytical runs with eps_r=0.001, eps_c=0.01, and N ranging from 156 to 640000 in powers of two.
+
+- Inputs 141 -- 145 : For Fig. 6. CoMD runs with eps_r=0.001, eps_c=0.01, and N ranging from 25 to 400. Plotting is turned on, so these runs can also be used for Figs. 2 and 3.
+
+- Input  243 : Like input 143, but with adaptive sampling turned off. For debugging I guess?
+
