@@ -1,0 +1,26 @@
+/** Interface file for kriging chare array
+* **/
+module krigingMod {
+
+    include "2DKriging.hpp";
+
+    array [1D] krigingChare{
+        entry krigingChare();
+        entry void fluxFn(std::vector<fluxInput> fluxIn, Input in, CkCallback cb) {
+            serial {
+                if (thisIndex < fluxIn.size()) {
+                    fluxOutput f;
+                    f.index = thisIndex;
+                    ::fluxFn(&fluxIn[thisIndex], &f, in);
+                    contribute(sizeof(f), &f, CkReduction::concat, cb);
+                } else {
+		  contribute(0, NULL, CkReduction::concat, cb);
+                }
+            }
+        };
+    };
+    
+    message fluxOutMsg {
+        fluxOutput fluxOut[];
+    };
+};
