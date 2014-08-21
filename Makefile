@@ -108,18 +108,8 @@ krigingMod.decl.h krigingMod.def.h : krigingMod.ci
 
 2DKriging.o: 2DKriging.cpp krigingMod.decl.h krigingMod.def.h main.decl.h main.h
 
-else ifeq ($(CXX), $(CNC)) 
+else  
 $(info compiling CnC files)
-
-2D_Kriging: 2DKriging.o main_cnc.o kriging.o flux.o redisBuckets.o output.o input.o
-	$(CXX) -o $@ $^ $(LDFLAGS)
-
-main_cnc.o : main_cnc.cpp main_cnc.hpp input.hpp
-
-2DKriging.o: 2DKriging.cpp 2DKriging.hpp
-
-else ifeq ($(CXX), $(OMP)) 
-$(info compiling OpenMP files)
 
 2D_Kriging: 2DKriging.o main_cnc.o kriging.o flux.o redisBuckets.o output.o input.o
 	$(CXX) -o $@ $^ $(LDFLAGS)

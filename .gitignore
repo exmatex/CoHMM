@@ -11,3 +11,4 @@ main.def.h
 main.o
 output.o
 redisBuckets.o
+main_cnc.o
