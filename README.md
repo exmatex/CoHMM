@@ -65,7 +65,7 @@ Charm++:
 3. for use of only one local redis master use:
 
     
-     distributed: ./charmrun +p96  ++mpiexec ./2D_Kriging input.json localhost +stacksize 512000
+     distributed: ./charmrun +p96  ++mpiexec ./2D_Kriging input.json `hostname` +stacksize 512000
 
 CnC:
 
