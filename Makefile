@@ -7,7 +7,7 @@ endif
 ##############CHARM##########
 ifeq ($(SET), charm)
 OPTS=-DCHARM
-CHARMDIR=/home/droehm/charm
+CHARMDIR=$(HOME)/charm
 CHARMC=$(CHARMDIR)/bin/charmc $(OPTS)
 CXX=$(CHARMC)
 #############CNC############
@@ -34,7 +34,7 @@ endif
 endif
 
 #Darwin Flags
-HIREDIS=/home/droehm/hiredis
+HIREDIS=$(HOME)/CoHMM/hiredis
 HIREDISLIB=$(HIREDIS)
 HIREDISINC=$(HIREDIS)
 HIREDIS_CFLAG=-I$(HIREDISINC)
@@ -59,13 +59,13 @@ else ifeq ($(CXX), $(CNC))
 endif
 
 #BOOST=/projects/opt/boost/1.55.0
-BOOST=/home/droehm/boost_1_54_0_build
+BOOST=$(HOME)/boost_1_54_0_build
 BOOSTINC=$(BOOST)/include
 BOOSTLIB=$(BOOST)/lib
 BOOST_CFLAG=-I$(BOOSTINC)
 BOOST_LDFLAG=-L$(BOOSTINC)
 
-COMD=/home/droehm/2014/CNC/COMD_lib
+COMD=$(HOME)/CoHMM/COMD_lib
 COMDINC=$(COMD)/src-lib
 COMDLIB=$(COMD)
 COMD_CFLAG=-I$(COMDINC)
