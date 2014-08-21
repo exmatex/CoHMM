@@ -26,6 +26,7 @@
 #include "main.decl.h"
 #include "krigingMod.decl.h"
 #include "krigingMod.h"
+#define printf CkPrintf 
 #endif//CHARM
 /****************C-STUFF******************/
 extern "C"
@@ -60,7 +61,7 @@ extern "C"
 #define OUTPUT
 //#define VTK_FIELDS
 //#define VTK_COLORMAP
-#define LOADBAR
+//#define LOADBAR
 /****************************************/
 /*****************GLOBALS****************/
 /****************************************/
@@ -401,10 +402,6 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
     //tm->co = 0.0;
 
 #ifdef CHARM
-#ifndef LOADBAR
-	CkPrintf("About to run parallel kriging & MD: %d args, %d MD, %d kriging\n", fluxInArgs.size(), ca->comd, ca->krig);
-#endif
-
     CkReductionMsg *fluxOut;
     context.fluxFn(fluxInArgs, in, CkCallbackResumeThread((void*&)fluxOut));
     
@@ -852,11 +849,7 @@ void main_2DKriging(Input in)
   FILE *fn = fopen(file_name, "w");
   if (fn == NULL) {
     printf("Error writing file< %s >!\n", file_name);
-#ifdef CHARM
-    CkExit();
-#elif CNC
     exit(0);
-#endif
   }
   fprintf(fn, "#NO      COMD       COMD_P      DB      KR_DB      KR      KR_P      KR_FAIL\n");
   fclose(fn);
@@ -868,7 +861,7 @@ void main_2DKriging(Input in)
     printf("Error writing file< %s >!\n", file_name);
 #ifdef CHARM
     CkExit();
-#elif CNC
+#else
     exit(0);
 #endif
   }
@@ -882,7 +875,11 @@ void main_2DKriging(Input in)
   FILE *fn3 = fopen(file_name, "a");
   if (fn3 == NULL) {
     printf("Error writing file< %s >!\n", file_name);
+#ifdef CHARM
     CkExit();
+#else
+    exit(0);
+#endif
   }
 
 #endif//OUTPUT
@@ -894,7 +891,7 @@ void main_2DKriging(Input in)
 	printf("Redis error: %s\n", headRedis->errstr);
 #ifdef CHARM
     CkExit();
-#elif CNC
+#else
     exit(0);
 #endif
   }
