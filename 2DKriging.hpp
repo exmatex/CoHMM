@@ -1,6 +1,9 @@
 #ifndef KRIGING2D_HPP
 #define KRIGING2D_HPP
 
+#include <math.h>
+#include <string.h>
+
 #ifdef CNC
 #ifdef _DIST_
 #include <cnc/dist_cnc.h>
@@ -10,9 +13,7 @@
 //struct containing the flux information
 struct flux_context;
 #endif//CNC
-#include "types.h"
-#include <math.h>
-#include <string.h>
+
 //some extern constants
 extern const int comdDigits;
 extern const int krigDigits;
@@ -25,6 +26,29 @@ struct gridPoint
 	int x;
 	int y;
 };
+
+/** struct containg the conserved quantities
+ * **/
+typedef struct{
+
+  //use of the following notation:
+  //strain_xx  = w[0]
+  //strain_yx  = w[1]
+  //strain_xy  = w[2]
+  //strain_yy  = w[3]
+  //momentum_x = w[4]
+  //momentum_y = w[5]
+  //energy     = w[6]
+  double w[7];
+  double rho;
+
+#ifdef CHARM
+  void pup(PUP::er &p) {
+    PUParray(p, w, 7);
+    p|rho;
+  }
+#endif
+} Conserved;
 
 /** struct with input values for flux computation
  * **/
@@ -127,11 +151,6 @@ struct flux_context : public CnC::context< flux_context > // derive from CnC::co
     }
 };
 #endif//CNC
-#if defined (CNC) || (OMP) 
-//call 2D_main from main.cpp
-//template <typename T> void main_2DKriging(Input in, T context);
-void main_2DKriging(Input in);
-#endif//CNC||OMP
 /** bring charm flux output into flux input order
  * **/
 struct fluxOutOrder

@@ -43,8 +43,8 @@ void fluxFn(fluxInput *in, fluxOutput *out, std::map<std::string, std::vector<ch
 	fluxOutput* out = &outVal;
     Input inp;
     inp.head_node = in->headNode;
-    printf("id %d cnc input %s\n", id, inp.head_node.c_str());
-    printf("id %d cnc input %lf\n", id, in->w.w[0]);
+    //printf("id %d cnc input %s\n", id, inp.head_node.c_str());
+    //printf("id %d cnc input %lf\n", id, in->w.w[0]);
 #endif//CNC
 //#ifdef CHARM
 #if 1
@@ -428,7 +428,7 @@ void fluxFn(fluxInput *in, fluxOutput *out, std::map<std::string, std::vector<ch
     outVal.diffKr=0.0;
 #endif
 	outVal.index=id;
-    printf("outval %d\n", outVal.index);
+    //printf("outval %d\n", outVal.index);
 	fluxText.fluxOutp.put(id, outVal);
 
     return CnC::CNC_Success;

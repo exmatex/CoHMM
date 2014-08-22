@@ -29,9 +29,9 @@
 #define printf CkPrintf 
 #endif//CHARM
 /****************C-STUFF******************/
+#include "types.h"
 extern "C"
 {
-#include "types.h"
 #include <CoMD_lib.h>
 #include <hiredis.h>
 #ifdef OMP

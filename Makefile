@@ -34,7 +34,7 @@ endif
 endif
 
 #Darwin Flags
-HIREDIS=$(HOME)/CoHMM/hiredis
+HIREDIS=$(HOME)/hiredis
 HIREDISLIB=$(HIREDIS)
 HIREDISINC=$(HIREDIS)
 HIREDIS_CFLAG=-I$(HIREDISINC)
@@ -54,8 +54,8 @@ else ifeq ($(CXX), $(OMP))
 else ifeq ($(CXX), $(CNC)) 
   MKL_LDFLAG= -L$(MKLLIB) -mkl=sequential
   CNC_LDFLAG=-L$(CNCROOT)/lib/$(ARCH) -lcnc -ltbb -ltbbmalloc
-  #CNC_CFLAG=-I$(CNCROOT)/include -D_DIST_ -std=c++0x
-  CNC_CFLAG=-I$(CNCROOT)/include -std=c++0x
+  CNC_CFLAG= -D_DIST_ -I$(CNCROOT)/include -std=c++0x
+  #CNC_CFLAG=-I$(CNCROOT)/include -std=c++0x
 endif
 
 #BOOST=/projects/opt/boost/1.55.0
@@ -65,7 +65,7 @@ BOOSTLIB=$(BOOST)/lib
 BOOST_CFLAG=-I$(BOOSTINC)
 BOOST_LDFLAG=-L$(BOOSTINC)
 
-COMD=$(HOME)/CoHMM/COMD_lib
+COMD=$(HOME)/2014/CNC/COMD_lib
 COMDINC=$(COMD)/src-lib
 COMDLIB=$(COMD)
 COMD_CFLAG=-I$(COMDINC)
@@ -76,8 +76,8 @@ ifeq ($(CXX), $(CHARMC))
 LDFLAGS= $(HIREDIS_LDFLAG) $(MKL_LDFLAG) $(COMD_LDFLAG) -lm -lrt
 CXXFLAGS= $(HIREDIS_CFLAG) $(MKL_CFLAG) $(COMD_CFLAG) $(BOOST_CFLAG) -g $(LDFLAGS) 
 else ifeq ($(CXX), $(CNC)) 
-LDFLAGS= $(HIREDIS_LDFLAG) $(MKL_LDFLAG) $(COMD_LDFLAG) $(CNC_LDFLAG) -lm -lrt
-CXXFLAGS= $(HIREDIS_CFLAG) $(MKL_CFLAG) $(COMD_CFLAG) $(BOOST_CFLAG) $(CNC_CFLAG) -g  
+LDFLAGS= $(CNC_LDFLAG) $(HIREDIS_LDFLAG) $(MKL_LDFLAG) $(CNC_LDFLAG) -lm -lrt
+CXXFLAGS=  $(CNC_CFLAG) $(HIREDIS_CFLAG) $(MKL_CFLAG) $(COMD_CFLAG) $(BOOST_CFLAG) -g  
 else ifeq ($(CXX), $(OMP)) 
 LDFLAGS= $(HIREDIS_LDFLAG) $(MKL_LDFLAG) $(COMD_LDFLAG) -lm -lrt $(OPENMP_FLAG)
 CXXFLAGS= $(HIREDIS_CFLAG) $(MKL_CFLAG) $(COMD_CFLAG) $(BOOST_CFLAG) -g 
@@ -109,26 +109,33 @@ krigingMod.decl.h krigingMod.def.h : krigingMod.ci
 2DKriging.o: 2DKriging.cpp krigingMod.decl.h krigingMod.def.h main.decl.h main.h
 
 else  
-$(info compiling CnC files)
+$(info compiling CnC/OpenMP files)
 
 2D_Kriging: 2DKriging.o main_cnc.o kriging.o flux.o redisBuckets.o output.o input.o
-	$(CXX) -o $@ $^ $(LDFLAGS)
+	$(CXX) $(OPT) -o $@ $^ -L$(CNCROOT)/lib/$(ARCH) -lcnc -lrt -ltbb -ltbbmalloc $(HIREDIS_LDFLAG) $(MKL_LDFLAG)
 
 main_cnc.o : main_cnc.cpp main_cnc.hpp input.hpp
+	$(CXX) -c $(CXXFLAGS) -I$(CNCROOT)/include $(OPT) -o $@ $< $(LDFLAGS)
 
 2DKriging.o: 2DKriging.cpp 2DKriging.hpp
+	$(CXX) -c $(CXXFLAGS) -I$(CNCROOT)/include $(OPT) -o $@ $< $(LDFLAGS)
 
 endif
 
 flux.o: flux.cpp
+	$(CXX) -c $(CXXFLAGS) flux.cpp
 
 input.o: input.cpp
+	$(CXX) -c $(CXXFLAGS) input.cpp
 
 output.o: output.cpp
+	$(CXX) -c $(CXXFLAGS) output.cpp
 
 kriging.o: kriging.cpp
+	$(CXX) -c $(CXXFLAGS) kriging.cpp
 
 redisBuckets.o: redisBuckets.cpp
+	$(CXX) -c $(CXXFLAGS) redisBuckets.cpp
 
 clean:
 	rm -f ./*decl.h ./*def.h ./*.o ./*.vtk ./*.dat ./core.* ./2D_Kriging ./charmrun
