@@ -30,7 +30,7 @@ char  potDir[] = "../pots";
 #ifdef CHARM
 void fluxFn(fluxInput *in, fluxOutput *out, Input inp)
 #elif CNC
-int flux_step::execute(const int & id, flux_context & fluxText) const
+int fluxFn::execute(const int & id, flux_context & fluxText) const
 #else
 void fluxFn(fluxInput *in, fluxOutput *out, std::map<std::string, std::vector<char *> > *dbCache, double* startKr, double* stopKr, double* startCo, double* stopCo, Input inp)
 #endif

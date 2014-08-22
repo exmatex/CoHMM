@@ -106,7 +106,7 @@ typedef struct
 CNC_BITWISE_SERIALIZABLE(fluxOutput);
 
 // declaration of compute step class
-struct flux_step
+struct fluxFn
 {
     // declaration of execute method goes here
     int execute( const int & t, flux_context & c ) const;
@@ -115,7 +115,7 @@ struct flux_step
 struct fluxTuner: public CnC::step_tuner<>
 {
 	template<class dependency_consumer>
-		void depends(const int &tag, fluxContext &c, dependency_consumer & dC) const
+		void depends(const int &tag, flux_context &c, dependency_consumer & dC) const
 		{
 			dC.depends(c.fluxInp, tag);
 		}
@@ -126,7 +126,8 @@ CNC_BITWISE_SERIALIZABLE(fluxTuner);
 struct flux_context : public CnC::context< flux_context > // derive from CnC::context
 {
     // the step collection for the instances of the compute-kernel
-    CnC::step_collection< flux_step > steps;
+    CnC::step_collection< fluxFn > steps;
+	//CnC::step_collection<fluxFn, fluxTuner> steps;
     // item collection holding the flux number(s)
 	CnC::item_collection<int, fluxInput> fluxInp;
 	CnC::item_collection<int, fluxOutput> fluxOutp;

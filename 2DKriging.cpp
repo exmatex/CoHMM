@@ -373,7 +373,7 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
     //***************************************************//
     //CnC::debug::trace(context->steps); 
     //CnC::debug::trace(context->tags);
-    //CnC::debug::collect_scheduler_statistics(&context);
+    //CnC::debug::collect_scheduler_statistics(*context);
     //***************************************************//
 	context->wait();
 #endif
@@ -427,7 +427,8 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
 	{
 #ifdef CNC
 		fluxOutput fluxOut;
-		context->fluxOutp.get(i, fluxOut);
+		context->fluxOutp.get(i+1, fluxOut);
+        //printf("got val %d from task %d\n\n", fluxOut.index, i+1);
 #endif
 		//Write results to fluxes for all duplicates as this is good
 		for(std::list<gridPoint>::iterator iter = taskMap[fluxInArgs[i].w].begin(); iter != taskMap[fluxInArgs[i].w].end(); iter++)
