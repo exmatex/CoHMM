@@ -51,11 +51,12 @@ extern "C"
 #endif//CNC
 /****************FEATURES****************/
 //define specifies if CoMD is used or the linear "analytic" approach
-#define DB
-#define KRIGING
+//#define DB
+//#define KRIGING
 //#define KR_DB
 //#define XWAVE
 #define CIRCULAR
+//#define HEAT
 #define FLUSHDB
 /*****************OUTPUT****************/
 #define OUTPUT
@@ -189,10 +190,14 @@ void init_conserved_fields(Node* node_a, Input in, int grid_size){
     //if((x<l.dim_x/2+l.dim_x/10) && (x>=l.dim_x/2-l.dim_x/10) && (y<l.dim_y/2+l.dim_y/10) && (y>=l.dim_y/2-l.dim_y/10)){
       int r = floor(sqrt((x-in.dim_x/2)*(x-in.dim_x/2) + (y-in.dim_y/2)*(y-in.dim_y/2)));
       if(r <= 3){
+#ifdef HEAT
+        node_a[i].w.w[6] = init.energy+0.02;
+#else
         node_a[i].w.w[0] = 1.02;
         node_a[i].w.w[3] = 1.02;
         node_a[i].w.w[1] = 0.02;
         node_a[i].w.w[2] = -0.02;
+#endif
       }
     //}
 //#########################################

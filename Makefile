@@ -97,8 +97,8 @@ OBJS+=main_charm.o
 else ifeq ($(CXX), $(CNC)) 
 $(info compiling CnC files)
 OBJS+=main_cnc.o
-LDFLAGS= $(CNC_LDFLAG) $(LDFLAGS) 
-CXXFLAGS=$(CNC_CFLAG) $(CXXFLAGS)
+LDFLAGS+=$(CNC_LDFLAG) 
+CXXFLAGS+=$(CNC_CFLAG)
 else ifeq ($(CXX), $(OMP)) 
 $(info compiling OpenMP files)
 OBJS+=main_cnc.o
@@ -109,7 +109,7 @@ endif
 #target
 NAME=2D_Kriging
 default: all
-all: $(NAME)
+all: $(SUBDIRS) $(NAME)
 
 ifeq ($(CXX), $(CHARMC))
 %.d: %.cpp $(CHARMBIN)/dep.pl
@@ -131,7 +131,7 @@ endif
 
 ##--- Executable ---##
 
-$(NAME): $(SUBDIRS) $(OBJS)
+$(NAME): $(OBJS)
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
 #GNU make implicit rule
