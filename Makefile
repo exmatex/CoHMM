@@ -65,7 +65,7 @@ BOOSTLIB=$(BOOST)/lib
 BOOST_CFLAG=-I$(BOOSTINC)
 BOOST_LDFLAG=-L$(BOOSTINC)
 
-COMD=$(HOME)/2014/CNC/COMD_lib
+COMD=./COMD_lib
 COMDINC=$(COMD)/src-lib
 COMDLIB=$(COMD)
 COMD_CFLAG=-I$(COMDINC)
@@ -112,7 +112,7 @@ else
 $(info compiling CnC/OpenMP files)
 
 2D_Kriging: 2DKriging.o main_cnc.o kriging.o flux.o redisBuckets.o output.o input.o
-	$(CXX) $(OPT) -o $@ $^ -L$(CNCROOT)/lib/$(ARCH) -lcnc -lrt -ltbb -ltbbmalloc $(HIREDIS_LDFLAG) $(MKL_LDFLAG)
+	$(CXX) $(OPT) -o $@ $^ -L$(CNCROOT)/lib/$(ARCH) -lcnc -lrt -ltbb -ltbbmalloc $(HIREDIS_LDFLAG) $(MKL_LDFLAG) $(COMD_LDFLAG)
 
 main_cnc.o : main_cnc.cpp main_cnc.hpp input.hpp
 	$(CXX) -c $(CXXFLAGS) -I$(CNCROOT)/include $(OPT) -o $@ $< $(LDFLAGS)

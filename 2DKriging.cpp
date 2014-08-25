@@ -54,8 +54,8 @@ extern "C"
 #define DB
 #define KRIGING
 //#define KR_DB
-#define XWAVE
-//#define CIRCULAR
+//#define XWAVE
+#define CIRCULAR
 #define FLUSHDB
 /*****************OUTPUT****************/
 #define OUTPUT

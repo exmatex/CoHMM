@@ -12,3 +12,8 @@ main.o
 output.o
 redisBuckets.o
 main_cnc.o
+COMD_lib/libCoMD_2D.so
+COMD_lib/old/
+COMD_lib/src-lib/*.o
+COMD_lib/src-lib/.depend
+COMD_lib/src-lib/CoMD_info.h
