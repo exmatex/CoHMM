@@ -4,6 +4,7 @@
 #include <math.h>
 #include <string.h>
 #include <string>
+#include "types.h"
 
 #ifdef CNC
 #ifdef _DIST_
@@ -27,29 +28,6 @@ struct gridPoint
 	int x;
 	int y;
 };
-
-/** struct containg the conserved quantities
- * **/
-typedef struct{
-
-  //use of the following notation:
-  //strain_xx  = w[0]
-  //strain_yx  = w[1]
-  //strain_xy  = w[2]
-  //strain_yy  = w[3]
-  //momentum_x = w[4]
-  //momentum_y = w[5]
-  //energy     = w[6]
-  double w[7];
-  double rho;
-
-#ifdef CHARM
-  void pup(PUP::er &p) {
-    PUParray(p, w, 7);
-    p|rho;
-  }
-#endif
-} Conserved;
 
 /** struct with input values for flux computation
  * **/

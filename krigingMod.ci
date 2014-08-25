@@ -14,7 +14,7 @@ module krigingMod {
                     ::fluxFn(&fluxIn[thisIndex], &f, in);
                     contribute(sizeof(f), &f, CkReduction::concat, cb);
                 } else {
-		  contribute(0, NULL, CkReduction::concat, cb);
+		            contribute(0, NULL, CkReduction::concat, cb);
                 }
             }
         };

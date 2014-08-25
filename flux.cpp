@@ -18,6 +18,7 @@ extern "C"
 #define DB
 //#define CoMD
 //#define C_RAND
+
 //FIXME get rid of that:
 char  potDir[] = "../pots";
 
