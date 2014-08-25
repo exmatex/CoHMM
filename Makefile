@@ -6,51 +6,60 @@ endif
 #VPATH = ..
 ##############CHARM##########
 ifeq ($(SET), charm)
-OPTS=-DCHARM
-CHARMDIR=$(HOME)/charm
-CHARMC=$(CHARMDIR)/bin/charmc $(OPTS)
+#CHARM_ROOT=$(HOME)/charm
+ifeq (,$(CHARM_ROOT))
+$(info Please establish Charmm++ environment variables before using this Makefile.)
+$(info E.g. by running setting CHARM_ROOT pr run 'module load charm++')
+$(error CHARM_ROOT is not set)
+endif
+CXXFLAGS=-DCHARM
+CHARMBIN=$(CHARM_ROOT)/bin
+CHARMINC=$(CHARM_ROOT)/include
+CHARMC=$(CHARMBIN)/charmc
 CXX=$(CHARMC)
 #############CNC############
 else ifeq ($(SET), cnc) 
-OPTS=-DCNC
-CNC=icpc $(OPTS)
+CXXFLAGS=-DCNC
+CNC=icpc
 CXX=$(CNC)
 #############OMP############
 else ifeq ($(SET), omp)
-OPTS=-DOMP
-OMP=g++ $(OPTS)
+CXXFLAGS=-DOMP
+OMP=g++
 CXX=$(OMP)
-
-else ifeq ($(SET), ) 
+else ifeq ($(SET), )
 $(error please SET=cnc, SET=charm or SET=omp)
 endif
 
 ifeq ($(CXX), $(CNC))
 ifeq (,$(CNCROOT))
-$(info Please estblish CnC environment variables before using this Makefile.)
+$(info Please establish CnC environment variables before using this Makefile.)
 $(info E.g. by running cncvars.sh or cncvars.csh)
 $(error CNCROOT is not set)
 endif
 endif
 
-#Darwin Flags
-HIREDIS=$(HOME)/hiredis
-HIREDISLIB=$(HIREDIS)
-HIREDISINC=$(HIREDIS)
+#HIREDIS_INCLUDES=$(HOME)/hiredis
+ifeq ($(HIREDIS_INCLUDES), )
+$(error Set HIREDIS_INCLUDES or run 'module load hiredis' first)
+endif
+HIREDISLIB=$(HIREDIS_INCLUDES)/../lib
+HIREDISINC=$(HIREDIS_INCLUDES)/hiredis
 HIREDIS_CFLAG=-I$(HIREDISINC)
 HIREDIS_LDFLAG=-L$(HIREDISLIB) -lhiredis
 
 MKL=/projects/opt/intel/compilers/composer_xe_2013.4.183/mkl
 MKLINC=$(MKL)/include
-MKLLIB=$(MKL)/lib/intel64
+MKLLIB=$(MKL)/lib/$(ARCH)
 MKL_CFLAG= -I$(MKLINC) 
 
 #MKL flags
 ifeq ($(CXX), $(CHARMC))
   MKL_LDFLAG= -L$(MKLLIB) -lmkl_intel_ilp64 -lmkl_core -lmkl_sequential
 else ifeq ($(CXX), $(OMP)) 
-  OPENMP_FLAG=-fopenmp
   MKL_LDFLAG= -L$(MKLLIB) -lmkl_intel_ilp64 -lmkl_core -lmkl_sequential
+  OMP_CFLAGS=-fopenmp
+  OMP_LDFLAGS=-fopenmp
 else ifeq ($(CXX), $(CNC)) 
   MKL_LDFLAG= -L$(MKLLIB) -mkl=sequential
   CNC_LDFLAG=-L$(CNCROOT)/lib/$(ARCH) -lcnc -ltbb -ltbbmalloc
@@ -58,85 +67,78 @@ else ifeq ($(CXX), $(CNC))
   #CNC_CFLAG=-I$(CNCROOT)/include -std=c++0x
 endif
 
-#BOOST=/projects/opt/boost/1.55.0
-BOOST=$(HOME)/boost_1_54_0_build
-BOOSTINC=$(BOOST)/include
-BOOSTLIB=$(BOOST)/lib
-BOOST_CFLAG=-I$(BOOSTINC)
-BOOST_LDFLAG=-L$(BOOSTINC)
+#BOOST_INCLUDES=/projects/opt/boost/1.55.0/include
+#BOOST_INCLUDES=$(HOME)/boost_1_54_0_build/include
+ifeq ($(BOOST_INCLUDES), )
+$(error Set BOOST_INCLUDES or run 'module load boost' first)
+endif
+BOOST_CFLAG=-I$(BOOST_INCLUDES)
+#We use boost header only so far
+#BOOSTLIB=$(HIREDIS_INCLUDES)/../lib
+#BOOST_LDFLAG=-L$(BOOSTINC)
 
-COMD=./COMD_lib
+COMD=$(PWD)/COMD_lib
 COMDINC=$(COMD)/src-lib
+ifeq ($(wildcard $(COMDINC)/CoMD_lib.h), )
+$(error COMDINC=$(COMDINC) seems to point to the wrong directory)
+endif
 COMDLIB=$(COMD)
 COMD_CFLAG=-I$(COMDINC)
 COMD_LDFLAG=-L$(COMDLIB) -lCoMD_2D
 #COMD_LDFLAG=-L$(COMDLIB) -lcomd
 
+OBJS=2DKriging.o kriging.o flux.o redisBuckets.o output.o input.o
+CXXFLAGS+=$(HIREDIS_CFLAG) $(MKL_CFLAG) $(COMD_CFLAG) $(BOOST_CFLAG) -g
+LDFLAGS=$(HIREDIS_LDFLAG) $(MKL_LDFLAG) $(COMD_LDFLAG) -lm -lrt
 ifeq ($(CXX), $(CHARMC))
-LDFLAGS= $(HIREDIS_LDFLAG) $(MKL_LDFLAG) $(COMD_LDFLAG) -lm -lrt
-CXXFLAGS= $(HIREDIS_CFLAG) $(MKL_CFLAG) $(COMD_CFLAG) $(BOOST_CFLAG) -g $(LDFLAGS) 
+$(info compiling Charm files)
+OBJS+=main_charm.o
 else ifeq ($(CXX), $(CNC)) 
-LDFLAGS= $(CNC_LDFLAG) $(HIREDIS_LDFLAG) $(MKL_LDFLAG) $(CNC_LDFLAG) -lm -lrt
-CXXFLAGS=  $(CNC_CFLAG) $(HIREDIS_CFLAG) $(MKL_CFLAG) $(COMD_CFLAG) $(BOOST_CFLAG) -g  
+$(info compiling CnC files)
+OBJS+=main_cnc.o
+LDFLAGS= $(CNC_LDFLAG) $(LDFLAGS) 
+CXXFLAGS=$(CNC_CFLAG) $(CXXFLAGS)
 else ifeq ($(CXX), $(OMP)) 
-LDFLAGS= $(HIREDIS_LDFLAG) $(MKL_LDFLAG) $(COMD_LDFLAG) -lm -lrt $(OPENMP_FLAG)
-CXXFLAGS= $(HIREDIS_CFLAG) $(MKL_CFLAG) $(COMD_CFLAG) $(BOOST_CFLAG) -g 
+$(info compiling OpenMP files)
+OBJS+=main_cnc.o
+CXXFLAGS+=$(OMP_CFLAGS)
+LDFLAGS+=$(OMP_LDFLAGS)
 endif
 
 #target
-
+NAME=2D_Kriging
 default: all
-all: 2D_Kriging
+all: $(NAME)
+
+ifeq ($(CXX), $(CHARMC))
+%.d: %.cpp $(CHARMBIN)/dep.pl
+	g++ -MM -MG $(CXXFLAGS) -I$(CHARMINC) $< | perl $(CHARMBIN)/dep.pl $(CHARMINC) > $@
+
+#Charmm++ ci files
+%.decl.h %.def.h: %.ci
+	$(CXX) $<
+else
+#deps rule for c files
+%.d: %.cpp
+	$(CXX) $(CXXFLAGS) -MM -MF $@ $<
+endif
+
+DEPS=$(OBJS:.o=.d)
+ifneq "$(MAKECMDGOALS)" "clean"
+-include $(DEPS)
+endif
 
 ##--- Executable ---##
 
-ifeq ($(CXX), $(CHARMC))
-$(info compiling Charm files)
-
-2D_Kriging: 2DKriging.o main.o kriging.o flux.o redisBuckets.o output.o input.o
+$(NAME): $(OBJS)
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
-##--- Main Chare ---##
-
-main.o : main.C main.h main.decl.h main.def.h krigingMod.decl.h input.hpp
-
-main.decl.h main.def.h : main.ci
-	$(CXX) main.ci
-
-krigingMod.decl.h krigingMod.def.h : krigingMod.ci
-	$(CXX) krigingMod.ci
-
-2DKriging.o: 2DKriging.cpp krigingMod.decl.h krigingMod.def.h main.decl.h main.h
-
-else  
-$(info compiling CnC/OpenMP files)
-
-2D_Kriging: 2DKriging.o main_cnc.o kriging.o flux.o redisBuckets.o output.o input.o
-	$(CXX) $(OPT) -o $@ $^ -L$(CNCROOT)/lib/$(ARCH) -lcnc -lrt -ltbb -ltbbmalloc $(HIREDIS_LDFLAG) $(MKL_LDFLAG) $(COMD_LDFLAG)
-
-main_cnc.o : main_cnc.cpp main_cnc.hpp input.hpp
-	$(CXX) -c $(CXXFLAGS) -I$(CNCROOT)/include $(OPT) -o $@ $< $(LDFLAGS)
-
-2DKriging.o: 2DKriging.cpp 2DKriging.hpp
-	$(CXX) -c $(CXXFLAGS) -I$(CNCROOT)/include $(OPT) -o $@ $< $(LDFLAGS)
-
-endif
-
-flux.o: flux.cpp
-	$(CXX) -c $(CXXFLAGS) flux.cpp
-
-input.o: input.cpp
-	$(CXX) -c $(CXXFLAGS) input.cpp
-
-output.o: output.cpp
-	$(CXX) -c $(CXXFLAGS) output.cpp
-
-kriging.o: kriging.cpp
-	$(CXX) -c $(CXXFLAGS) kriging.cpp
-
-redisBuckets.o: redisBuckets.cpp
-	$(CXX) -c $(CXXFLAGS) redisBuckets.cpp
+#GNU make implicit rule
+#%.o: %.cpp
+#	$(CXX) -c $(CXXFLAGS) $< -o $@
 
 clean:
-	rm -f ./*decl.h ./*def.h ./*.o ./*.vtk ./*.dat ./core.* ./2D_Kriging ./charmrun
+	rm -f *.decl.h *.def.h charmrun
+	rm -f *.vtk *.dat core.* 
+	rm -f $(OBJS) $(DEPS) $(NAME)
 
