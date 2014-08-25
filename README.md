@@ -69,11 +69,15 @@ Charm++:
 
 CnC:
 
-2. run 2D_Kriging distributed with 'env DIST_CNC=MPI mpirun -n $(NPROCS*48) ./2D_Kriging input.json' 
+2. MPI: run 2D_Kriging distributed with 'env DIST_CNC=MPI mpirun -n $(NPROCS*48) ./2D_Kriging input.json' 
 
-3. local: in Makefile remove -D_DIST_ option in CNC_FLAG and rebuild 
+3. SOCKETS: write client nodes in hostfile (eg.g cn30;cn31)
 
-4. run './2D_Kriging input.json'
+4. run 'env DIST_CNC=SOCKETS HOST_FILE=hostfile CNC_SOCKET_HOST=./start.sh ./2D_Kriging input.json'
+
+5. SHARED MEM: in Makefile remove -D_DIST_ option in CNC_FLAG and rebuild 
+
+6. run './2D_Kriging input.json'
 
 OpenMP:
 
