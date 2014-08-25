@@ -17,3 +17,4 @@ COMD_lib/old/
 COMD_lib/src-lib/*.o
 COMD_lib/src-lib/.depend
 COMD_lib/src-lib/CoMD_info.h
+*.d

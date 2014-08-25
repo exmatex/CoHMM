@@ -79,6 +79,7 @@ BOOST_CFLAG=-I$(BOOST_INCLUDES)
 
 COMD=$(PWD)/COMD_lib
 COMDINC=$(COMD)/src-lib
+SUBDIRS=$(COMDINC)
 ifeq ($(wildcard $(COMDINC)/CoMD_lib.h), )
 $(error COMDINC=$(COMDINC) seems to point to the wrong directory)
 endif
@@ -130,14 +131,24 @@ endif
 
 ##--- Executable ---##
 
-$(NAME): $(OBJS)
+$(NAME): $(SUBDIRS) $(OBJS)
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
 #GNU make implicit rule
 #%.o: %.cpp
 #	$(CXX) -c $(CXXFLAGS) $< -o $@
 
-clean:
+.PHONY: $(SUBDIRS)
+$(SUBDIRS):
+	$(MAKE) $(MFLAGS) -C $@
+
+subdirclean:
+	@for i in $(SUBDIRS); do \
+	  echo $(MAKE) $(MFLAGS) -C $$i clean; \
+	  $(MAKE) $(MFLAGS) -C $$i clean || exit 1; \
+	done
+
+clean: subdirclean
 	rm -f *.decl.h *.def.h charmrun
 	rm -f *.vtk *.dat core.* 
 	rm -f $(OBJS) $(DEPS) $(NAME)

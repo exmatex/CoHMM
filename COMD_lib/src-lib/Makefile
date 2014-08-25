@@ -72,15 +72,15 @@ CFLAGS  += ${OPTFLAGS} ${INCLUDES} ${OTHER_INCLUDE} -fPIC
 SOURCES=$(wildcard *.c)
 OBJECTS=$(SOURCES:.c=.o)
 
-
-DEFAULT: ../libCoMD.a
+LIBNAME=../libCoMD_2D.so
+DEFAULT: $(LIBNAME)
 
 %.o: %.c
 	${CC} ${CFLAGS} -c $< -o $@
 
-../libCoMD.a: CoMD_info.h ${OBJECTS} 
-#	ar rcs ../libCoMD.a ${OBJECTS}
-	$(CC) $(CFLAGS) -fPIC -shared -o ../libCoMD_2D.so *.o
+$(LIBNAME): CoMD_info.h ${OBJECTS} 
+#	ar rcs $(LIBNAME) ${OBJECTS}
+	$(CC) $(CFLAGS) -fPIC -shared -o $(LIBNAME) *.o
 #cp ../libCoMD_2D.so ../../lib/
 #	${CC} ${CFLAGS} -o ../CoMDParallel ${OBJECTS} ${LDFLAGS}
 
@@ -89,6 +89,7 @@ CoMD_info.h: Makefile
 
 clean:
 	rm -f *.o CoMD_info.h .depend
+	rm -f ../libCoMD_2D.so
 
 distclean: clean
 	rm -f ../CoMD_bootstrap.a
