@@ -46,12 +46,8 @@ void fluxFn(fluxInput *in, fluxOutput *out, std::map<std::string, std::vector<ch
     //printf("id %d cnc input %s\n", id, inp.head_node.c_str());
     //printf("id %d cnc input %lf\n", id, in->w.w[0]);
 #endif//CNC
-//#ifdef CHARM
-#if 1
 	//Prep outputs
 	out->error = 0.0;
-    //printf("input %s\n", in->headNode);
-    //printf("input %lf\n", in->w.w[0]);
 
 #ifdef DB
 	//Make redis context
@@ -414,19 +410,8 @@ void fluxFn(fluxInput *in, fluxOutput *out, std::map<std::string, std::vector<ch
 	//All pertinent values are set, let's disconneect from Redis and return
 	redisFree(rTask);
 #endif
-#endif
 //#endif//CHARM
 #ifdef CNC
-#if 0
-	outVal.index=id;
-    for(int i=0;i<7;++i){
-      outVal.f[i]=0.0;
-	  outVal.g[i]=0.0;
-    }
-	outVal.error=1.0;
-    outVal.diffCo=0.0;
-    outVal.diffKr=0.0;
-#endif
 	outVal.index=id;
     //printf("outval %d\n", outVal.index);
 	fluxText.fluxOutp.put(id, outVal);
