@@ -3,6 +3,7 @@
 
 #include <math.h>
 #include <string.h>
+#include <string>
 
 #ifdef CNC
 #ifdef _DIST_
