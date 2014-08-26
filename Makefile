@@ -27,8 +27,19 @@ else ifeq ($(SET), omp)
 CXXFLAGS=-DOMP
 OMP=g++
 CXX=$(OMP)
+else ifeq ($(SET), circle)
+CXXFLAGS=-DCIRCLE
+CXX=mpic++
+LIBCIRCLELIBS=$(shell pkg-config --libs libcircle)
+LIBCIRCLE_CFLAGS=$(shell pkg-config --cflags libcircle)
+ifeq ($(LIBCIRCLELIBS), )
+$(error Set LIBCIRCLELIBS or run 'module load libcircle' first)
+endif
+
 else ifeq ($(SET), )
-$(error please SET=cnc, SET=charm or SET=omp)
+ifneq "$(MAKECMDGOALS)" "clean"
+$(error please SET=cnc, SET=charm, SET=circle or SET=omp)
+endif
 endif
 
 ifeq ($(CXX), $(CNC))
@@ -55,6 +66,8 @@ MKL_CFLAG= -I$(MKLINC)
 
 #MKL flags
 ifeq ($(CXX), $(CHARMC))
+  MKL_LDFLAG= -L$(MKLLIB) -lmkl_intel_ilp64 -lmkl_core -lmkl_sequential
+else ifeq ($(SET), circle) 
   MKL_LDFLAG= -L$(MKLLIB) -lmkl_intel_ilp64 -lmkl_core -lmkl_sequential
 else ifeq ($(CXX), $(OMP)) 
   MKL_LDFLAG= -L$(MKLLIB) -lmkl_intel_ilp64 -lmkl_core -lmkl_sequential
@@ -104,6 +117,10 @@ $(info compiling OpenMP files)
 OBJS+=main_cnc.o
 CXXFLAGS+=$(OMP_CFLAGS)
 LDFLAGS+=$(OMP_LDFLAGS)
+else ifeq ($(SET), circle)
+OBJS+=main_cnc.o
+CXXFLAGS+=$(LIBCIRCLE_CFLAGS)
+LDFLAGS+=$(LIBCIRCLELIBS)
 endif
 
 #target
@@ -151,5 +168,5 @@ subdirclean:
 clean: subdirclean
 	rm -f *.decl.h *.def.h charmrun
 	rm -f *.vtk *.dat core.* 
-	rm -f $(OBJS) $(DEPS) $(NAME)
+	rm -f $(OBJS) $(DEPS) $(NAME) main_*.[od]
 

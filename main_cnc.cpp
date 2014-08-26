@@ -1,7 +1,6 @@
 /** file containing the CNC main function
  * calls 2D Kriging main
  * **/
-#if defined (CNC) || (OMP)
 #include "main_cnc.hpp"
 #include "input.hpp"
 #include "types.h"
@@ -12,6 +11,10 @@
 #ifdef OMP
 #include <omp.h>
 #endif//OMP
+
+#ifdef CIRCLE
+#include <libcircle.h>
+#endif//CIRCLE
 
 int main( int argc, char* argv[] )
 {
@@ -27,10 +30,14 @@ int main( int argc, char* argv[] )
   printf("**                                              **\n");
 #ifdef CNC
   printf("**   Running \"CNC 2D Kriging x processors    **\n"
-         );
-#else
+#elif defined OMP
   printf("**   Running \"OpenMP 2D Kriging %d processors    **\n",
          omp_get_max_threads());
+#elif defined CIRCLE
+  printf("**   Running \"libcircle 2D Kriging x processors  **\n"
+         );
+#else
+#error Something is wrong
 #endif
   printf("**                                              **\n");
   printf("**                                              **\n");
@@ -47,4 +54,3 @@ int main( int argc, char* argv[] )
   main_2DKriging(in);
 
 }
-#endif

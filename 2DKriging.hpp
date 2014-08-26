@@ -33,7 +33,7 @@ struct gridPoint
  * **/
 struct fluxInput
 {
-#if defined (CNC) || (OMP) 
+#if defined (CNC) || (OMP) || (CIRCLE) 
     char headNode[1024];
 #endif
     //enable char here or make add collection input
@@ -41,7 +41,7 @@ struct fluxInput
 	bool callCoMD;
 
     fluxInput() { }
-#if defined (CNC) || (OMP) 
+#if defined (CNC) || (OMP) || (CIRCLE)
     // constructor
     fluxInput(Conserved w_, bool callCoMD_, char* headNode_)
     : w(w_), callCoMD(callCoMD_)

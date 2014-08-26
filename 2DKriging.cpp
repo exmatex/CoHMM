@@ -420,7 +420,13 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
     for(int i = 0; i < int(fluxInArgs.size()); i++){
         fluxFn(&fluxInArgs[i], &fluxOutOmp[i], dbCache, &startKr[i], &stopKr[i], &startCo[i], &stopCo[i], in);
     }
-#endif
+#endif//OMP
+#ifdef CIRCLE
+    fluxOutput * fluxOutOmp = new fluxOutput[fluxInArgs.size()];
+    for(int i = 0; i < int(fluxInArgs.size()); i++){
+        fluxFn(&fluxInArgs[i], &fluxOutOmp[i], dbCache, &startKr[i], &stopKr[i], &startCo[i], &stopCo[i], in);
+    }
+#endif//CIRCLE
 
     for(int i = 0; i < int(fluxInArgs.size()); i++)
     {
@@ -464,7 +470,7 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
             }
 		}
 	}
-#ifdef OMP
+#if defined (OMP) || (CIRCLE)
   delete[] fluxOutOmp;
 #endif
 //FIXME check for []
@@ -841,7 +847,7 @@ void main_2DKriging(Input in)
 #ifdef CNC
   flux_context context;
 #endif
-#ifdef OMP
+#if defined (OMP) || (CIRCLE)
   //dummy var
   int context;
 #endif

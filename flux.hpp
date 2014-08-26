@@ -6,7 +6,7 @@
 #ifdef CHARM
 void fluxFn(fluxInput *in, fluxOutput *out, Input inp);
 #endif
-#ifdef OMP
+#if defined (OMP) || (CIRCLE)
 void fluxFn(fluxInput *in, fluxOutput *out, std::map<std::string, std::vector<char *> > *dbCache, double* startKr, double* stopKr, double* startCo, double* stopCo, Input inp);
 #endif
 
