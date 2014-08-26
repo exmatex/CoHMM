@@ -1,3 +1,7 @@
+/** parse input file for 2D macro solver, inlcudes 
+ * boost json file parsing
+ * **/
+
 #include <iostream>
 #ifdef CHARM
 #include "main.h"

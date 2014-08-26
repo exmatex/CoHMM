@@ -410,15 +410,15 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
     CkReductionMsg *fluxOut;
     context.fluxFn(fluxInArgs, in, CkCallbackResumeThread((void*&)fluxOut));
     
-    fluxOutput *fluxOutData = (fluxOutput*)fluxOut->getData();
+    fluxOutput *fluxOutCharm = (fluxOutput*)fluxOut->getData();
 
-    std::sort(fluxOutData, fluxOutData + fluxInArgs.size(), fluxOutOrder());
+    std::sort(fluxOutCharm, fluxOutCharm + fluxInArgs.size(), fluxOutOrder());
 #endif
 #ifdef OMP
-    fluxOutput * fluxOutArgs = new fluxOutput[fluxInArgs.size()];
+    fluxOutput * fluxOutOmp = new fluxOutput[fluxInArgs.size()];
 #pragma omp parallel for
     for(int i = 0; i < int(fluxInArgs.size()); i++){
-        fluxFn(&fluxInArgs[i], &fluxOutArgs[i], dbCache, &startKr[i], &stopKr[i], &startCo[i], &stopCo[i], in);
+        fluxFn(&fluxInArgs[i], &fluxOutOmp[i], dbCache, &startKr[i], &stopKr[i], &startCo[i], &stopCo[i], in);
     }
 #endif
 
@@ -431,8 +431,8 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
 	for(int i = 0; i < int(fluxInArgs.size()); i++)
 	{
 #ifdef CNC
-		fluxOutput fluxOut;
-		context->fluxOutp.get(i+1, fluxOut);
+		fluxOutput fluxOutCnc;
+		context->fluxOutp.get(i+1, fluxOutCnc);
         //printf("got val %d from task %d\n\n", fluxOut.index, i+1);
 #endif
 		//Write results to fluxes for all duplicates as this is good
@@ -444,14 +444,14 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
 			Fluxes * g = &fluxes[x + dim_x*y].g;
 
 #ifdef CHARM
-			memcpy(f->f, &fluxOutData[i].f, sizeof(double)*7);
-			memcpy(g->f, &fluxOutData[i].g, sizeof(double)*7);
+			memcpy(f->f, &fluxOutCharm[i].f, sizeof(double)*7);
+			memcpy(g->f, &fluxOutCharm[i].g, sizeof(double)*7);
 #elif CNC
-	    	memcpy(f->f, fluxOut.f, sizeof(double)*7);
-			memcpy(g->f, fluxOut.g, sizeof(double)*7);
+	    	memcpy(f->f, fluxOutCnc.f, sizeof(double)*7);
+			memcpy(g->f, fluxOutCnc.g, sizeof(double)*7);
 #else
-            memcpy(f->f, &fluxOutArgs[i].f, sizeof(double)*7);
-            memcpy(g->f, &fluxOutArgs[i].g, sizeof(double)*7);
+            memcpy(f->f, &fluxOutOmp[i].f, sizeof(double)*7);
+            memcpy(g->f, &fluxOutOmp[i].g, sizeof(double)*7);
 #endif
 			if(fluxInArgs[i].callCoMD == true)
             {
@@ -465,11 +465,11 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
 		}
 	}
 #ifdef OMP
-  delete[] fluxOutArgs;
+  delete[] fluxOutOmp;
 #endif
 //FIXME check for []
 #ifdef CHARM
-  delete fluxOut;
+  delete[] fluxOutCharm;
 #endif
   taskMap.clear();
 #ifdef CNC
