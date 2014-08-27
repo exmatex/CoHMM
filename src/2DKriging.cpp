@@ -51,15 +51,15 @@ extern "C"
 #endif//CNC
 /****************FEATURES****************/
 //define specifies if CoMD is used or the linear "analytic" approach
-//#define DB
-//#define KRIGING
-//#define KR_DB
+#define DB
+#define KRIGING
+#define KR_DB
 //#define XWAVE
 #define CIRCULAR
 //#define HEAT
 #define FLUSHDB
 /*****************OUTPUT****************/
-#define OUTPUT
+//#define OUTPUT
 //#define VTK_FIELDS
 //#define VTK_COLORMAP
 //#define LOADBAR

@@ -4,6 +4,7 @@ ifeq ($(M_UNAME), i686)
 ARCH := ia32
 endif
 #VPATH = ..
+SRCDIR=src
 ##############CHARM##########
 ifeq ($(SET), charm)
 #CHARM_ROOT=$(HOME)/charm
@@ -17,16 +18,22 @@ CHARMBIN=$(CHARM_ROOT)/bin
 CHARMINC=$(CHARM_ROOT)/include
 CHARMC=$(CHARMBIN)/charmc
 CXX=$(CHARMC)
+OBJDIR=charm_obj
+BINDIR=charm_bin
 #############CNC############
 else ifeq ($(SET), cnc) 
 CXXFLAGS=-DCNC
 CNC=icpc
 CXX=$(CNC)
+OBJDIR=cnc_obj
+BINDIR=cnc_bin
 #############OMP############
 else ifeq ($(SET), omp)
 CXXFLAGS=-DOMP
 OMP=g++
 CXX=$(OMP)
+OBJDIR=omp_obj
+BINDIR=omp_bin
 else ifeq ($(SET), )
 $(error please SET=cnc, SET=charm or SET=omp)
 endif
@@ -48,7 +55,10 @@ HIREDISINC=$(HIREDIS_INCLUDES)/hiredis
 HIREDIS_CFLAG=-I$(HIREDISINC)
 HIREDIS_LDFLAG=-L$(HIREDISLIB) -lhiredis
 
-MKL=/projects/opt/intel/compilers/composer_xe_2013.4.183/mkl
+ifeq ($(MKLROOT), )
+$(error Set MKLROOT or run 'module load mkl' first)
+endif
+MKL=$(MKLROOT)
 MKLINC=$(MKL)/include
 MKLLIB=$(MKL)/lib/$(ARCH)
 MKL_CFLAG= -I$(MKLINC) 
@@ -88,39 +98,39 @@ COMD_CFLAG=-I$(COMDINC)
 COMD_LDFLAG=-L$(COMDLIB) -lCoMD_2D
 #COMD_LDFLAG=-L$(COMDLIB) -lcomd
 
-OBJS=2DKriging.o kriging.o flux.o redisBuckets.o output.o input.o
+OBJS:=$(addprefix $(OBJDIR)/, 2DKriging.o kriging.o flux.o redisBuckets.o output.o input.o)
 CXXFLAGS+=$(HIREDIS_CFLAG) $(MKL_CFLAG) $(COMD_CFLAG) $(BOOST_CFLAG) -g
 LDFLAGS=$(HIREDIS_LDFLAG) $(MKL_LDFLAG) $(COMD_LDFLAG) -lm -lrt
 ifeq ($(CXX), $(CHARMC))
 $(info compiling Charm files)
-OBJS+=main_charm.o
+OBJS+=$(addprefix $(OBJDIR)/,main_charm.o)
 else ifeq ($(CXX), $(CNC)) 
 $(info compiling CnC files)
-OBJS+=main_cnc.o
+OBJS+=$(addprefix $(OBJDIR)/,main_cnc.o)
 LDFLAGS+=$(CNC_LDFLAG) 
 CXXFLAGS+=$(CNC_CFLAG)
 else ifeq ($(CXX), $(OMP)) 
 $(info compiling OpenMP files)
-OBJS+=main_cnc.o
+OBJS+=$(addprefix $(OBJDIR)/,main_cnc.o)
 CXXFLAGS+=$(OMP_CFLAGS)
 LDFLAGS+=$(OMP_LDFLAGS)
 endif
 
 #target
-NAME=2D_Kriging
+NAME=$(BINDIR)/2D_Kriging
 default: all
-all: $(SUBDIRS) $(NAME)
+all: $(SUBDIRS) $(OBJDIR) $(NAME)
 
 ifeq ($(CXX), $(CHARMC))
-%.d: %.cpp $(CHARMBIN)/dep.pl
+$(OBJDIR)/%.d: $(SRCDIR)/%.cpp $(CHARMBIN)/dep.pl
 	g++ -MM -MG $(CXXFLAGS) -I$(CHARMINC) $< | perl $(CHARMBIN)/dep.pl $(CHARMINC) > $@
 
 #Charmm++ ci files
-%.decl.h %.def.h: %.ci
+$(OBJDIR)/%.decl.h $(OBJDIR)/%.def.h: $(SRCDIR)/%.ci
 	$(CXX) $<
 else
 #deps rule for c files
-%.d: %.cpp
+$(OBJDIR)/%.d: $(SRCDIR)/%.cpp
 	$(CXX) $(CXXFLAGS) -MM -MF $@ $<
 endif
 
@@ -129,14 +139,26 @@ ifneq "$(MAKECMDGOALS)" "clean"
 -include $(DEPS)
 endif
 
+#make subdirs for objects and executable
+$(NAME): | $(BINDIR)
+
+$(BINDIR):
+	mkdir -p $(BINDIR)
+
+$(OBJS): | $(OBJDIR)
+$(DEPS): | $(OBJDIR)
+
+$(OBJDIR):
+	mkdir -p $(OBJDIR)
+
 ##--- Executable ---##
 
 $(NAME): $(OBJS)
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
 #GNU make implicit rule
-#%.o: %.cpp
-#	$(CXX) -c $(CXXFLAGS) $< -o $@
+$(OBJDIR)/%.o: $(SRCDIR)/%.cpp
+	$(CXX) -c $(CXXFLAGS) $< -o $@
 
 .PHONY: $(SUBDIRS)
 $(SUBDIRS):

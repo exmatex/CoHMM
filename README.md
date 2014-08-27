@@ -73,6 +73,8 @@ CnC:
 
 2. MPI: run 2D_Kriging distributed with 'env DIST_CNC=MPI mpirun -n $(NPROCS*48) ./2D_Kriging input.json' 
 
+   on Darwin (no infiniband) 'env DIST_CNC=MPI mpirun -n 96 -env I_MPI_FABRICS shm:tcp ~/2014/CoHMM/2D_Kriging input.json'
+
 3. SOCKETS: write client nodes in hostfile (eg.g cn30;cn31)
 
 4. run 'env DIST_CNC=SOCKETS HOST_FILE=hostfile CNC_SOCKET_HOST=./start.sh ./2D_Kriging input.json'
