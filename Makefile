@@ -42,8 +42,8 @@ LIBCIRCLE_CFLAGS=$(shell pkg-config --cflags libcircle)
 ifeq ($(LIBCIRCLELIBS), )
 $(error Set LIBCIRCLELIBS or run 'module load libcircle' first)
 endif
-OBJDIR=charm_obj
-BINDIR=charm_bin
+OBJDIR=circle_obj
+BINDIR=circle_bin
 else ifeq ($(SET), )
 ifneq "$(MAKECMDGOALS)" "clean"
 $(error please SET=cnc, SET=charm, SET=circle or SET=omp)
@@ -117,19 +117,19 @@ CXXFLAGS+=$(HIREDIS_CFLAG) $(MKL_CFLAG) $(COMD_CFLAG) $(BOOST_CFLAG) -g
 LDFLAGS=$(HIREDIS_LDFLAG) $(MKL_LDFLAG) $(COMD_LDFLAG) -lm -lrt
 ifeq ($(CXX), $(CHARMC))
 $(info compiling Charm files)
-OBJS+=$(addprefix $(OBJDIR)/,main_charm.o)
+OBJS+=$(OBJDIR)/main_charm.o
 else ifeq ($(CXX), $(CNC)) 
 $(info compiling CnC files)
-OBJS+=$(addprefix $(OBJDIR)/,main_cnc.o)
+OBJS+=$(OBJDIR)/main_generic.o
 LDFLAGS+=$(CNC_LDFLAG) 
 CXXFLAGS+=$(CNC_CFLAG)
 else ifeq ($(CXX), $(OMP)) 
 $(info compiling OpenMP files)
-OBJS+=$(addprefix $(OBJDIR)/,main_cnc.o)
+OBJS+=$(OBJDIR)/main_generic.o
 CXXFLAGS+=$(OMP_CFLAGS)
 LDFLAGS+=$(OMP_LDFLAGS)
 else ifeq ($(SET), circle)
-OBJS+=main_cnc.o
+OBJS+=$(OBJDIR)/main_generic.o
 CXXFLAGS+=$(LIBCIRCLE_CFLAGS)
 LDFLAGS+=$(LIBCIRCLELIBS)
 endif
@@ -201,5 +201,5 @@ subdirclean:
 clean: subdirclean
 	rm -f $(SRCDIR)/*.decl.h $(SRCDIR)/*.def.h charmrun
 	rm -f *.vtk *.dat core.* 
-	rm -f $(OBJS) $(DEPS) $(NAME) main_*.[od]
+	rm -f $(OBJS) $(DEPS) $(NAME) $(OBJDIR)/main_*.[od]
 

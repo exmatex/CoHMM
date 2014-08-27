@@ -1,7 +1,7 @@
 /** file containing the CNC main function
  * calls 2D Kriging main
  * **/
-#include "main_cnc.hpp"
+#include "main_generic.hpp"
 #include "input.hpp"
 #include "types.h"
 #include "2DKriging.hpp"
