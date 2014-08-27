@@ -24,6 +24,8 @@ Charm++:
 
 7. [charm](http://charm.cs.illinois.edu/software)
 
+   or git repo  http://charm.cs.illinois.edu/gerrit/charm
+
 8. [charm](define CHARMDIR="Charm install path" in Makefile) 
 
 CnC:

@@ -467,9 +467,9 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
 #ifdef OMP
   delete[] fluxOutOmp;
 #endif
-//FIXME check for []
+
 #ifdef CHARM
-  delete[] fluxOutCharm;
+  delete fluxOut;
 #endif
   taskMap.clear();
 #ifdef CNC
