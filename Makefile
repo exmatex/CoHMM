@@ -140,16 +140,23 @@ default: all
 all: $(SUBDIRS) $(OBJDIR) $(NAME)
 
 ifeq ($(CXX), $(CHARMC))
-$(OBJDIR)/%.d: $(SRCDIR)/%.cpp $(CHARMBIN)/dep.pl
-	g++ -MM -MG $(CXXFLAGS) -I$(CHARMINC) $< | perl $(CHARMBIN)/dep.pl $(CHARMINC) > $@
+$(OBJDIR)/%.d: $(SRCDIR)/%.cpp
+	@#1. sed:  put one file per line * * -> *\\\n*
+	@#2. sed gcc -MG does not know that missing files will be in $(SRCDIR)
+	@# no path -> SRCDIR
+	@echo g++ -MM -MG -MT $(OBJDIR)/$*.o $(CXXFLAGS) -I$(SRCDIR) -I$(CHARMINC) $< \> $@
+	@g++ -MM -MG -MT $(OBJDIR)/$*.o $(CXXFLAGS) -I$(SRCDIR) -I$(CHARMINC) $< | \
+	sed 's/\([^[:space:]]\) \([^\\[:space:]]\)/\1 \\\n \2/g' | \
+	sed '/^[^/]*.\(def\|decl\)\./s@[^[:space:]]@$(SRCDIR)/&@' > $@
 
 #Charmm++ ci files
-$(OBJDIR)/%.decl.h $(OBJDIR)/%.def.h: $(SRCDIR)/%.ci
-	$(CXX) $<
+$(SRCDIR)/%.decl.h $(SRCDIR)/%.def.h: $(SRCDIR)/%.ci
+	@#charmc writes to pwd only
+	cd $(<D) && $(CXX) $(<F)
 else
 #deps rule for c files
 $(OBJDIR)/%.d: $(SRCDIR)/%.cpp
-	$(CXX) $(CXXFLAGS) -MM -MF $@ $<
+	$(CXX) $(CXXFLAGS) -MM -MF $@ -MT $(OBJDIR)/$*.o $<
 endif
 
 DEPS=$(OBJS:.o=.d)
@@ -173,6 +180,9 @@ $(OBJDIR):
 
 $(NAME): $(OBJS)
 	$(CXX) -o $@ $^ $(LDFLAGS)
+ifeq ($(CXX), $(CHARMC))
+	mv charmrun $(BINDIR)/
+endif
 
 #GNU make implicit rule
 $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
@@ -189,7 +199,7 @@ subdirclean:
 	done
 
 clean: subdirclean
-	rm -f *.decl.h *.def.h charmrun
+	rm -f $(SRCDIR)/*.decl.h $(SRCDIR)/*.def.h charmrun
 	rm -f *.vtk *.dat core.* 
 	rm -f $(OBJS) $(DEPS) $(NAME) main_*.[od]
 
