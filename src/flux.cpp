@@ -16,7 +16,7 @@ extern "C"
 }
 #include "types.h"
 #define DB
-//#define CoMD
+#define CoMD
 //#define C_RAND
 
 //FIXME get rid of that:

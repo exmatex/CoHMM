@@ -51,15 +51,15 @@ extern "C"
 #endif//CNC
 /****************FEATURES****************/
 //define specifies if CoMD is used or the linear "analytic" approach
-//#define DB
-//#define KRIGING
-//#define KR_DB
+#define DB
+#define KRIGING
+#define KR_DB
 //#define XWAVE
 #define CIRCULAR
 //#define HEAT
 #define FLUSHDB
 /*****************OUTPUT****************/
-#define OUTPUT
+//#define OUTPUT
 //#define VTK_FIELDS
 //#define VTK_COLORMAP
 //#define LOADBAR
@@ -473,9 +473,9 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
 #if defined (OMP) || (CIRCLE)
   delete[] fluxOutOmp;
 #endif
-//FIXME check for []
+
 #ifdef CHARM
-  delete[] fluxOutCharm;
+  delete fluxOut;
 #endif
   taskMap.clear();
 #ifdef CNC
