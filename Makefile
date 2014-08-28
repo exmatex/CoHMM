@@ -61,28 +61,47 @@ endif
 MKL=$(MKLROOT)
 MKLINC=$(MKL)/include
 MKLLIB=$(MKL)/lib/$(ARCH)
-MKL_CFLAG= -I$(MKLINC) 
+MKL_CFLAG=-I$(MKLINC) -DHAVE_MKL 
 
+#LAPEROOT=/projects/opt/lapack/3.5.0/lapacke
+LINALGROOT=/usr
+LINALGLIB=/usr/lib64
+LINALG=$(LINALGROOT)
+LINALGINC=$(LINALG)/include/gsl
+#LAPELIB=$(LAPE)/lib64
+#LAPE_CFLAG=-I$(LAPEINC)
+#INCLUDE BLAS
+BLASROOT=/usr
+BLAS=$(BLASROOT)
+BLASINC=$(BLAS)/include
+BLASLIB=$(BLAS)/lib64
+BLAS_CFLAG=-I$(BLASINC)
+#LINALG
+
+ifeq ($(LINALGROOT), )
 #MKL flags
 ifeq ($(CXX), $(CHARMC))
   MKL_LDFLAG= -L$(MKLLIB) -lmkl_intel_ilp64 -lmkl_core -lmkl_sequential
 else ifeq ($(CXX), $(OMP)) 
-  MKL_LDFLAG= -L$(MKLLIB) -lmkl_intel_ilp64 -lmkl_core -lmkl_sequential
+  MKL_LDFLAG= -L$(MKLLIB) -mkl=sequential
   OMP_CFLAGS=-fopenmp
   OMP_LDFLAGS=-fopenmp
 else ifeq ($(CXX), $(CNC)) 
-  MKL_LDFLAG= -L$(MKLLIB) -mkl=sequential
+  MKL_LDFLAG= -L$(MKLLIB) -lmkl_intel_ilp64 -lmkl_core -lmkl_sequential
   CNC_LDFLAG=-L$(CNCROOT)/lib/$(ARCH) -lcnc -ltbb -ltbbmalloc
   CNC_CFLAG= -D_DIST_ -I$(CNCROOT)/include -std=c++0x
   #CNC_CFLAG=-I$(CNCROOT)/include -std=c++0x
 endif
+else
+ LINALG_CFLAGS=-llapack -I$(LINALGINC)
+ LINALG_LDFLAG=-L$(BLASLIB) -lgslcblas -llapack
+endif
 
-#BOOST_INCLUDES=/projects/opt/boost/1.55.0/include
-#BOOST_INCLUDES=$(HOME)/boost_1_54_0_build/include
 ifeq ($(BOOST_INCLUDES), )
 $(error Set BOOST_INCLUDES or run 'module load boost' first)
-endif
+else
 BOOST_CFLAG=-I$(BOOST_INCLUDES)
+endif
 #We use boost header only so far
 #BOOSTLIB=$(HIREDIS_INCLUDES)/../lib
 #BOOST_LDFLAG=-L$(BOOSTINC)
@@ -99,8 +118,14 @@ COMD_LDFLAG=-L$(COMDLIB) -lCoMD_2D
 #COMD_LDFLAG=-L$(COMDLIB) -lcomd
 
 OBJS:=$(addprefix $(OBJDIR)/, 2DKriging.o kriging.o flux.o redisBuckets.o output.o input.o)
+ifeq ($(LINALGROOT), )
 CXXFLAGS+=$(HIREDIS_CFLAG) $(MKL_CFLAG) $(COMD_CFLAG) $(BOOST_CFLAG) -g
 LDFLAGS=$(HIREDIS_LDFLAG) $(MKL_LDFLAG) $(COMD_LDFLAG) -lm -lrt
+else
+CXXFLAGS+=$(HIREDIS_CFLAG) $(LINALG_CFLAG) $(COMD_CFLAG) $(BOOST_CFLAG) -g
+LDFLAGS=$(HIREDIS_LDFLAG) $(LINALG_LDFLAG) $(COMD_LDFLAG) -lm -lrt -fopenmp
+endif
+
 ifeq ($(CXX), $(CHARMC))
 $(info compiling Charm files)
 OBJS+=$(addprefix $(OBJDIR)/,main_charm.o)
@@ -115,6 +140,7 @@ OBJS+=$(addprefix $(OBJDIR)/,main_cnc.o)
 CXXFLAGS+=$(OMP_CFLAGS)
 LDFLAGS+=$(OMP_LDFLAGS)
 endif
+CXXFLAGS+=$(LINALG_CFLAGS)
 
 #target
 NAME=$(BINDIR)/2D_Kriging
@@ -150,20 +176,20 @@ endif
 $(NAME): | $(BINDIR)
 
 $(BINDIR):
-	mkdir -p $(BINDIR)
+	@mkdir -p $(BINDIR)
 
 $(OBJS): | $(OBJDIR)
 $(DEPS): | $(OBJDIR)
 
 $(OBJDIR):
-	mkdir -p $(OBJDIR)
+	@mkdir -p $(OBJDIR)
 
 ##--- Executable ---##
 
 $(NAME): $(OBJS)
 	$(CXX) -o $@ $^ $(LDFLAGS)
 ifeq ($(CXX), $(CHARMC))
-	mv charmrun $(BINDIR)/
+	@mv charmrun $(BINDIR)/
 endif
 
 #GNU make implicit rule

@@ -4,17 +4,20 @@
 #include <vector>
 #include <cstdlib>
 #include <cmath>
+#include "kriging.hpp"
 #ifdef CHARM
 #include <charm++.h>
 #endif
 
 //MKL
-#define HAVE_MKL
+//#define HAVE_MKL
 #ifdef HAVE_MKL
 #include <mkl.h>
 #else
-#include <lapacke.h>
-#include <cblas.h>
+#define lapack_int int
+//#include <lapacke.h>
+//#include <clapack.h>
+#include <gsl_cblas.h>
 #endif
 
 enum variogramApprox_t
@@ -101,7 +104,7 @@ int kriging(double * w, int pointDims, std::vector<double *> oldWs, std::vector<
 		retVal[1] = 9.9999999;
 		return 0;
 	}
-	int n = oldVals.size() + 1;
+	lapack_int n = oldVals.size() + 1;
     ///Z(x_i) known values of surrounding points + 1 
 	//Copy oldVals into a new array, add a 0 to the end, and transpose
 #ifndef HAVE_MKL
@@ -173,12 +176,19 @@ int kriging(double * w, int pointDims, std::vector<double *> oldWs, std::vector<
 	///Proesses Kriging system KW = M
 	//W = np.linalg.solve(K,M)
 	//Need to LU fatorize K
-	int * ipiv = (int *)malloc(sizeof(int64_t) * n);
+	lapack_int * ipiv = (lapack_int *)malloc(sizeof(lapack_int) * n);
 #ifdef CHARM
 	CkAssert(ipiv);
 #endif
-    int info;
+    lapack_int info;
+#ifndef HAVE_MKL
+    //double *a, *b, *c;
+    //a = ctof(K, n, n);
+    //b = ctof(M, 1, n);
+    dgetrf_(&n, &n, K, &n, ipiv, &info);   
+#else
 	info = LAPACKE_dgetrf(LAPACK_ROW_MAJOR, n, n, K, n, ipiv);
+#endif
 	if(info != 0)
 	{
 		fprintf(stderr, "LAPACK dgetrf failed on %d \n", info);
@@ -186,7 +196,15 @@ int kriging(double * w, int pointDims, std::vector<double *> oldWs, std::vector<
 		return 0;
 	}
 	//KW=M, solve for W
-	info = LAPACKE_dgetrs(LAPACK_ROW_MAJOR, 'N', n, 1, K, n, ipiv, M, 1);
+    int nrhs = 1;
+#ifndef HAVE_MKL
+    char trans;
+    trans = 'N';
+    dgetrs_(&trans, &n, &nrhs, K, &n, ipiv, M, &n, &info);   
+#else
+	info = LAPACKE_dgetrs(LAPACK_ROW_MAJOR, 'N', n, 1, K, n, ipiv, M, n);
+	//info = LAPACKE_dgetrs(LAPACK_ROW_MAJOR, 'N', n, 1, K, n, ipiv, M, 1);
+#endif
 
 	//info = LAPACKE_dgetrs(LAPACK_ROW_MAJOR, 'N', n, 1, K, n, M, n, 1, ipiv);
 	if(info != 0)
@@ -194,32 +212,14 @@ int kriging(double * w, int pointDims, std::vector<double *> oldWs, std::vector<
 		fprintf(stderr, "LAPACK dgetrs failed on %d \n", info);
 		return 0;
 	}
+#ifndef HAVE_MKL
+    //c = new double[n];
+    //ftoc(c, M, n, n);
+#endif
 	double * W = M;
-	
-
-
 
 	M = Mo;
-	///Process results
-/*
-void cblas_dgemm
-(
-	const CBLAS_ORDER Order,
-	const CBLAS_TRANSPOSE TransA,
-	const CBLAS_TRANSPOSE TransB,
-	const MKL_INT M,
-	const MKL_INT N,
-	const MKL_INT K,
-	const double alpha,
-	const double *A,
-	const MKL_INT lda,
-	const double *B,
-	const MKL_INT ldb,
-	const double beta,
-	double *C,
-	const MKL_INT ldc
-);
-*/
+	//Process results
 
 	//Value = W.T*Z
 	cblas_dgemm
