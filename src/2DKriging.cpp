@@ -49,6 +49,11 @@ extern "C"
 #define _CRT_SECURE_NO_DEPRECATE // to keep the VS compiler happy with TBB
 #include <cnc/debug.h>
 #endif//CNC
+#ifdef CIRCLE
+#include <sstream>
+#include <cstring>
+#include <boost/archive/text_oarchive.hpp>
+#endif //CIRCLE
 /****************FEATURES****************/
 //define specifies if CoMD is used or the linear "analytic" approach
 #define DB
@@ -71,6 +76,20 @@ const int comdDigits = 4;
 const int krigDigits = 4;
 const double zeroThresh = 0.0001;
 int counter = 0;
+#ifdef CIRCLE
+static std::vector<fluxInput> *_fluxInArgs;
+void enqueue_fluxInArgs(CIRCLE_handle *handle) {
+  for(std::vector<fluxInput>::iterator iter = _fluxInArgs->begin(); iter != _fluxInArgs->end(); iter++){
+    //serialize
+    std::ostringstream archive_stream;
+    boost::archive::text_oarchive archive(archive_stream);
+    archive << *iter;
+    char str[archive_stream.str().size()+1];
+    strcpy(str,archive_stream.str().c_str());
+    handle->enqueue(&str[0]);
+  }
+}
+#endif
 
 /** initialize the struct containing all node quantities
  * @param node       grid_node containing the conserved and the fluxes
@@ -422,10 +441,11 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
     }
 #endif//OMP
 #ifdef CIRCLE
+    _fluxInArgs=&fluxInArgs;
+    CIRCLE_cb_create(&enqueue_fluxInArgs);
+    CIRCLE_begin();
     fluxOutput * fluxOutOmp = new fluxOutput[fluxInArgs.size()];
-    for(int i = 0; i < int(fluxInArgs.size()); i++){
-        fluxFn(&fluxInArgs[i], &fluxOutOmp[i], dbCache, &startKr[i], &stopKr[i], &startCo[i], &stopCo[i], in);
-    }
+    //TODO sync db, get results from db
 #endif//CIRCLE
 
     for(int i = 0; i < int(fluxInArgs.size()); i++)
@@ -945,6 +965,10 @@ void main_2DKriging(Input in)
   prev_step = redisRead_fields(nodes_a, &in, headRedis);
   prev_step++;
 #endif//FT_MODE
+#ifdef CIRCLE
+  MPI_Bcast(&in.int_steps, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  MPI_Bcast(&prev_step, 1, MPI_INT, 0, MPI_COMM_WORLD);
+#endif
   //set_boundaries(l, grid_size, nodes_a, nodes_b);
   for(int i=prev_step; i<in.int_steps; ++i){
 #ifdef OUTPUT

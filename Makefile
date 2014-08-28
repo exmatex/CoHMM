@@ -131,7 +131,7 @@ LDFLAGS+=$(OMP_LDFLAGS)
 else ifeq ($(SET), circle)
 OBJS+=$(OBJDIR)/main_generic.o
 CXXFLAGS+=$(LIBCIRCLE_CFLAGS)
-LDFLAGS+=$(LIBCIRCLELIBS)
+LDFLAGS+=$(LIBCIRCLELIBS) -lboost_serialization
 endif
 
 #target

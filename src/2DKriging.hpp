@@ -16,6 +16,10 @@
 struct flux_context;
 #endif//CNC
 
+#ifdef CIRCLE
+#include <mpi.h>
+#endif
+
 //some extern constants
 extern const int comdDigits;
 extern const int krigDigits;
@@ -64,6 +68,13 @@ struct fluxInput
     p|callCoMD;
   }
 #endif//CHARM
+#ifdef CIRCLE
+  template<class Archive>
+  void serialize(Archive & ar, const unsigned int version) {
+    ar & w;
+    ar & callCoMD;
+  }
+#endif//CIRCLE
 };
 #ifdef CNC
 CNC_BITWISE_SERIALIZABLE(fluxInput);
