@@ -4,7 +4,7 @@
 
 #include <iostream>
 #ifdef CHARM
-#include "main.h"
+#include "main_charm.hpp"
 #include "main.decl.h"
 #endif
 #include "types.h"

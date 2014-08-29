@@ -22,7 +22,7 @@
 #include <list>
 /****************CHARM++******************/
 #ifdef CHARM
-#include "main.h"
+#include "main_charm.hpp"
 #include "main.decl.h"
 #include "krigingMod.decl.h"
 #include "krigingMod.h"
