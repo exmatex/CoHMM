@@ -444,8 +444,9 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
     _fluxInArgs=&fluxInArgs;
     CIRCLE_cb_create(&enqueue_fluxInArgs);
     CIRCLE_begin();
+    redisCommand(context,"sync");
     fluxOutput * fluxOutOmp = new fluxOutput[fluxInArgs.size()];
-    //TODO sync db, get results from db
+    //get results from db
 #endif//CIRCLE
 
     for(int i = 0; i < int(fluxInArgs.size()); i++)
@@ -867,7 +868,7 @@ void main_2DKriging(Input in)
 #ifdef CNC
   flux_context context;
 #endif
-#if defined (OMP) || (CIRCLE)
+#if defined (OMP)
   //dummy var
   int context;
 #endif
@@ -995,6 +996,10 @@ void main_2DKriging(Input in)
         half_step_second_order(nodes_a, nodes_b, grid_size, &in, krigingChareProxy, headRedis);
         //second half step
         half_step_second_order(nodes_b, nodes_a, grid_size, &in, krigingChareProxy, headRedis);
+#elif CIRCLE
+        half_step_second_order(nodes_a, nodes_b, grid_size, &in, headRedis, headRedis);
+        //second half step
+        half_step_second_order(nodes_b, nodes_a, grid_size, &in, headRedis, headRedis);
 #else
         half_step_second_order(nodes_a, nodes_b, grid_size, &in, &context, headRedis);
         //second half step
@@ -1043,9 +1048,15 @@ template void doFluxes(Node* fields, Node* fluxes, int grid_size, Input* in, flu
 template void doParallelCalls(Node * fields, Node * fluxes, Input in, std::list<gridPoint> * comdTasks, std::list<gridPoint> * krigTasks, std::map<std::string, std::vector<char *> > *dbCache, Calls* ca, Tms *tm, flux_context* fluxText);
 #else
 //template void main_2DKriging(Input in, int * context);
-template void half_step_second_order(Node* node_a, Node* node_b, int grid_size, Input* in, int* context, redisContext *headRedis);
+#ifdef CIRCLE
+template void doFluxes(Node* fields, Node* fluxes, int grid_size, Input* in, redisContext *context, redisContext *headRedis);
+template void half_step_second_order(Node* node_a, Node* node_b, int grid_size, Input* in, redisContext *context, redisContext *headRedis);
+template void doParallelCalls(Node * fields, Node * fluxes, Input in, std::list<gridPoint> * comdTasks, std::list<gridPoint> * krigTasks, std::map<std::string, std::vector<char *> > *dbCache, Calls* ca, Tms *tm, redisContext *context);
+#else
 template void doFluxes(Node* fields, Node* fluxes, int grid_size, Input* in, int* context, redisContext *headRedis);
+template void half_step_second_order(Node* node_a, Node* node_b, int grid_size, Input* in, int* context, redisContext *headRedis);
 template void doParallelCalls(Node * fields, Node * fluxes, Input in, std::list<gridPoint> * comdTasks, std::list<gridPoint> * krigTasks, std::map<std::string, std::vector<char *> > *dbCache, Calls* ca, Tms *tm, int* context);
+#endif
 #endif
 
 #ifdef CHARM

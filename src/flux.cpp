@@ -15,6 +15,10 @@ extern "C"
 #include <hiredis.h>
 #include <stdlib.h>
 }
+#ifdef CIRCLE
+#include <sstream>
+#include <boost/archive/text_iarchive.hpp>
+#endif
 #include "types.h"
 #define DB
 #define CoMD
@@ -55,8 +59,11 @@ void fluxFn(CIRCLE_handle *handle)
 #ifdef CIRCLE
         char str[CIRCLE_MAX_STRING_LEN];
         handle->dequeue(&str[0]);
-        //TODO deserilize
+    	//de-serialize
+	std::stringstream archive_stream(str);
+        boost::archive::text_iarchive archive(archive_stream);
 	fluxInput inVal;
+	archive >> inVal;
 	fluxInput * in = &inVal;
 	fluxOutput outVal;
 	fluxOutput* out = &outVal;

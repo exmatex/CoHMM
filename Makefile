@@ -98,8 +98,8 @@ $(error Set BOOST_INCLUDES or run 'module load boost' first)
 endif
 BOOST_CFLAG=-I$(BOOST_INCLUDES)
 #We use boost header only so far
-#BOOSTLIB=$(HIREDIS_INCLUDES)/../lib
-#BOOST_LDFLAG=-L$(BOOSTINC)
+BOOSTLIB=$(HIREDIS_INCLUDES)/../lib
+BOOST_LDFLAG=-L$(BOOSTLIB)
 
 COMD=$(PWD)/COMD_lib
 COMDINC=$(COMD)/src-lib
@@ -131,7 +131,7 @@ LDFLAGS+=$(OMP_LDFLAGS)
 else ifeq ($(SET), circle)
 OBJS+=$(OBJDIR)/main_generic.o
 CXXFLAGS+=$(LIBCIRCLE_CFLAGS)
-LDFLAGS+=$(LIBCIRCLELIBS) -lboost_serialization
+LDFLAGS+=$(LIBCIRCLELIBS) $(BOOST_LDFLAG) -lboost_serialization
 endif
 
 #target
