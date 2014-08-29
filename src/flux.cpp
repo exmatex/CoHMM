@@ -8,12 +8,17 @@
 #include "2DKriging.hpp"
 #include "redisBuckets.hpp"
 #include "kriging.hpp"
+#include "flux.hpp"
 extern "C"
 {
 #include <CoMD_lib.h>
 #include <hiredis.h>
 #include <stdlib.h>
 }
+#ifdef CIRCLE
+#include <sstream>
+#include <boost/archive/text_iarchive.hpp>
+#endif
 #include "types.h"
 #define DB
 #define CoMD
@@ -32,8 +37,12 @@ char  potDir[] = "../pots";
 void fluxFn(fluxInput *in, fluxOutput *out, Input inp)
 #elif CNC
 int fluxFn::execute(const int & id, flux_context & fluxText) const
-#else
+#elif OMP
 void fluxFn(fluxInput *in, fluxOutput *out, std::map<std::string, std::vector<char *> > *dbCache, double* startKr, double* stopKr, double* startCo, double* stopCo, Input inp)
+#elif CIRCLE
+void fluxFn(CIRCLE_handle *handle)
+#else
+#error Something is wrong
 #endif
 {
 #ifdef CNC
@@ -47,6 +56,20 @@ void fluxFn(fluxInput *in, fluxOutput *out, std::map<std::string, std::vector<ch
     //printf("id %d cnc input %s\n", id, inp.head_node.c_str());
     //printf("id %d cnc input %lf\n", id, in->w.w[0]);
 #endif//CNC
+#ifdef CIRCLE
+        char str[CIRCLE_MAX_STRING_LEN];
+        handle->dequeue(&str[0]);
+    	//de-serialize
+	std::stringstream archive_stream(str);
+        boost::archive::text_iarchive archive(archive_stream);
+	fluxInput inVal;
+	archive >> inVal;
+	fluxInput * in = &inVal;
+	fluxOutput outVal;
+	fluxOutput* out = &outVal;
+        Input inp;
+        inp.head_node = in->headNode;
+#endif//CIRCLE
 	//Prep outputs
 	out->error = 0.0;
 

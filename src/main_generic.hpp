@@ -5,10 +5,10 @@
 
 #include "types.h"
 
-#if defined (CNC) || (OMP) 
+#if defined (CNC) || (OMP) || (CIRCLE)
 //call 2D_main from main.cpp
 //template <typename T> void main_2DKriging(Input in, T context);
 void main_2DKriging(Input in);
-#endif//CNC||OMP
+#endif//CNC||OMP||CIRCLE
 
 #endif //__MAIN_H__

@@ -51,6 +51,15 @@ typedef struct{
     p|rho;
   }
 #endif
+#ifdef CIRCLE
+  template<class Archive>
+  void serialize(Archive & ar, const unsigned int version) {
+    for(int i=0;i<7;i++){
+      ar & w[i];
+    }
+    ar & rho;
+  }
+#endif  
 } Conserved;
 
 /** struct containing the 2D field 

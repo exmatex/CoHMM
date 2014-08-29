@@ -34,8 +34,20 @@ OMP=g++
 CXX=$(OMP)
 OBJDIR=omp_obj
 BINDIR=omp_bin
+else ifeq ($(SET), circle)
+CXXFLAGS=-DCIRCLE
+CXX=mpic++
+LIBCIRCLELIBS=$(shell pkg-config --libs libcircle)
+LIBCIRCLE_CFLAGS=$(shell pkg-config --cflags libcircle)
+ifeq ($(LIBCIRCLELIBS), )
+$(error Set LIBCIRCLELIBS or run 'module load libcircle' first)
+endif
+OBJDIR=circle_obj
+BINDIR=circle_bin
 else ifeq ($(SET), )
-$(error please SET=cnc, SET=charm or SET=omp)
+ifneq "$(MAKECMDGOALS)" "clean"
+$(error please SET=cnc, SET=charm, SET=circle or SET=omp)
+endif
 endif
 
 ifeq ($(CXX), $(CNC))
@@ -82,6 +94,8 @@ ifeq ($(LINALGROOT), )
 #MKL flags
 ifeq ($(CXX), $(CHARMC))
   MKL_LDFLAG= -L$(MKLLIB) -lmkl_intel_ilp64 -lmkl_core -lmkl_sequential
+else ifeq ($(SET), circle) 
+  MKL_LDFLAG= -L$(MKLLIB) -lmkl_intel_ilp64 -lmkl_core -lmkl_sequential
 else ifeq ($(CXX), $(OMP)) 
   MKL_LDFLAG= -L$(MKLLIB) -mkl=sequential
   OMP_CFLAGS=-fopenmp
@@ -103,8 +117,8 @@ else
 BOOST_CFLAG=-I$(BOOST_INCLUDES)
 endif
 #We use boost header only so far
-#BOOSTLIB=$(HIREDIS_INCLUDES)/../lib
-#BOOST_LDFLAG=-L$(BOOSTINC)
+BOOSTLIB=$(HIREDIS_INCLUDES)/../lib
+BOOST_LDFLAG=-L$(BOOSTLIB)
 
 COMD=$(PWD)/COMD_lib
 COMDINC=$(COMD)/src-lib
@@ -128,17 +142,21 @@ endif
 
 ifeq ($(CXX), $(CHARMC))
 $(info compiling Charm files)
-OBJS+=$(addprefix $(OBJDIR)/,main_charm.o)
+OBJS+=$(OBJDIR)/main_charm.o
 else ifeq ($(CXX), $(CNC)) 
 $(info compiling CnC files)
-OBJS+=$(addprefix $(OBJDIR)/,main_cnc.o)
+OBJS+=$(OBJDIR)/main_generic.o
 LDFLAGS+=$(CNC_LDFLAG) 
 CXXFLAGS+=$(CNC_CFLAG)
 else ifeq ($(CXX), $(OMP)) 
 $(info compiling OpenMP files)
-OBJS+=$(addprefix $(OBJDIR)/,main_cnc.o)
+OBJS+=$(OBJDIR)/main_generic.o
 CXXFLAGS+=$(OMP_CFLAGS)
 LDFLAGS+=$(OMP_LDFLAGS)
+else ifeq ($(SET), circle)
+OBJS+=$(OBJDIR)/main_generic.o
+CXXFLAGS+=$(LIBCIRCLE_CFLAGS)
+LDFLAGS+=$(LIBCIRCLELIBS) $(BOOST_LDFLAG) -lboost_serialization
 endif
 CXXFLAGS+=$(LINALG_CFLAGS)
 
@@ -209,5 +227,5 @@ subdirclean:
 clean: subdirclean
 	rm -f $(SRCDIR)/*.decl.h $(SRCDIR)/*.def.h charmrun
 	rm -f *.vtk *.dat core.* 
-	rm -f $(OBJS) $(DEPS) $(NAME)
+	rm -f $(OBJS) $(DEPS) $(NAME) $(OBJDIR)/main_*.[od]
 

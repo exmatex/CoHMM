@@ -3,11 +3,16 @@
 #ifndef FLUX_HPP
 #define FLUX_HPP
 
+#ifdef CIRCLE
+#include <libcircle.h>
+#endif
+
 #ifdef CHARM
 void fluxFn(fluxInput *in, fluxOutput *out, Input inp);
-#endif
-#ifdef OMP
+#elif OMP
 void fluxFn(fluxInput *in, fluxOutput *out, std::map<std::string, std::vector<char *> > *dbCache, double* startKr, double* stopKr, double* startCo, double* stopCo, Input inp);
+#elif CIRCLE
+void fluxFn(CIRCLE_handle *handle);
 #endif
 
 #endif

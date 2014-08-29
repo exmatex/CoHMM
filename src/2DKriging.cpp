@@ -49,6 +49,11 @@ extern "C"
 #define _CRT_SECURE_NO_DEPRECATE // to keep the VS compiler happy with TBB
 #include <cnc/debug.h>
 #endif//CNC
+#ifdef CIRCLE
+#include <sstream>
+#include <cstring>
+#include <boost/archive/text_oarchive.hpp>
+#endif //CIRCLE
 /****************FEATURES****************/
 //define specifies if CoMD is used or the linear "analytic" approach
 #define DB
@@ -71,6 +76,20 @@ const int comdDigits = 4;
 const int krigDigits = 4;
 const double zeroThresh = 0.0001;
 int counter = 0;
+#ifdef CIRCLE
+static std::vector<fluxInput> *_fluxInArgs;
+void enqueue_fluxInArgs(CIRCLE_handle *handle) {
+  for(std::vector<fluxInput>::iterator iter = _fluxInArgs->begin(); iter != _fluxInArgs->end(); iter++){
+    //serialize
+    std::ostringstream archive_stream;
+    boost::archive::text_oarchive archive(archive_stream);
+    archive << *iter;
+    char str[archive_stream.str().size()+1];
+    strcpy(str,archive_stream.str().c_str());
+    handle->enqueue(&str[0]);
+  }
+}
+#endif
 
 /** initialize the struct containing all node quantities
  * @param node       grid_node containing the conserved and the fluxes
@@ -420,7 +439,15 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
     for(int i = 0; i < int(fluxInArgs.size()); i++){
         fluxFn(&fluxInArgs[i], &fluxOutOmp[i], dbCache, &startKr[i], &stopKr[i], &startCo[i], &stopCo[i], in);
     }
-#endif
+#endif//OMP
+#ifdef CIRCLE
+    _fluxInArgs=&fluxInArgs;
+    CIRCLE_cb_create(&enqueue_fluxInArgs);
+    CIRCLE_begin();
+    redisCommand(context,"sync");
+    fluxOutput * fluxOutOmp = new fluxOutput[fluxInArgs.size()];
+    //get results from db
+#endif//CIRCLE
 
     for(int i = 0; i < int(fluxInArgs.size()); i++)
     {
@@ -464,7 +491,7 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
             }
 		}
 	}
-#ifdef OMP
+#if defined (OMP) || (CIRCLE)
   delete[] fluxOutOmp;
 #endif
 
@@ -841,7 +868,7 @@ void main_2DKriging(Input in)
 #ifdef CNC
   flux_context context;
 #endif
-#ifdef OMP
+#if defined (OMP)
   //dummy var
   int context;
 #endif
@@ -939,6 +966,10 @@ void main_2DKriging(Input in)
   prev_step = redisRead_fields(nodes_a, &in, headRedis);
   prev_step++;
 #endif//FT_MODE
+#ifdef CIRCLE
+  MPI_Bcast(&in.int_steps, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  MPI_Bcast(&prev_step, 1, MPI_INT, 0, MPI_COMM_WORLD);
+#endif
   //set_boundaries(l, grid_size, nodes_a, nodes_b);
   for(int i=prev_step; i<in.int_steps; ++i){
 #ifdef OUTPUT
@@ -965,6 +996,10 @@ void main_2DKriging(Input in)
         half_step_second_order(nodes_a, nodes_b, grid_size, &in, krigingChareProxy, headRedis);
         //second half step
         half_step_second_order(nodes_b, nodes_a, grid_size, &in, krigingChareProxy, headRedis);
+#elif CIRCLE
+        half_step_second_order(nodes_a, nodes_b, grid_size, &in, headRedis, headRedis);
+        //second half step
+        half_step_second_order(nodes_b, nodes_a, grid_size, &in, headRedis, headRedis);
 #else
         half_step_second_order(nodes_a, nodes_b, grid_size, &in, &context, headRedis);
         //second half step
@@ -1013,9 +1048,15 @@ template void doFluxes(Node* fields, Node* fluxes, int grid_size, Input* in, flu
 template void doParallelCalls(Node * fields, Node * fluxes, Input in, std::list<gridPoint> * comdTasks, std::list<gridPoint> * krigTasks, std::map<std::string, std::vector<char *> > *dbCache, Calls* ca, Tms *tm, flux_context* fluxText);
 #else
 //template void main_2DKriging(Input in, int * context);
-template void half_step_second_order(Node* node_a, Node* node_b, int grid_size, Input* in, int* context, redisContext *headRedis);
+#ifdef CIRCLE
+template void doFluxes(Node* fields, Node* fluxes, int grid_size, Input* in, redisContext *context, redisContext *headRedis);
+template void half_step_second_order(Node* node_a, Node* node_b, int grid_size, Input* in, redisContext *context, redisContext *headRedis);
+template void doParallelCalls(Node * fields, Node * fluxes, Input in, std::list<gridPoint> * comdTasks, std::list<gridPoint> * krigTasks, std::map<std::string, std::vector<char *> > *dbCache, Calls* ca, Tms *tm, redisContext *context);
+#else
 template void doFluxes(Node* fields, Node* fluxes, int grid_size, Input* in, int* context, redisContext *headRedis);
+template void half_step_second_order(Node* node_a, Node* node_b, int grid_size, Input* in, int* context, redisContext *headRedis);
 template void doParallelCalls(Node * fields, Node * fluxes, Input in, std::list<gridPoint> * comdTasks, std::list<gridPoint> * krigTasks, std::map<std::string, std::vector<char *> > *dbCache, Calls* ca, Tms *tm, int* context);
+#endif
 #endif
 
 #ifdef CHARM
