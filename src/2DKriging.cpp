@@ -50,18 +50,31 @@ extern "C"
 #include <cnc/debug.h>
 #endif//CNC
 /****************FEATURES****************/
-//define specifies if CoMD is used or the linear "analytic" approach
+/* define specifies if CoMD is used or the linear "analytic" approach */
+/* enable redis database */
+/* !!! enable it in flux.cpp too!!! */
 #define DB
+/* enable kriging -> needs database */
 #define KRIGING
+/* enable kriging database-> needs database */
 #define KR_DB
+/* flat wave testcase  */
 //#define XWAVE
+/* circular impact testcase  */
 #define CIRCULAR
+/* laser impact testcase  */
 //#define HEAT
+/* autoflush database at the start of simulation */
 #define FLUSHDB
+/* enable fault tolerance/checkpointing */
+//#define FT_MODE
 /*****************OUTPUT****************/
-//#define OUTPUT
+/* use no output for benchmark */
+#define OUTPUT
+/* sepcify additional vtk output (otherwise just gnuplot and ps files) */
 //#define VTK_FIELDS
 //#define VTK_COLORMAP
+/* hidden feature */
 //#define LOADBAR
 /****************************************/
 /*****************GLOBALS****************/
