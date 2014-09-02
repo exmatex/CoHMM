@@ -55,18 +55,31 @@ extern "C"
 #include <boost/archive/text_oarchive.hpp>
 #endif //CIRCLE
 /****************FEATURES****************/
-//define specifies if CoMD is used or the linear "analytic" approach
+/* define specifies if CoMD is used or the linear "analytic" approach */
+/* enable redis database */
+/* !!! enable it in flux.cpp too!!! */
 #define DB
+/* enable kriging -> needs database */
 #define KRIGING
+/* enable kriging database-> needs database */
 #define KR_DB
+/* flat wave testcase  */
 //#define XWAVE
+/* circular impact testcase  */
 #define CIRCULAR
+/* laser impact testcase  */
 //#define HEAT
+/* autoflush database at the start of simulation */
 #define FLUSHDB
+/* enable fault tolerance/checkpointing */
+//#define FT_MODE
 /*****************OUTPUT****************/
-//#define OUTPUT
+/* use no output for benchmark */
+#define OUTPUT
+/* sepcify additional vtk output (otherwise just gnuplot and ps files) */
 //#define VTK_FIELDS
 //#define VTK_COLORMAP
+/* hidden feature */
 //#define LOADBAR
 /****************************************/
 /*****************GLOBALS****************/
@@ -447,11 +460,13 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
     redisCommand(context,"sync");
 #endif//CIRCLE
 
+#ifdef OMP
     for(int i = 0; i < int(fluxInArgs.size()); i++)
     {
       tm->kr += (stopKr[i] - startKr[i]);
       tm->co += (stopCo[i] - startCo[i]);
     }
+#endif
 	//Process the results of OMP'd tasks
 	for(int i = 0; i < int(fluxInArgs.size()); i++)
 	{

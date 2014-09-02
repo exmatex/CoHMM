@@ -45,7 +45,7 @@ int main( int argc, char* argv[] )
   printf("**                                              **\n");
   printf("**                                              **\n");
 #ifdef CNC
-  printf("**   Running \"CNC 2D Kriging x processors    **\n"
+  printf("**   Running \"CNC 2D Kriging x processors     **\n");
 #elif defined OMP
   printf("**   Running \"OpenMP 2D Kriging %d processors    **\n",
          omp_get_max_threads());

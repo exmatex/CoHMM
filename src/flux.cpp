@@ -20,8 +20,11 @@ extern "C"
 #include <boost/archive/text_iarchive.hpp>
 #endif
 #include "types.h"
+/* enable redis database */
 #define DB
-#define CoMD
+/* enable CoMD lib */
+//#define CoMD
+/* enable Gaussian noise */
 //#define C_RAND
 
 //FIXME get rid of that:
