@@ -68,52 +68,45 @@ HIREDIS_CFLAG=-I$(HIREDISINC)
 HIREDIS_LDFLAG=-L$(HIREDISLIB) -lhiredis
 
 ifeq ($(MKLROOT), )
-ifeq ($(CXX), $(CNC)) 
-$(error MKLROOT is not set, but mkl needed for CnC)
-else
 $(info MKLROOT not set, using lapack/gsl, run 'module load mkl' or set MKLROOT first to use mkl)
 LINALGROOT=/usr
-endif
 else
 LINALGROOT=
-endif
 MKLINC=$(MKLROOT)/include
 MKLLIB=$(MKLROOT)/lib/$(ARCH)
 MKL_CFLAG=-I$(MKLINC) -DHAVE_MKL 
+endif
 
-#LAPEROOT=/projects/opt/lapack/3.5.0/lapacke
+#LINALG
 LINALGLIB=/usr/lib64
 LINALG=$(LINALGROOT)
 LINALGINC=$(LINALG)/include/gsl
-#LAPELIB=$(LAPE)/lib64
-#LAPE_CFLAG=-I$(LAPEINC)
 #INCLUDE BLAS
 BLASROOT=/usr
 BLAS=$(BLASROOT)
 BLASINC=$(BLAS)/include
 BLASLIB=$(BLAS)/lib64
 BLAS_CFLAG=-I$(BLASINC)
-#LINALG
 
 ifeq ($(LINALGROOT), )
 #MKL flags
-ifeq ($(CXX), $(CHARMC))
-  MKL_LDFLAG= -L$(MKLLIB) -lmkl_intel_ilp64 -lmkl_core -lmkl_sequential
-else ifeq ($(SET), circle) 
-  MKL_LDFLAG= -L$(MKLLIB) -lmkl_intel_ilp64 -lmkl_core -lmkl_sequential
-else ifeq ($(CXX), $(OMP)) 
+ifeq ($(CXX), $(OMP))
   MKL_LDFLAG= -L$(MKLLIB) -mkl=sequential
-  OMP_CFLAGS=-fopenmp
-  OMP_LDFLAGS=-fopenmp
-else ifeq ($(CXX), $(CNC)) 
+else 
   MKL_LDFLAG= -L$(MKLLIB) -lmkl_intel_ilp64 -lmkl_core -lmkl_sequential
+endif
+else
+  LINALG_CFLAGS=-llapack -I$(LINALGINC)
+  LINALG_LDFLAG=-L$(BLASLIB) -lgslcblas -llapack
+endif
+
+ifeq ($(CXX), $(CNC)) 
   CNC_LDFLAG=-L$(CNCROOT)/lib/$(ARCH) -lcnc -ltbb -ltbbmalloc
   CNC_CFLAG= -D_DIST_ -I$(CNCROOT)/include -std=c++0x
   #CNC_CFLAG=-I$(CNCROOT)/include -std=c++0x
-endif
-else
- LINALG_CFLAGS=-llapack -I$(LINALGINC)
- LINALG_LDFLAG=-L$(BLASLIB) -lgslcblas -llapack
+else ifeq ($(CXX), $(OMP)) 
+  OMP_CFLAGS=-fopenmp
+  OMP_LDFLAGS=-fopenmp
 endif
 
 ifeq ($(BOOST_INCLUDES), )
@@ -142,7 +135,7 @@ CXXFLAGS+=$(HIREDIS_CFLAG) $(MKL_CFLAG) $(COMD_CFLAG) $(BOOST_CFLAG) -g
 LDFLAGS=$(HIREDIS_LDFLAG) $(MKL_LDFLAG) $(COMD_LDFLAG) -lm -lrt
 else
 CXXFLAGS+=$(HIREDIS_CFLAG) $(LINALG_CFLAG) $(COMD_CFLAG) $(BOOST_CFLAG) -g
-LDFLAGS=$(HIREDIS_LDFLAG) $(LINALG_LDFLAG) $(COMD_LDFLAG) -lm -lrt -fopenmp
+LDFLAGS=$(HIREDIS_LDFLAG) $(LINALG_LDFLAG) $(COMD_LDFLAG) -lm -lrt 
 endif
 
 ifeq ($(CXX), $(CHARMC))

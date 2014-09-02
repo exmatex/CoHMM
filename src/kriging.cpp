@@ -10,7 +10,6 @@
 #endif
 
 //MKL
-//#define HAVE_MKL
 #ifdef HAVE_MKL
 #include <mkl.h>
 #else
@@ -182,9 +181,6 @@ int kriging(double * w, int pointDims, std::vector<double *> oldWs, std::vector<
 #endif
     lapack_int info;
 #ifndef HAVE_MKL
-    //double *a, *b, *c;
-    //a = ctof(K, n, n);
-    //b = ctof(M, 1, n);
     dgetrf_(&n, &n, K, &n, ipiv, &info);   
 #else
 	info = LAPACKE_dgetrf(LAPACK_ROW_MAJOR, n, n, K, n, ipiv);
