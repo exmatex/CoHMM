@@ -445,8 +445,6 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
     CIRCLE_cb_create(&enqueue_fluxInArgs);
     CIRCLE_begin();
     redisCommand(context,"sync");
-    fluxOutput * fluxOutOmp = new fluxOutput[fluxInArgs.size()];
-    //get results from db
 #endif//CIRCLE
 
     for(int i = 0; i < int(fluxInArgs.size()); i++)
@@ -461,6 +459,23 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
 		fluxOutput fluxOutCnc;
 		context->fluxOutp.get(i+1, fluxOutCnc);
         //printf("got val %d from task %d\n\n", fluxOut.index, i+1);
+#elif CIRCLE
+		std::vector<double *> wVec;
+		std::vector<double *> fVec;
+		std::vector<double *> gVec;
+    		//get results from db
+		if (fluxInArgs[i].callCoMD){
+		  getCachedSortedSubBucketNearZero(fluxInArgs[i].w.w, (char *)"comd", context, comdDigits, 1, &wVec, &fVec, &gVec, zeroThresh, dbCache);
+		} else {
+		  getCachedSortedSubBucketNearZero(fluxInArgs[i].w.w, (char *)"krig", context, comdDigits, 1, &wVec, &fVec, &gVec, zeroThresh, dbCache);
+		  if (! ifConservedFieldsMatch(fluxInArgs[i].w.w, &wVec, 0.0)){
+		    getCachedSortedSubBucketNearZero(fluxInArgs[i].w.w, (char *)"comd", context, comdDigits, 1, &wVec, &fVec, &gVec, zeroThresh, dbCache);
+		  }
+		}
+		if (! ifConservedFieldsMatch(fluxInArgs[i].w.w, &wVec, 0.0)){
+		  printf("Redis error: COMD value not found\n");
+		  exit(1);
+		}
 #endif
 		//Write results to fluxes for all duplicates as this is good
 		for(std::list<gridPoint>::iterator iter = taskMap[fluxInArgs[i].w].begin(); iter != taskMap[fluxInArgs[i].w].end(); iter++)
@@ -476,9 +491,14 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
 #elif CNC
 	    	memcpy(f->f, fluxOutCnc.f, sizeof(double)*7);
 			memcpy(g->f, fluxOutCnc.g, sizeof(double)*7);
-#else
+#elif OMP
             memcpy(f->f, &fluxOutOmp[i].f, sizeof(double)*7);
             memcpy(g->f, &fluxOutOmp[i].g, sizeof(double)*7);
+#elif CIRCLE
+            memcpy(f->f, fVec[0], sizeof(double)*7);
+            memcpy(g->f, gVec[0], sizeof(double)*7);
+#else
+#error Something is wrong.
 #endif
 			if(fluxInArgs[i].callCoMD == true)
             {
@@ -490,8 +510,11 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
             //ca->cPoints++;
             }
 		}
+		freeClear(wVec);
+		freeClear(fVec);
+		freeClear(gVec);
 	}
-#if defined (OMP) || (CIRCLE)
+#ifdef OMP
   delete[] fluxOutOmp;
 #endif
 
