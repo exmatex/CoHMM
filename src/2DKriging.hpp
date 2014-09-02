@@ -53,11 +53,6 @@ struct fluxInput
 	    strcpy(headNode, headNode_);
     }
 
-//    void serialize( CnC::serializer & buf ) {
-//        buf & w
-//            & callCoMD;
-//    }
-
 #elif CHARM
     fluxInput(Conserved w_, bool callCoMD_)
     : w(w_), callCoMD(callCoMD_)
@@ -101,7 +96,7 @@ struct fluxFn
     // declaration of execute method goes here
     int execute( const int & t, flux_context & c ) const;
 };
-#if 0
+#if 1
 struct fluxTuner: public CnC::step_tuner<>
 {
 	template<class dependency_consumer>
@@ -116,8 +111,8 @@ CNC_BITWISE_SERIALIZABLE(fluxTuner);
 struct flux_context : public CnC::context< flux_context > // derive from CnC::context
 {
     // the step collection for the instances of the compute-kernel
-    CnC::step_collection< fluxFn > steps;
-	//CnC::step_collection<fluxFn, fluxTuner> steps;
+    //CnC::step_collection< fluxFn > steps;
+	CnC::step_collection<fluxFn, fluxTuner> steps;
     // item collection holding the flux number(s)
 	CnC::item_collection<int, fluxInput> fluxInp;
 	CnC::item_collection<int, fluxOutput> fluxOutp;

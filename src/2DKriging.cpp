@@ -462,11 +462,13 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
     //get results from db
 #endif//CIRCLE
 
+#ifdef OMP
     for(int i = 0; i < int(fluxInArgs.size()); i++)
     {
       tm->kr += (stopKr[i] - startKr[i]);
       tm->co += (stopCo[i] - startCo[i]);
     }
+#endif
 	//Process the results of OMP'd tasks
 	for(int i = 0; i < int(fluxInArgs.size()); i++)
 	{

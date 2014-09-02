@@ -68,8 +68,12 @@ HIREDIS_CFLAG=-I$(HIREDISINC)
 HIREDIS_LDFLAG=-L$(HIREDISLIB) -lhiredis
 
 ifeq ($(MKLROOT), )
+ifeq ($(CXX), $(CNC)) 
+$(error MKLROOT is not set, but mkl needed for CnC)
+else
 $(info MKLROOT not set, using lapack/gsl, run 'module load mkl' or set MKLROOT first to use mkl)
 LINALGROOT=/usr
+endif
 else
 LINALGROOT=
 endif
