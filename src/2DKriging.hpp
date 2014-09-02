@@ -16,6 +16,10 @@
 struct flux_context;
 #endif//CNC
 
+#ifdef CIRCLE
+#include <mpi.h>
+#endif
+
 //some extern constants
 extern const int comdDigits;
 extern const int krigDigits;
@@ -33,7 +37,7 @@ struct gridPoint
  * **/
 struct fluxInput
 {
-#if defined (CNC) || (OMP) 
+#if defined (CNC) || (OMP) || (CIRCLE) 
     char headNode[1024];
 #endif
     //enable char here or make add collection input
@@ -41,7 +45,7 @@ struct fluxInput
 	bool callCoMD;
 
     fluxInput() { }
-#if defined (CNC) || (OMP) 
+#if defined (CNC) || (OMP) || (CIRCLE)
     // constructor
     fluxInput(Conserved w_, bool callCoMD_, char* headNode_)
     : w(w_), callCoMD(callCoMD_)
@@ -64,6 +68,13 @@ struct fluxInput
     p|callCoMD;
   }
 #endif//CHARM
+#ifdef CIRCLE
+  template<class Archive>
+  void serialize(Archive & ar, const unsigned int version) {
+    ar & w;
+    ar & callCoMD;
+  }
+#endif//CIRCLE
 };
 #ifdef CNC
 CNC_BITWISE_SERIALIZABLE(fluxInput);

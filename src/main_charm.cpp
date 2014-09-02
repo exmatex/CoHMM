@@ -1,7 +1,7 @@
 /** file containing the charm main function
  * calls 2D Kriging main
  * **/
-#include "main.h"
+#include "main_charm.hpp"
 #include "input.hpp"
 #include "2DKriging.hpp"
 #include "krigingMod.decl.h"
