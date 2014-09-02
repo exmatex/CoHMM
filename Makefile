@@ -68,15 +68,16 @@ HIREDIS_CFLAG=-I$(HIREDISINC)
 HIREDIS_LDFLAG=-L$(HIREDISLIB) -lhiredis
 
 ifeq ($(MKLROOT), )
-$(error Set MKLROOT or run 'module load mkl' first)
+$(info MKLROOT not set, using lapack/gsl, run 'module load mkl' or set MKLROOT first to use mkl)
+LINALGROOT=/usr
+else
+LINALGROOT=
 endif
-MKL=$(MKLROOT)
-MKLINC=$(MKL)/include
-MKLLIB=$(MKL)/lib/$(ARCH)
+MKLINC=$(MKLROOT)/include
+MKLLIB=$(MKLROOT)/lib/$(ARCH)
 MKL_CFLAG=-I$(MKLINC) -DHAVE_MKL 
 
 #LAPEROOT=/projects/opt/lapack/3.5.0/lapacke
-LINALGROOT=/usr
 LINALGLIB=/usr/lib64
 LINALG=$(LINALGROOT)
 LINALGINC=$(LINALG)/include/gsl
