@@ -746,7 +746,7 @@ template <typename T> void doFluxes(Node* fields, Node* fluxes, int grid_size, I
   if(ca.krig)tm.kr /= ca.krig;
   //print the calls
 #ifdef VTK_COLORMAP
-  printf_colormap_vtk(counter, fields, in, grid_size);
+  printf_colormap_vtk(counter, fields, *in, grid_size);
 #endif
 #ifdef OUTPUT
   printf_calls(counter, ca);
