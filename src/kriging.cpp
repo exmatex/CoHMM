@@ -10,14 +10,12 @@
 #endif
 
 //MKL
-#ifdef HAVE_MKL
-#include <mkl.h>
-#else
+//#ifdef HAVE_MKL
+//#include <mkl.h>
+//#else
 #define lapack_int int
-//#include <lapacke.h>
-//#include <clapack.h>
 #include <gsl_cblas.h>
-#endif
+//#endif
 
 enum variogramApprox_t
 {
@@ -180,11 +178,8 @@ int kriging(double * w, int pointDims, std::vector<double *> oldWs, std::vector<
 	CkAssert(ipiv);
 #endif
     lapack_int info;
-#ifndef HAVE_MKL
     dgetrf_(&n, &n, K, &n, ipiv, &info);   
-#else
-	info = LAPACKE_dgetrf(LAPACK_ROW_MAJOR, n, n, K, n, ipiv);
-#endif
+	//info = LAPACKE_dgetrf(LAPACK_ROW_MAJOR, n, n, K, n, ipiv);
 	if(info != 0)
 	{
 		fprintf(stderr, "LAPACK dgetrf failed on %d \n", info);
@@ -193,14 +188,11 @@ int kriging(double * w, int pointDims, std::vector<double *> oldWs, std::vector<
 	}
 	//KW=M, solve for W
     int nrhs = 1;
-#ifndef HAVE_MKL
     char trans;
     trans = 'N';
     dgetrs_(&trans, &n, &nrhs, K, &n, ipiv, M, &n, &info);   
-#else
-	info = LAPACKE_dgetrs(LAPACK_ROW_MAJOR, 'N', n, 1, K, n, ipiv, M, n);
+	//info = LAPACKE_dgetrs(LAPACK_ROW_MAJOR, 'N', n, 1, K, n, ipiv, M, n);
 	//info = LAPACKE_dgetrs(LAPACK_ROW_MAJOR, 'N', n, 1, K, n, ipiv, M, 1);
-#endif
 
 	//info = LAPACKE_dgetrs(LAPACK_ROW_MAJOR, 'N', n, 1, K, n, M, n, 1, ipiv);
 	if(info != 0)

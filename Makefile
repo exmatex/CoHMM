@@ -74,7 +74,6 @@ else
 LINALGROOT=
 MKLINC=$(MKLROOT)/include
 MKLLIB=$(MKLROOT)/lib/$(ARCH)
-MKL_CFLAG=-I$(MKLINC) -DHAVE_MKL 
 endif
 
 #LINALG
@@ -84,19 +83,19 @@ LINALGINC=$(LINALG)/include/gsl
 #INCLUDE BLAS
 BLASROOT=/usr
 BLAS=$(BLASROOT)
-BLASINC=$(BLAS)/include
+BLASINC=$(BLAS)/include/gsl
 BLASLIB=$(BLAS)/lib64
 BLAS_CFLAG=-I$(BLASINC)
 
 ifeq ($(LINALGROOT), )
 #MKL flags
-ifeq ($(CXX), $(OMP))
-  MKL_LDFLAG= -L$(MKLLIB) -mkl=sequential
-else 
-  MKL_LDFLAG= -L$(MKLLIB) -lmkl_intel_ilp64 -lmkl_core -lmkl_sequential
-endif
+  #MKL_LDFLAG= -L$(MKLLIB) -lmkl_intel_ilp64 -lmkl_core -lmkl_sequential
+  MKL_CFLAG=-I$(MKLINC) -DHAVE_MKL -I$(BLASINC)
+  MKL_LDFLAG= -L$(MKLLIB) -lmkl_rt -L$(BLASLIB) -lgslcblas
 else
-  LINALG_CFLAGS=-llapack -I$(LINALGINC)
+#FIXME
+  #LINALG_CFLAGS=-llapack -I$(LINALGINC)
+  LINALG_CFLAGS=-I$(LINALGINC) -llapack
   LINALG_LDFLAG=-L$(BLASLIB) -lgslcblas -llapack
 endif
 

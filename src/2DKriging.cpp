@@ -525,9 +525,11 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
             //ca->cPoints++;
             }
 		}
+#ifdef CIRCLE
 		freeClear(wVec);
 		freeClear(fVec);
 		freeClear(gVec);
+#endif
 	}
 #ifdef OMP
   delete[] fluxOutOmp;
