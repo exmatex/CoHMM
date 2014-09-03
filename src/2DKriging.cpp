@@ -422,22 +422,6 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
 	comdTasks->clear();
 	krigTasks->clear();
 
-	//init timers
-    //double startKr[int(fluxInArgs.size())];
-    //double stopKr[int(fluxInArgs.size())];
-    //double startCo[int(fluxInArgs.size())];
-    //double stopCo[int(fluxInArgs.size())];
-	//for(int i = 0; i < int(fluxInArgs.size()); i++)
-
-    //{
-    //  startKr[i] = 0.0;
-    //  stopKr[i] = 0.0;
-    //  startCo[i] = 0.0;
-    //  stopCo[i] = 0.0;
-   // }
-    //tm->kr = 0.0;
-    //tm->co = 0.0;
-
 #ifdef CHARM
     CkReductionMsg *fluxOut;
     context.fluxFn(fluxInArgs, in, CkCallbackResumeThread((void*&)fluxOut));
@@ -460,13 +444,6 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
     redisCommand(context,"sync");
 #endif//CIRCLE
 
-#ifdef OMP
-    //for(int i = 0; i < int(fluxInArgs.size()); i++)
-    //{
-    //  tm->kr += (stopKr[i] - startKr[i]);
-    //  tm->co += (stopCo[i] - startCo[i]);
-   // }
-#endif
 	//Process the results of OMP'd tasks
 	for(int i = 0; i < int(fluxInArgs.size()); i++)
 	{
@@ -645,8 +622,6 @@ template <typename T> void doFluxes(Node* fields, Node* fluxes, int grid_size, I
 
 			getCachedSortedSubBucketNearZero(fields[x + dim_x*y].w.w, (char *)"comd", headRedis, comdDigits, 2, &wVec, &fVec, &gVec, zeroThresh, &dbCache);
 			//getSortedSubBucketNearZero(fields[x + dim_x*y].w.w, "comd", headRedis, comdDigits, 2, &wVec, &fVec, &gVec, zeroThresh);
-            //if(int(wVec.size())>1)printf("wvecsize %i\n", int(wVec.size()));
-            //printf("wvecsize %i\n", int(wVec.size()));
 
 			//Check for exact value
             //printf("dbthresh %lf\n", dbT);
