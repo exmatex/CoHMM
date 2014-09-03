@@ -41,7 +41,7 @@ void fluxFn(fluxInput *in, fluxOutput *out, Input inp)
 #elif CNC
 int fluxFn::execute(const int & id, flux_context & fluxText) const
 #elif OMP
-void fluxFn(fluxInput *in, fluxOutput *out, std::map<std::string, std::vector<char *> > *dbCache, double* startKr, double* stopKr, double* startCo, double* stopCo, Input inp)
+void fluxFn(fluxInput *in, fluxOutput *out, std::map<std::string, std::vector<char *> > *dbCache, Input inp)
 #elif CIRCLE
 void fluxFn(CIRCLE_handle *handle)
 #else
@@ -60,22 +60,23 @@ void fluxFn(CIRCLE_handle *handle)
     //printf("id %d cnc input %lf\n", id, in->w.w[0]);
 #endif//CNC
 #ifdef CIRCLE
-        char str[CIRCLE_MAX_STRING_LEN];
-        handle->dequeue(&str[0]);
-    	//de-serialize
+    char str[CIRCLE_MAX_STRING_LEN];
+    handle->dequeue(&str[0]);
+    //de-serialize
 	std::stringstream archive_stream(str);
-        boost::archive::text_iarchive archive(archive_stream);
+    boost::archive::text_iarchive archive(archive_stream);
 	fluxInput inVal;
 	archive >> inVal;
 	fluxInput * in = &inVal;
 	fluxOutput outVal;
 	fluxOutput* out = &outVal;
-        Input inp;
-        inp.head_node = in->headNode;
+    Input inp;
+    inp.head_node = in->headNode;
 #endif//CIRCLE
 	//Prep outputs
 	out->error = 0.0;
-
+    double startKr = 0.0;
+    double stopKr = 0.0;
 #ifdef DB
 	//Make redis context
 	redisContext * rTask;
@@ -233,13 +234,13 @@ void fluxFn(CIRCLE_handle *handle)
 		putData(in->w.w, out->f, out->g, (char *)"comd", rTask, comdDigits);		
         double stopCo = getUnixTime();
         //if(diff1 > 1.0) printf("put timing %lf\n", diff1);
-        //out->diffCo = stopCo - startCo;
+        out->diffCo = stopCo - startCo;
 #endif
 	}
 	//It is kriging time!
 	else
 	{
-        double startKr = getUnixTime();
+        startKr = getUnixTime();
         //printf("krigingtime\n");
 		//Get data for kriging
 		std::vector<double *> oldWs;
@@ -288,7 +289,7 @@ void fluxFn(CIRCLE_handle *handle)
         //printf("error %lf\n", out->error);
         if(out->error > inp.kr_threshold)
         {
-            double stopKr = getUnixTime();
+            stopKr = getUnixTime();
 	        out->error = 0.0;
             double startCo = getUnixTime();
 		    //Call CoMD
@@ -302,7 +303,6 @@ void fluxFn(CIRCLE_handle *handle)
 		    double momentum_y = in->w.w[5];
 		    //enery_flux
 		    double energy = in->w.w[6];
-
 #ifdef CoMD
 		    CoMD_input theInput;
 
@@ -428,10 +428,11 @@ void fluxFn(CIRCLE_handle *handle)
             //Write result to database
             putData(in->w.w, out->f, out->g, (char *)"krig", rTask, krigDigits);		
 #endif
-            double stopKr = getUnixTime();
         }
+
+        stopKr = getUnixTime();
 	}
-    //out->diffKr = stopKr - startKr;
+    out->diffKr = stopKr - startKr;
 
 #ifdef DB
 	//All pertinent values are set, let's disconneect from Redis and return

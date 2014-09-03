@@ -64,9 +64,9 @@ extern "C"
 /* enable kriging database-> needs database */
 #define KR_DB
 /* flat wave testcase  */
-//#define XWAVE
+#define XWAVE
 /* circular impact testcase  */
-#define CIRCULAR
+//#define CIRCULAR
 /* laser impact testcase  */
 //#define HEAT
 /* autoflush database at the start of simulation */
@@ -78,7 +78,7 @@ extern "C"
 #define OUTPUT
 /* sepcify additional vtk output (otherwise just gnuplot and ps files) */
 //#define VTK_FIELDS
-//#define VTK_COLORMAP
+#define VTK_COLORMAP
 /* hidden feature */
 //#define LOADBAR
 /****************************************/
@@ -423,18 +423,18 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
 	krigTasks->clear();
 
 	//init timers
-    double startKr[int(fluxInArgs.size())];
-    double stopKr[int(fluxInArgs.size())];
-    double startCo[int(fluxInArgs.size())];
-    double stopCo[int(fluxInArgs.size())];
-	for(int i = 0; i < int(fluxInArgs.size()); i++)
+    //double startKr[int(fluxInArgs.size())];
+    //double stopKr[int(fluxInArgs.size())];
+    //double startCo[int(fluxInArgs.size())];
+    //double stopCo[int(fluxInArgs.size())];
+	//for(int i = 0; i < int(fluxInArgs.size()); i++)
 
-    {
-      startKr[i] = 0.0;
-      stopKr[i] = 0.0;
-      startCo[i] = 0.0;
-      stopCo[i] = 0.0;
-    }
+    //{
+    //  startKr[i] = 0.0;
+    //  stopKr[i] = 0.0;
+    //  startCo[i] = 0.0;
+    //  stopCo[i] = 0.0;
+   // }
     //tm->kr = 0.0;
     //tm->co = 0.0;
 
@@ -450,7 +450,7 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
     fluxOutput * fluxOutOmp = new fluxOutput[fluxInArgs.size()];
 #pragma omp parallel for
     for(int i = 0; i < int(fluxInArgs.size()); i++){
-        fluxFn(&fluxInArgs[i], &fluxOutOmp[i], dbCache, &startKr[i], &stopKr[i], &startCo[i], &stopCo[i], in);
+        fluxFn(&fluxInArgs[i], &fluxOutOmp[i], dbCache, in);
     }
 #endif//OMP
 #ifdef CIRCLE
@@ -461,11 +461,11 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
 #endif//CIRCLE
 
 #ifdef OMP
-    for(int i = 0; i < int(fluxInArgs.size()); i++)
-    {
-      tm->kr += (stopKr[i] - startKr[i]);
-      tm->co += (stopCo[i] - startCo[i]);
-    }
+    //for(int i = 0; i < int(fluxInArgs.size()); i++)
+    //{
+    //  tm->kr += (stopKr[i] - startKr[i]);
+    //  tm->co += (stopCo[i] - startCo[i]);
+   // }
 #endif
 	//Process the results of OMP'd tasks
 	for(int i = 0; i < int(fluxInArgs.size()); i++)
@@ -525,6 +525,19 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
             //ca->cPoints++;
             }
 		}
+#ifdef CHARM
+        //timings
+        tm->kr += fluxOutCharm[i].diffKr;
+        tm->co += fluxOutCharm[i].diffCo;
+#elif CNC
+        //timings
+        tm->kr += fluxOutCnc.diffKr;
+        tm->co += fluxOutCnc.diffCo;
+#elif OMP
+        //timings
+        tm->kr += fluxOutOmp[i].diffKr;
+        tm->co += fluxOutOmp[i].diffCo;
+#endif
 #ifdef CIRCLE
 		freeClear(wVec);
 		freeClear(fVec);
@@ -938,7 +951,7 @@ void main_2DKriging(Input in)
     exit(0);
 #endif
   }
-  fprintf(fn2, "#NO      COMD       COMD_P      DB      KR_DB      KR      KR_P      KR_FAIL\n");
+  fprintf(fn2, "#NO   COMD               COMD_P             DB             KR_DB            KR              KR_P          KR_FAIL\n");
   fclose(fn2);
 #else
   //init total_time.dat
