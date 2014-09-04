@@ -441,7 +441,7 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
     _fluxInArgs=&fluxInArgs;
     CIRCLE_cb_create(&enqueue_fluxInArgs);
     CIRCLE_begin();
-    redisCommand(context,"sync");
+    //redisCommand(context,"sync");
 #endif//CIRCLE
 
 	//Process the results of OMP'd tasks
@@ -457,11 +457,11 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
 		std::vector<double *> gVec;
     		//get results from db
 		if (fluxInArgs[i].callCoMD){
-		  getCachedSortedSubBucketNearZero(fluxInArgs[i].w.w, (char *)"comd", context, comdDigits, 1, &wVec, &fVec, &gVec, zeroThresh, dbCache);
+		  getSortedSubBucketNearZero(fluxInArgs[i].w.w, (char *)"comd", context, comdDigits, 1, &wVec, &fVec, &gVec, zeroThresh);
 		} else {
-		  getCachedSortedSubBucketNearZero(fluxInArgs[i].w.w, (char *)"krig", context, comdDigits, 1, &wVec, &fVec, &gVec, zeroThresh, dbCache);
+		  getSortedSubBucketNearZero(fluxInArgs[i].w.w, (char *)"krig", context, comdDigits, 1, &wVec, &fVec, &gVec, zeroThresh);
 		  if (! ifConservedFieldsMatch(fluxInArgs[i].w.w, &wVec, 0.0)){
-		    getCachedSortedSubBucketNearZero(fluxInArgs[i].w.w, (char *)"comd", context, comdDigits, 1, &wVec, &fVec, &gVec, zeroThresh, dbCache);
+		    getSortedSubBucketNearZero(fluxInArgs[i].w.w, (char *)"comd", context, comdDigits, 1, &wVec, &fVec, &gVec, zeroThresh);
 		  }
 		}
 		if (! ifConservedFieldsMatch(fluxInArgs[i].w.w, &wVec, 0.0)){

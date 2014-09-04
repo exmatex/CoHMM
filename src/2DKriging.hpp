@@ -66,6 +66,7 @@ struct fluxInput
 #ifdef CIRCLE
   template<class Archive>
   void serialize(Archive & ar, const unsigned int version) {
+    ar & headNode;
     ar & w;
     ar & callCoMD;
   }
