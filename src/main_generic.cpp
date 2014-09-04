@@ -36,6 +36,7 @@ int main( int argc, char* argv[] )
     for(int i=prev_step; i<steps; ++i){    
       CIRCLE_begin();
     }
+    exit(0);
   }
 #endif
 // Display some info about this execution
