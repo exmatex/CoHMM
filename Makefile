@@ -125,7 +125,7 @@ $(error COMDINC=$(COMDINC) seems to point to the wrong directory)
 endif
 COMDLIB=$(COMD)
 COMD_CFLAG=-I$(COMDINC)
-COMD_LDFLAG=-L$(COMDLIB) -lCoMD_2D
+COMD_LDFLAG=-L$(COMDLIB) -Wl,-rpath,$(COMDLIB) -lCoMD_2D
 #COMD_LDFLAG=-L$(COMDLIB) -lcomd
 
 OBJS:=$(addprefix $(OBJDIR)/, 2DKriging.o kriging.o flux.o redisBuckets.o output.o input.o)

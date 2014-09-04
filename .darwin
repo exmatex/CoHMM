@@ -3,3 +3,4 @@ module load libcircle
 module load mkl
 module load boost
 module load hiredis
+module load redis
