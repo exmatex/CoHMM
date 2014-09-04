@@ -114,7 +114,7 @@ else
 BOOST_CFLAG=-I$(BOOST_INCLUDES)
 endif
 #We use boost header only so far
-BOOSTLIB=$(HIREDIS_INCLUDES)/../lib
+BOOSTLIB=$(BOOST_INCLUDES)/../lib
 BOOST_LDFLAG=-L$(BOOSTLIB)
 
 COMD=$(PWD)/COMD_lib
