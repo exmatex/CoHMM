@@ -10,12 +10,12 @@
 #endif
 
 //MKL
-//#ifdef HAVE_MKL
-//#include <mkl.h>
-//#else
-#define lapack_int int
+#ifdef HAVE_MKL
+#include <mkl_cblas.h>
+#else
 #include <gsl_cblas.h>
-//#endif
+#endif
+#define lapack_int int
 
 enum variogramApprox_t
 {

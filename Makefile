@@ -90,8 +90,8 @@ BLAS_CFLAG=-I$(BLASINC)
 ifeq ($(LINALGROOT), )
 #MKL flags
   #MKL_LDFLAG= -L$(MKLLIB) -lmkl_intel_ilp64 -lmkl_core -lmkl_sequential
-  MKL_CFLAG=-I$(MKLINC) -DHAVE_MKL -I$(BLASINC)
-  MKL_LDFLAG= -L$(MKLLIB) -lmkl_rt -L$(BLASLIB) -lgslcblas
+  MKL_CFLAG=-I$(MKLINC) -DHAVE_MKL
+  MKL_LDFLAG= -L$(MKLLIB) -lmkl_rt
 else
 #FIXME
   #LINALG_CFLAGS=-llapack -I$(LINALGINC)
