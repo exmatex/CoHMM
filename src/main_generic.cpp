@@ -13,6 +13,7 @@
 #endif//OMP
 
 #ifdef CIRCLE
+#include <stdlib.h>
 #include <mpi.h>
 #include <libcircle.h>
 #include "flux.hpp"
@@ -36,6 +37,7 @@ int main( int argc, char* argv[] )
     for(int i=prev_step; i<steps; ++i){    
       CIRCLE_begin();
     }
+    CIRCLE_finalize();
     exit(0);
   }
 #endif
@@ -71,5 +73,7 @@ int main( int argc, char* argv[] )
   parse_input((string)input_file, &in);
 
   main_2DKriging(in);
-
+#ifdef CIRCLE
+  CIRCLE_finalize();
+#endif
 }
