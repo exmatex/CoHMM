@@ -5,6 +5,7 @@ cd $dir
 rm -r cn*
 sleep 1
 master=
+[[ ! -f $i ]] && echo "No hostfile given!" >&2 && exit 1
 for i in $(cat "$1"); do
     mkdir "$i"
     cd "$i"
@@ -20,7 +21,7 @@ for i in $(cat "$1"); do
             echo "dbfilename dump$i.rdb"
             echo "slave-read-only no"
         } > redis.conf
-        nohup ssh -n $i "cd $dir/$i; redis-server ./redis.conf " &
+        nohup ssh -n $i "cd $dir/$i; $(type -p redis-server) ./redis.conf " &
         echo "started slave on $i"
     fi
     sleep 2
