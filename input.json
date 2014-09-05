@@ -1,8 +1,8 @@
 {"parameter": {
     "header": "D2KS2 Input File",
     "macro_solver": [
-        {"id": "dim x",                     "value": 50},
-        {"id": "dim y",                     "value": 50},
+        {"id": "dim x",                     "value": 100},
+        {"id": "dim y",                     "value": 10},
         {"id": "integration steps",         "value": 25},
         {"id": "redis headnode",            "value": "localhost"},
         {"id": "database threshold",        "value": 0.00001},

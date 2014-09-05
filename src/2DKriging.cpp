@@ -64,9 +64,9 @@ extern "C"
 /* enable kriging database-> needs database */
 #define KR_DB
 /* flat wave testcase  */
-#define XWAVE
+//#define XWAVE
 /* circular impact testcase  */
-//#define CIRCULAR
+#define CIRCULAR
 /* laser impact testcase  */
 //#define HEAT
 /* autoflush database at the start of simulation */
