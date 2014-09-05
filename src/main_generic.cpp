@@ -29,6 +29,8 @@ int main( int argc, char* argv[] )
 #ifdef CIRCLE
   int rank = CIRCLE_init(argc, argv,CIRCLE_DEFAULT_FLAGS);
   CIRCLE_cb_process(&fluxFn);
+  //default logging is too verbose
+  CIRCLE_enable_logging(CIRCLE_LOG_ERR);
   if (rank!=0){
     int steps;
     MPI_Bcast(&steps, 1, MPI_INT, 0, MPI_COMM_WORLD);
