@@ -42,7 +42,7 @@ CnC:
 Installation
 ------------
 
-1. SET=charm or SET=cnc or SET=omp make
+1. make SET=charm, make SET=cnc, make SET=omp or make SET=circle
 
 Execution
 ---------
@@ -88,6 +88,10 @@ OpenMP:
 2. set $OMP_NUM_THREADS e.g. to the number of processors
 
 3. run './2D_Kriging input.json'
+
+libcircle:
+
+2. run 'mpirun -np XXX ./2D_Kriging input.json'
 
 Test Problems:
 
