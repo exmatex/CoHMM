@@ -89,6 +89,53 @@ OpenMP:
 
 3. run './2D_Kriging input.json'
 
+Test Problems:
+
+TP1
+
+1. in 2DKriging.cpp enable define XWAVE (disable CIRCULAR)
+
+2. features: define DB, KRIGING, KR_DB
+
+3. in flux.cpp enable define COMD and DB !!! (disable C_RAND)
+
+4. inout.json macro_solver:
+
+        {"id": "dim x",                     "value": 100},
+        {"id": "dim y",                     "value": 10},
+        {"id": "integration steps",         "value": 50},
+        {"id": "redis headnode",            "value": "localhost"},
+        {"id": "database threshold",        "value": 0.00001},
+        {"id": "kriging err. threshold",    "value": 0.001},
+        {"id": "Gaussian noise",            "value": 0.0},
+        {"id": "dx",                        "value": 1.0},
+        {"id": "dy",                        "value": 1.0},
+        {"id": "dt_x",                      "value": 0.1},
+        {"id": "dt_y",                      "value": 0.1}
+
+TP2
+
+1. in 2DKriging.cpp enable define CIRCULAR (disable XWAVE)
+
+2. features: define DB, KRIGING, KR_DB
+
+3. in flux.cpp enable define COMD and DB !!! (disable C_RAND)
+
+4. inout.json macro_solver:
+
+        {"id": "dim x",                     "value": 50},
+        {"id": "dim y",                     "value": 50},
+        {"id": "integration steps",         "value": 50},
+        {"id": "redis headnode",            "value": "localhost"},
+        {"id": "database threshold",        "value": 0.00001},
+        {"id": "kriging err. threshold",    "value": 0.001},
+        {"id": "Gaussian noise",            "value": 0.0},
+        {"id": "dx",                        "value": 1.0},
+        {"id": "dy",                        "value": 1.0},
+        {"id": "dt_x",                      "value": 0.1},
+        {"id": "dt_y",                      "value": 0.1}
+
+
 #TODO deprecated
 Generating a Trace of Database Accesses
 ---------

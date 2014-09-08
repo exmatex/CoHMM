@@ -130,6 +130,7 @@ COMD_LDFLAG=-L$(COMDLIB) -Wl,-rpath,$(COMDLIB) -lCoMD_2D
 #COMD_LDFLAG=-L$(COMDLIB) -lcomd
 
 OBJS:=$(addprefix $(OBJDIR)/, 2DKriging.o kriging.o flux.o redisBuckets.o output.o input.o)
+#-03 for icpc and -05 for gcc
 OPTFLAGS=-O5
 ifeq ($(LINALGROOT), )
 CXXFLAGS+=$(HIREDIS_CFLAG) $(MKL_CFLAG) $(COMD_CFLAG) $(BOOST_CFLAG) $(OPTFLAGS)

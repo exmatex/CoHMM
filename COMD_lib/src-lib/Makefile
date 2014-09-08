@@ -21,7 +21,8 @@ else
 CC = gcc
 endif
 CFLAGS = -std=c99
-OPTFLAGS = -g -O5
+#OPTFLAGS = -g -O5
+OPTFLAGS = -O5
 INCLUDES = 
 C_LIB = -lm
 
