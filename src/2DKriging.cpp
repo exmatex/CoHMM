@@ -363,10 +363,10 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
 		{
 			//It was, add it to the task queue
 #ifdef CNC
-			fluxInArgs.push_back(fluxInput(*w, false, headNode));
+			fluxInArgs.push_back(fluxInput(*w, false, headNode, in.kr_threshold));
 			int taskID = fluxInArgs.size();
 			context->tags.put(taskID);
-			context->fluxInp.put(taskID, fluxInput(*w, false, headNode));
+			context->fluxInp.put(taskID, fluxInput(*w, false, headNode, in.kr_threshold));
 #elif CHARM
 			fluxInArgs.push_back(fluxInput(*w, false));
 #else
@@ -392,10 +392,10 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
 		{
 			//It was, add it to the task queue
 #ifdef CNC
-			fluxInArgs.push_back(fluxInput(*w, true, headNode));
+			fluxInArgs.push_back(fluxInput(*w, true, headNode, in.kr_threshold));
 			int taskID = fluxInArgs.size();
 			context->tags.put(taskID);
-			context->fluxInp.put(taskID, fluxInput(*w, true, headNode));
+			context->fluxInp.put(taskID, fluxInput(*w, true, headNode, in.kr_threshold));
 #elif CHARM
 			fluxInArgs.push_back(fluxInput(*w, true));
 #else

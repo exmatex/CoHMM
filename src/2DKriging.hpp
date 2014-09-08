@@ -48,8 +48,8 @@ struct fluxInput
     fluxInput() { }
 #if defined (CNC) || (OMP) || (CIRCLE)
     // constructor
-    fluxInput(Conserved w_, bool callCoMD_, char* headNode_)
-    : w(w_), callCoMD(callCoMD_)
+    fluxInput(Conserved w_, bool callCoMD_, char* headNode_, double kr_threshold_)
+    : w(w_), callCoMD(callCoMD_), kr_threshold(kr_threshold_)
     {
 	    strcpy(headNode, headNode_);
     }
