@@ -99,7 +99,9 @@ TP1
 
 3. in flux.cpp enable define COMD and DB !!! (disable C_RAND)
 
-4. inout.json macro_solver:
+4. for total execution time measurement only disable define OUTPUT in 2DKriging.cpp
+
+5. inout.json macro_solver:
 
         {"id": "dim x",                     "value": 100},
         {"id": "dim y",                     "value": 10},
@@ -121,7 +123,9 @@ TP2
 
 3. in flux.cpp enable define COMD and DB !!! (disable C_RAND)
 
-4. inout.json macro_solver:
+4. for total execution time measurement only disable define OUTPUT in 2DKriging.cpp
+
+5. inout.json macro_solver:
 
         {"id": "dim x",                     "value": 50},
         {"id": "dim y",                     "value": 50},

@@ -23,7 +23,7 @@ extern "C"
 /* enable redis database */
 #define DB
 /* enable CoMD lib */
-//#define CoMD
+#define CoMD
 /* enable Gaussian noise */
 //#define C_RAND
 

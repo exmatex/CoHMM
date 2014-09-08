@@ -75,10 +75,10 @@ extern "C"
 //#define FT_MODE
 /*****************OUTPUT****************/
 /* use no output for benchmark */
-#define OUTPUT
+//#define OUTPUT
 /* sepcify additional vtk output (otherwise just gnuplot and ps files) */
 //#define VTK_FIELDS
-#define VTK_COLORMAP
+//#define VTK_COLORMAP
 /* hidden feature */
 //#define LOADBAR
 /****************************************/
@@ -733,10 +733,10 @@ template <typename T> void doFluxes(Node* fields, Node* fluxes, int grid_size, I
   if(ca.comd)tm.co /= ca.comd;
   if(ca.krig)tm.kr /= ca.krig;
   //print the calls
+#ifdef OUTPUT
 #ifdef VTK_COLORMAP
   printf_colormap_vtk(counter, fields, *in, grid_size);
 #endif
-#ifdef OUTPUT
   printf_calls(counter, ca);
   printf_timings(counter, tm);
 #endif//OUTPUT
@@ -1002,10 +1002,10 @@ void main_2DKriging(Input in)
   for(int i=prev_step; i<in.int_steps; ++i){
 #ifdef OUTPUT
     plot_fields(i, nodes_a, in);
-#endif//OUTPUT
 #ifdef VTK_FIELDS
     printf_fields_vtk(i, nodes_a, in, grid_size);
 #endif//VTK_FIELDS
+#endif//OUTPUT
 #ifdef FT_MODE
     redisWrite_fields(nodes_a, in, headRedis, i);
     redisDel_fields(headRedis, i);
