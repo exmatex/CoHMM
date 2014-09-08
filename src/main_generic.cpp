@@ -74,6 +74,13 @@ int main( int argc, char* argv[] )
   strcpy(input_file, argv[1]);
   parse_input((string)input_file, &in);
 
+  if(argc >2){ 
+    char host[1024];
+    strcpy(host, argv[2]);
+    in.head_node = string(host); 
+    printf("Used cmd line redis host: %s\n", in.head_node.c_str());
+  }
+
   main_2DKriging(in);
 #ifdef CIRCLE
   CIRCLE_finalize();

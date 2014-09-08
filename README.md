@@ -95,7 +95,7 @@ TP1
 
 1. in 2DKriging.cpp enable define XWAVE (disable CIRCULAR)
 
-2. features: define DB, KRIGING, KR_DB
+2. features: define DB, KRIGING, KR_DB, FLUSHDB
 
 3. in flux.cpp enable define COMD and DB !!! (disable C_RAND)
 
@@ -119,7 +119,7 @@ TP2
 
 1. in 2DKriging.cpp enable define CIRCULAR (disable XWAVE)
 
-2. features: define DB, KRIGING, KR_DB
+2. features: define DB, KRIGING, KR_DB, FLUSHDB
 
 3. in flux.cpp enable define COMD and DB !!! (disable C_RAND)
 

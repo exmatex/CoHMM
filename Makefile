@@ -100,9 +100,12 @@ else
   LINALG_LDFLAG=-L$(BLASLIB) -lgslcblas -llapack
 endif
 
+#-03 for icpc and -05 for gcc
+OPTFLAGS=-O5
 ifeq ($(CXX), $(CNC)) 
   CNC_LDFLAG=-L$(CNCROOT)/lib/$(ARCH) -lcnc -ltbb -ltbbmalloc
   CNC_CFLAG= -D_DIST_ -I$(CNCROOT)/include -std=c++0x
+  OPTFLAGS=-O3
   #CNC_CFLAG=-I$(CNCROOT)/include -std=c++0x
 else ifeq ($(CXX), $(OMP)) 
   OMP_CFLAGS=-fopenmp
@@ -130,8 +133,6 @@ COMD_LDFLAG=-L$(COMDLIB) -Wl,-rpath,$(COMDLIB) -lCoMD_2D
 #COMD_LDFLAG=-L$(COMDLIB) -lcomd
 
 OBJS:=$(addprefix $(OBJDIR)/, 2DKriging.o kriging.o flux.o redisBuckets.o output.o input.o)
-#-03 for icpc and -05 for gcc
-OPTFLAGS=-O5
 ifeq ($(LINALGROOT), )
 CXXFLAGS+=$(HIREDIS_CFLAG) $(MKL_CFLAG) $(COMD_CFLAG) $(BOOST_CFLAG) $(OPTFLAGS)
 LDFLAGS=$(HIREDIS_LDFLAG) $(MKL_LDFLAG) $(COMD_LDFLAG) -lm -lrt
