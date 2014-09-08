@@ -36,8 +36,11 @@ int main( int argc, char* argv[] )
     MPI_Bcast(&steps, 1, MPI_INT, 0, MPI_COMM_WORLD);
     int prev_step;
     MPI_Bcast(&prev_step, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    for(int i=prev_step; i<steps; ++i){    
-      CIRCLE_begin();
+    for(int i=prev_step; i<steps; ++i){
+      //2 *2 =4 half time steps
+      for (int j=0;j<4;j++){ 
+        CIRCLE_begin();
+      }
     }
     CIRCLE_finalize();
     exit(0);
