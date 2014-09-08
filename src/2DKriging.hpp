@@ -70,6 +70,7 @@ struct fluxInput
     ar & headNode;
     ar & w;
     ar & callCoMD;
+    ar & kr_threshold;
   }
 #endif//CIRCLE
 };

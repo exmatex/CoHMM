@@ -370,7 +370,7 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
 #elif CHARM
 			fluxInArgs.push_back(fluxInput(*w, false));
 #else
-			fluxInArgs.push_back(fluxInput(*w, false, headNode));
+			fluxInArgs.push_back(fluxInput(*w, false, headNode, in.kr_threshold));
 
 #endif
             ca->krig++;
@@ -399,7 +399,7 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
 #elif CHARM
 			fluxInArgs.push_back(fluxInput(*w, true));
 #else
-			fluxInArgs.push_back(fluxInput(*w, true, headNode));
+			fluxInArgs.push_back(fluxInput(*w, true, headNode, in.kr_threshold));
 #endif
             ca->comd++;
             ca->cPoints--;
