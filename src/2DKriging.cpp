@@ -462,6 +462,7 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
 		  getSortedSubBucketNearZero(fluxInArgs[i].w.w, (char *)"krig", context, comdDigits, 1, &wVec, &fVec, &gVec, zeroThresh);
 		  if (! ifConservedFieldsMatch(fluxInArgs[i].w.w, &wVec, 0.0)){
 		  getSortedSubBucketNearZero(fluxInArgs[i].w.w, (char *)"comd", context, comdDigits, 1, &wVec, &fVec, &gVec, zeroThresh);
+            ca->kFail++;
 		  }
 		}
 		if (! ifConservedFieldsMatch(fluxInArgs[i].w.w, &wVec, 0.0)){
