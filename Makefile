@@ -37,7 +37,7 @@ BINDIR=omp_bin
 #############CIRCLE############
 else ifeq ($(SET), circle)
 CXXFLAGS=-DCIRCLE
-CXX=mpic++
+CXX=mpicxx
 LIBCIRCLELIBS=$(shell pkg-config --libs libcircle)
 LIBCIRCLE_CFLAGS=$(shell pkg-config --cflags libcircle)
 ifeq ($(LIBCIRCLELIBS), )
@@ -45,7 +45,7 @@ $(error Set LIBCIRCLELIBS or run 'module load libcircle' first)
 endif
 OBJDIR=circle_obj
 BINDIR=circle_bin
-else ifeq ($(SET), )
+else
 ifneq "$(MAKECMDGOALS)" "clean"
 $(error please SET=cnc, SET=charm, SET=circle or SET=omp)
 endif
@@ -101,11 +101,11 @@ else
 endif
 
 #-03 for icpc and -05 for gcc
-OPTFLAGS=-O5
+OPTFLAGS=-g
+#OPTFLAGS=-O3
 ifeq ($(CXX), $(CNC)) 
   CNC_LDFLAG=-L$(CNCROOT)/lib/$(ARCH) -lcnc -ltbb -ltbbmalloc
   CNC_CFLAG= -D_DIST_ -I$(CNCROOT)/include -std=c++0x
-  OPTFLAGS=-O3
   #CNC_CFLAG=-I$(CNCROOT)/include -std=c++0x
 else ifeq ($(CXX), $(OMP)) 
   OMP_CFLAGS=-fopenmp

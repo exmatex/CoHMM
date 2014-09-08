@@ -505,7 +505,6 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
                 ca->kFail++;
                 //printf("kfail++\n\n");
                 }
-            //ca->cPoints++;
             }
 		}
 #ifdef CHARM
