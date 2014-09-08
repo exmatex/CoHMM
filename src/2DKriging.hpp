@@ -39,6 +39,7 @@ struct fluxInput
 {
 #if defined (CNC) || (OMP) || (CIRCLE) 
     char headNode[1024];
+    double kr_threshold; 
 #endif
     //enable char here or make add collection input
 	Conserved w;
@@ -87,6 +88,7 @@ typedef struct
     //timedifference[]
     double diffCo;
     double diffKr;
+	bool callCoMD;
 } fluxOutput;
 #ifdef CNC
 CNC_BITWISE_SERIALIZABLE(fluxOutput);

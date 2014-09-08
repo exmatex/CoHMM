@@ -11,7 +11,8 @@
 #include "types.h"
 //}
 #define GNUPLOT "/usr/bin/gnuplot -persist"
-#define PS_FILES
+#include <unistd.h>
+//#define PS_FILES
 /** print the calls
  * @param i         number of output file (input)         
  * @param node      grid_node containing the conserved and the fluxes (input)
@@ -159,6 +160,7 @@ void plot_fields(int i, Node* node_a, Input in){
   int bufferSize = 256;
   char file_name[bufferSize];
   sprintf(file_name,"gp_%i.dat",i);
+  //sleep(2);
   FILE *gp_out = fopen(file_name, "w");
   if (gp_out == NULL) {
     printf("Error writing file< %s >!\n", file_name);

@@ -461,7 +461,7 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
 		} else {
 		  getSortedSubBucketNearZero(fluxInArgs[i].w.w, (char *)"krig", context, comdDigits, 1, &wVec, &fVec, &gVec, zeroThresh);
 		  if (! ifConservedFieldsMatch(fluxInArgs[i].w.w, &wVec, 0.0)){
-		    getSortedSubBucketNearZero(fluxInArgs[i].w.w, (char *)"comd", context, comdDigits, 1, &wVec, &fVec, &gVec, zeroThresh);
+		  getSortedSubBucketNearZero(fluxInArgs[i].w.w, (char *)"comd", context, comdDigits, 1, &wVec, &fVec, &gVec, zeroThresh);
 		  }
 		}
 		if (! ifConservedFieldsMatch(fluxInArgs[i].w.w, &wVec, 0.0)){
@@ -480,15 +480,19 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
 #ifdef CHARM
 			memcpy(f->f, &fluxOutCharm[i].f, sizeof(double)*7);
 			memcpy(g->f, &fluxOutCharm[i].g, sizeof(double)*7);
+            fluxInArgs[i].callCoMD = fluxOutCharm[i].callCoMD;
 #elif CNC
 	    	memcpy(f->f, fluxOutCnc.f, sizeof(double)*7);
 			memcpy(g->f, fluxOutCnc.g, sizeof(double)*7);
+            fluxInArgs[i].callCoMD = fluxOutCnc.callCoMD;
 #elif OMP
             memcpy(f->f, &fluxOutOmp[i].f, sizeof(double)*7);
             memcpy(g->f, &fluxOutOmp[i].g, sizeof(double)*7);
+            fluxInArgs[i].callCoMD = fluxOutOmp[i].callCoMD;
 #elif CIRCLE
             memcpy(f->f, fVec[0], sizeof(double)*7);
             memcpy(g->f, gVec[0], sizeof(double)*7);
+            //fluxInArgs[i].callCoMD = fluxOut[i].callCoMD;
 #else
 #error Something is wrong.
 #endif
@@ -498,6 +502,7 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
                 fields[x + dim_x*y].f.ca = 7;
                 //fields[x + dim_x*y].f.ca = 1;
                 ca->kFail++;
+                //printf("kfail++\n\n");
                 }
             //ca->cPoints++;
             }

@@ -56,6 +56,7 @@ void fluxFn(CIRCLE_handle *handle)
 	fluxOutput* out = &outVal;
     Input inp;
     inp.head_node = in->headNode;
+    inp.kr_threshold = in->kr_threshold;
     //printf("id %d cnc input %s\n", id, inp.head_node.c_str());
     //printf("id %d cnc input %lf\n", id, in->w.w[0]);
 #endif//CNC
@@ -72,8 +73,10 @@ void fluxFn(CIRCLE_handle *handle)
 	fluxOutput* out = &outVal;
     Input inp;
     inp.head_node = in->headNode;
+    inp.kr_threshold = in->kr_threshold;
 #endif//CIRCLE
 	//Prep outputs
+    out->callCoMD = false;
 	out->error = 0.0;
     double startKr = 0.0;
     double stopKr = 0.0;
@@ -415,7 +418,7 @@ void fluxFn(CIRCLE_handle *handle)
             out->g[6] = -out->g[3]*sqrt(out->g[4]*out->g[4] + out->g[5]*out->g[5]);
 #endif//COMD
             //mark as CoMD'd
-            in->callCoMD = true;
+            out->callCoMD = true;
 #ifdef DB
 		    //Write result to database
 		    putData(in->w.w, out->f, out->g, (char *)"comd", rTask, comdDigits);		
