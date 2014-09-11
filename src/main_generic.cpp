@@ -81,7 +81,7 @@ int main( int argc, char* argv[] )
     char host[1024];
     strcpy(host, argv[2]);
     in.head_node = string(host); 
-    printf("Used cmd line redis host: %s\n", in.head_node.c_str());
+    printf("Use single redis host on node: %s\n", in.head_node.c_str());
   }
 
   main_2DKriging(in);

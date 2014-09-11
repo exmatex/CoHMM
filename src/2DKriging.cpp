@@ -992,8 +992,7 @@ void main_2DKriging(Input in)
 #endif//KR_DB
   //start total time measurement
   double ttime_start = getUnixTime();
-  double ttime_stop;
-
+  double ttime_stop, stime_start;
   int prev_step = 0;
 #ifdef FT_MODE
   prev_step = redisRead_fields(nodes_a, &in, headRedis);
@@ -1023,6 +1022,7 @@ void main_2DKriging(Input in)
 #else
 	    fprintf(stdout, "============Integration Step: %d ==============\n", i);
 	    fflush(stdout);
+        stime_start = getUnixTime();
 #endif
         //first half step
 #ifdef CHARM
@@ -1045,7 +1045,7 @@ void main_2DKriging(Input in)
         //stop total time measurement
         ttime_stop = getUnixTime();
         fprintf(fn3, "%g\n", ttime_stop-ttime_start);
-        printf("time: %g\n", ttime_stop-ttime_start);
+        printf("time: %g time per step: %g\n", ttime_stop-ttime_start, ttime_stop-stime_start);
         fflush(fn3);
 #endif//OUTPUT
     }

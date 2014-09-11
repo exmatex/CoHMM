@@ -101,8 +101,8 @@ else
 endif
 
 #-03 for icpc and -05 for gcc
-OPTFLAGS=-g
-#OPTFLAGS=-O3
+#OPTFLAGS=-g
+OPTFLAGS=-O3
 ifeq ($(CXX), $(CNC)) 
   CNC_LDFLAG=-L$(CNCROOT)/lib/$(ARCH) -lcnc -ltbb -ltbbmalloc
   CNC_CFLAG= -D_DIST_ -I$(CNCROOT)/include -std=c++0x
