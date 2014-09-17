@@ -48,6 +48,14 @@ void parse_input(string input_file, Input *in, App *CoMD)
             in->int_steps = v.second.get<int>("value");
             CkPrintf("set int steps             %d\n", in->int_steps);
         }
+        if(v.second.get<std::string>("id") == "redis database" ){
+            in->redis_db = v.second.get<int>("value");
+            CkPrintf("set redis database:       %i\n", in->redis_db);
+        }
+        if(v.second.get<std::string>("id") == "flush database" ){
+            in->flush_db = v.second.get<int>("value");
+            CkPrintf("set flush database:       %i\n", in->flush_db);
+        }
         if(v.second.get<std::string>("id") == "redis headnode" ){
             in->head_node = v.second.get<std::string>("value");
             CkPrintf("set redis headnode:       %s\n", in->head_node.c_str());
@@ -56,9 +64,21 @@ void parse_input(string input_file, Input *in, App *CoMD)
             in->db_threshold = v.second.get<double>("value");
             CkPrintf("set db threshold:         %lf\n", in->db_threshold);
         }
+        if(v.second.get<std::string>("id") == "enable kriging" ){
+            in->kriging = v.second.get<int>("value");
+            CkPrintf("set enable kriging:       %i\n", in->kriging);
+        }
         if(v.second.get<std::string>("id") == "kriging err. threshold" ){
             in->kr_threshold = v.second.get<double>("value");
             CkPrintf("set kr threshold:         %lf\n", in->kr_threshold);
+        }
+        if(v.second.get<std::string>("id") == "enable kriging database" ){
+            in->kriging_db = v.second.get<int>("value");
+            CkPrintf("set enable kriging db:    %i\n", in->kriging_db);
+        }
+        if(v.second.get<std::string>("id") == "apply Gaussian noise" ){
+            in->gauss_noise = v.second.get<int>("value");
+            CkPrintf("set apply G. noise:       %i\n", in->gauss_noise);
         }
         if(v.second.get<std::string>("id") == "Gaussian noise" ){
             in->noise = v.second.get<double>("value");
@@ -92,10 +112,6 @@ void parse_input(string input_file, Input *in, App *CoMD)
             in->fault_tolerance = v.second.get<int>("value");
             CkPrintf("set fault tolerance:      %i\n", in->fault_tolerance);
         }
-        if(v.second.get<std::string>("id") == "flush database" ){
-            in->flush_db = v.second.get<int>("value");
-            CkPrintf("set flush database:       %i\n", in->flush_db);
-        }
     }
   }
   catch (std::exception const& e)
@@ -111,6 +127,10 @@ void parse_input(string input_file, Input *in, App *CoMD)
   {
     BOOST_FOREACH(const boost::property_tree::ptree::value_type &v, pt.get_child("parameter.mini_app"))
     {
+        if(v.second.get<std::string>("id") == "CoMD on" ){
+            CoMD->comd_on = v.second.get<int>("value");
+            CkPrintf("set CoMD eam on:          %i\n", CoMD->comd_on);
+        }
         if(v.second.get<std::string>("id") == "pot name" ){
             CoMD->pot_name = v.second.get<std::string>("value");
             CkPrintf("set CoMD pot name:        %s\n", CoMD->pot_name.c_str());

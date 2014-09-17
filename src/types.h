@@ -73,13 +73,17 @@ typedef struct{
   double dt_x;
   double dt_y;
   int int_steps;
+  int redis_db;
+  int flush_db;
   double db_threshold;
+  int kriging;
   double kr_threshold;
+  int kriging_db;
+  int gauss_noise;
   double noise; 
   double grad_threshold;
   int test_problem;
   int fault_tolerance;
-  int flush_db;
 
 } Save_Input;
 /** struct containing the 2D field 
@@ -98,8 +102,13 @@ typedef struct : public Save_Input {
     p|dt_x;
     p|dt_y;
     p|int_steps;
+    p|redis_db;
+    p|flush_db;
     p|db_threshold;
+    p|kriging;
     p|kr_threshold;
+    p|kriging_db;
+    p|gauss_noise;
     p|noise; 
     p|grad_threshold;
     p|head_node;
@@ -169,6 +178,7 @@ typedef struct{
  * **/
 typedef struct{
 
+  int comd_on;
   string pot_name;
   string pot_type;
   int eam_on;

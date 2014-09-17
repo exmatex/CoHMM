@@ -87,11 +87,11 @@ int redisRead_fields(Node* nodes, Input* in, redisContext * redis)
 	    freeReplyObject(reply);
 
         //CkExit();
-        printf("loaded field of integration step %d\n", saved_step);
+        printf("Loaded field of integration step %d\n", saved_step);
 	return saved_step;
     }
     else{
-        printf("no field loaded\n");
+        printf("No field loaded\n");
 	    return -1;
     }
 }

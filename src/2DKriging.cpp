@@ -1,7 +1,8 @@
 /** 2D Macrosolver written by
  * Dominic Roehm (dominic.roehm@gmail.com)
- with the help of
+ with 
  * Robert Pavel
+ * Christoph Junghans
  */
 /****************C-STANDARDS**************/
 #define _XOPEN_SOURCE 700
@@ -57,18 +58,6 @@ extern "C"
 /****************FEATURES****************/
 /* define specifies if CoMD is used or the linear "analytic" approach */
 /* enable redis database */
-/* !!! enable it in flux.cpp too!!! */
-#define DB
-/* enable kriging -> needs database */
-#define KRIGING
-/* enable kriging database-> needs database */
-#define KR_DB
-/* flat wave testcase  */
-//#define XWAVE
-/* circular impact testcase  */
-#define CIRCULAR
-/* laser impact testcase  */
-//#define HEAT
 /*****************OUTPUT****************/
 /* use no output for benchmark */
 //#define OUTPUT
@@ -616,21 +605,23 @@ template <typename T> void doFluxes(Node* fields, Node* fluxes, int grid_size, I
 			std::vector<double *> wVec;
 			std::vector<double *> fVec;
 			std::vector<double *> gVec;
-#ifdef DB
-            startDb = getUnixTime();
 
-			getCachedSortedSubBucketNearZero(fields[x + dim_x*y].w.w, (char *)"comd", headRedis, comdDigits, 2, &wVec, &fVec, &gVec, zeroThresh, &dbCache);
-			//getSortedSubBucketNearZero(fields[x + dim_x*y].w.w, "comd", headRedis, comdDigits, 2, &wVec, &fVec, &gVec, zeroThresh);
+            bool useDB;
+            if(in->redis_db == 1){
+              startDb = getUnixTime();
 
-			//Check for exact value
-            //printf("dbthresh %lf\n", dbT);
-			bool useDB = ifConservedFieldsMatch(fields[x+dim_x*y].w.w, &wVec, in->db_threshold);
+		      getCachedSortedSubBucketNearZero(fields[x + dim_x*y].w.w, (char *)"comd", headRedis, comdDigits, 2, &wVec, &fVec, &gVec, zeroThresh, &dbCache);
+		      //getSortedSubBucketNearZero(fields[x + dim_x*y].w.w, "comd", headRedis, comdDigits, 2, &wVec, &fVec, &gVec, zeroThresh);
+
+		      //Check for exact value
+              //printf("dbthresh %lf\n", dbT);
+		      useDB = ifConservedFieldsMatch(fields[x+dim_x*y].w.w, &wVec, in->db_threshold);
 		
-            stopDb = getUnixTime();
-            tm.db += stopDb - startDb;
-#else
-            bool useDB = false;
-#endif//DB
+              stopDb = getUnixTime();
+              tm.db += stopDb - startDb;
+            }else{
+              useDB = false;
+            }
 			//If we found it
 			if(useDB == true)
 			{
@@ -645,12 +636,13 @@ template <typename T> void doFluxes(Node* fields, Node* fluxes, int grid_size, I
 			else
 			{
 				//Check the gradient
-#ifdef KRIGING
-				bool smallGradient = checkGradient(x, y, fields, *in);
-#else
-				//If gradient is small enough
-                bool smallGradient = false;
-#endif//KRIGING
+                bool smallGradient;
+                if(in->kriging == 1){
+				  smallGradient = checkGradient(x, y, fields, *in);
+                }else{
+				  //If gradient is small enough
+                  smallGradient = false;
+                }
 				if(smallGradient == true)
 				{
 					//Grab krig database
@@ -658,21 +650,21 @@ template <typename T> void doFluxes(Node* fields, Node* fluxes, int grid_size, I
 					std::vector<double *> fVecK;
 					std::vector<double *> gVecK;
 
-#ifdef KR_DB
-                    startKrDb = getUnixTime();
+                    if(in->kriging_db == 1){
+                      startKrDb = getUnixTime();
 
-			        getCachedSortedSubBucketNearZero(fields[x + dim_x*y].w.w, (char *)"krig", headRedis, krigDigits, 1, &wVecK, &fVecK, &gVecK, zeroThresh, &dbCache);
-                    //if(diff > 1.0) printf("get kdb timing %lf\n", diff);
-			        //fflush(stdout);
-					//Check for exact value with kriging key
-					bool useDB = ifConservedFieldsMatch(fields[x+dim_x*y].w.w, &wVecK, 0.0);
-					//If we found it
-                    //if(int(wVec.size())>0)printf("wvecsize %i\n", int(wVec.size()));
-                    stopKrDb = getUnixTime();
-                    tm.krDb += stopKrDb - startKrDb;
-#else
-                    bool useDB = false;
-#endif//KR_DB
+			          getCachedSortedSubBucketNearZero(fields[x + dim_x*y].w.w, (char *)"krig", headRedis, krigDigits, 1, &wVecK, &fVecK, &gVecK, zeroThresh, &dbCache);
+                      //if(diff > 1.0) printf("get kdb timing %lf\n", diff);
+			          //fflush(stdout);
+				      //Check for exact value with kriging key
+				      bool useDB = ifConservedFieldsMatch(fields[x+dim_x*y].w.w, &wVecK, 0.0);
+				      //If we found it
+                      //if(int(wVec.size())>0)printf("wvecsize %i\n", int(wVec.size()));
+                      stopKrDb = getUnixTime();
+                      tm.krDb += stopKrDb - startKrDb;
+                    }else{
+                      bool useDB = false;
+                    }
 					if(useDB == true)
 					{
                         ca.kdb++;
@@ -894,11 +886,11 @@ void main_2DKriging(Input in, App CoMD)
 
 #ifdef CNC
   flux_context context;
-#endif
-#if defined (OMP)
+#endif//CNC
+#ifdef OMP
   //dummy var
   int context;
-#endif
+#endif//OMP
 
 #ifdef OUTPUT
 //#######################################//
@@ -923,7 +915,7 @@ void main_2DKriging(Input in, App CoMD)
     CkExit();
 #else
     exit(0);
-#endif
+#endif//Charm
   }
   fprintf(fn2, "#NO   COMD               COMD_P             DB             KR_DB            KR              KR_P          KR_FAIL\n");
   fclose(fn2);
@@ -939,30 +931,31 @@ void main_2DKriging(Input in, App CoMD)
     CkExit();
 #else
     exit(0);
-#endif
+#endif//Charm
   }
 
 #endif//OUTPUT
-#ifdef DB
-  // Init Redis
-  redisContext *headRedis = redisConnect(in.head_node.c_str(), 6379);
-  if(headRedis == NULL || headRedis->err)
-  {
-	printf("Redis error: %s\n", headRedis->errstr);
+  redisContext *headRedis;
+  if(in.redis_db == 1){
+    // Init Redis
+    headRedis = redisConnect(in.head_node.c_str(), 6379);
+    if(headRedis == NULL || headRedis->err)
+    {
+      printf("Redis error: %s\n", headRedis->errstr);
 #ifdef CHARM
-    CkExit();
+      CkExit();
 #else
-    exit(0);
-#endif
+      exit(0);
+#endif//Charm
+    }
+    if(in.flush_db == 1){
+      redisCommand(headRedis,"flushall");
+      redisCommand(headRedis,"flushdb");
+      printf("Flushed Redis DB\n");
+    }
+  }else{
+    headRedis = NULL;
   }
-  if(in.flush_db == 1){
-    redisCommand(headRedis,"flushall");
-    redisCommand(headRedis,"flushdb");
-    printf("flushed Redis DB\n");
-  }
-#else
-  redisContext *headRedis = NULL;
-#endif//DB
 
   //grid size (1D indexing)
   int grid_size = in.dim_x*in.dim_y;
@@ -978,32 +971,22 @@ void main_2DKriging(Input in, App CoMD)
 
   if(in.test_problem == 1){
     init_test_problem1(nodes_a, in, grid_size);
-    printf("executing test problem 1\n");
+    printf("Executing test problem 1 ...\n\n");
   }else if(in.test_problem == 2){
     init_test_problem2(nodes_a, in, grid_size);
-    printf("executing test problem 2\n");
+    printf("Executing test problem 2 ...\n\n");
   }else if(in.test_problem == 3){
     init_test_problem3(nodes_a, in, grid_size);
-    printf("executing test problem 3\n");
+    printf("Executing test problem 3 ...\n\n");
   }else{
-      printf("error unknown test problem!\n Set 1,2 or 3 in input.json\n");
+      printf("Error unknown test problem!\n Set 1,2 or 3 in input.json\n");
 #ifdef CHARM
     CkExit();
 #else
     exit(0);
-#endif
+#endif//Charm
   }
 
-  //define warnings
-#ifndef DB
-  printf("Database turned off!!!\n Check for defines\n");
-#endif//DB
-#ifndef KRIGING
-  printf("Kriging turned off!!!\n Check for defines\n");
-#endif//KRIGING
-#ifndef KR_DB
-  printf("Kriging database turned off!!!\n Check for defines\n");
-#endif//KR_DB
   //start total time measurement
   double ttime_start = getUnixTime();
   double ttime_stop, stime_start;
@@ -1032,7 +1015,7 @@ void main_2DKriging(Input in, App CoMD)
     for (int j = 0; j < 1; j++){
 #ifdef LOADBAR
         if(i>0 && in.int_steps >=50) loadBar(i,in.int_steps,50,100); 
-        else if (in.int_steps <50) printf("loadbar failed! Too few int_steps\n");
+        else if (in.int_steps <50) printf("Loadbar failed! Too few int_steps\n");
 #else
 	    fprintf(stdout, "============Integration Step: %d ==============\n", i);
 	    fflush(stdout);
@@ -1068,10 +1051,10 @@ void main_2DKriging(Input in, App CoMD)
   fprintf(stdout, "Done all steps \n");
   fprintf(stdout, "D^2KAS finished\n");
   fflush(stdout);
-#ifdef DB
   //cleanup redis
-  redisFree(headRedis);
-#endif
+  if(in.redis_db == 1){
+    redisFree(headRedis);
+  }
 #ifndef OUTPUT
   //close total time file
   fclose(fn3);
