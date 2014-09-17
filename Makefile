@@ -38,8 +38,8 @@ BINDIR=omp_bin
 #############CIRCLE############
 else ifeq ($(SET), circle)
 CXXFLAGS=-DCIRCLE
-#CXX=mpicxx
-CXX=/home/droehm/vampirTrace/bin/vtcxx -vt:cxx mpicxx
+CXX=mpicxx
+#CXX=/home/droehm/vampirTrace/bin/vtcxx -vt:cxx mpicxx
 LIBCIRCLELIBS=$(shell pkg-config --libs libcircle)
 LIBCIRCLE_CFLAGS=$(shell pkg-config --cflags libcircle)
 ifeq ($(LIBCIRCLELIBS), )
