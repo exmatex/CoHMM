@@ -8,7 +8,7 @@
 #if defined (CNC) || (OMP) || (CIRCLE)
 //call 2D_main from main.cpp
 //template <typename T> void main_2DKriging(Input in, T context);
-void main_2DKriging(Input in);
+void main_2DKriging(Input in, App CoMD);
 #endif//CNC||OMP||CIRCLE
 
 #endif //__MAIN_H__

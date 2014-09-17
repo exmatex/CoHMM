@@ -103,12 +103,13 @@ struct fluxFn
 #if 1
 struct fluxTuner: public CnC::step_tuner<>, public CnC::hashmap_tuner
 {
+#if 1
 	template<class dependency_consumer>
 		void depends(const int &tag, flux_context &c, dependency_consumer & dC) const
 		{
 			dC.depends(c.fluxInp, tag);
 		}
-        
+#endif   
     bool preschedule() const { return true; }
 #if 0
     int compute_on( const int & tag, flux_context & ) const
@@ -140,10 +141,10 @@ struct flux_context : public CnC::context< flux_context > // derive from CnC::co
     //CnC::step_collection< fluxFn > steps;
 	CnC::step_collection<fluxFn, fluxTuner> steps;
     // item collection holding the flux number(s)
-	CnC::item_collection<int, fluxInput> fluxInp;
-	CnC::item_collection<int, fluxOutput> fluxOutp;
-	//CnC::item_collection<int, fluxInput, fluxTuner> fluxInp;
-	//CnC::item_collection<int, fluxOutput, fluxTuner> fluxOutp;
+	//CnC::item_collection<int, fluxInput> fluxInp;
+	//CnC::item_collection<int, fluxOutput> fluxOutp;
+	CnC::item_collection<int, fluxInput, fluxTuner> fluxInp;
+	CnC::item_collection<int, fluxOutput, fluxTuner> fluxOutp;
     // tag collection to control steps
     CnC::tag_collection<int> tags;
 

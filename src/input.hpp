@@ -7,6 +7,6 @@
 //#include <string>
 //#include <cstring>
 
-void parse_input(string input_file, Input* in);
+void parse_input(string input_file, Input* in, App* CoMD);
 
 #endif//INPUT_HPP

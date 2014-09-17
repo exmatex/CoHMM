@@ -12,7 +12,10 @@
         {"id": "dy",                        "value": 1.0},
         {"id": "dt_x",                      "value": 0.1},
         {"id": "dt_y",                      "value": 0.1},
-        {"id": "grad_threshold",            "value": 0.001}
+        {"id": "grad threshold",            "value": 0.001},
+        {"id": "test problem",              "value": 2},
+        {"id": "fault tolerance",           "value": 1},
+        {"id": "flush database",            "value": 1}
     ],
     "mini_app": [
         {"id": "pot name",                  "value": "Cu01.eam.alloy"},

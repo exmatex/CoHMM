@@ -77,6 +77,9 @@ typedef struct{
   double kr_threshold;
   double noise; 
   double grad_threshold;
+  int test_problem;
+  int fault_tolerance;
+  int flush_db;
 
 } Save_Input;
 /** struct containing the 2D field 
@@ -100,6 +103,9 @@ typedef struct : public Save_Input {
     p|noise; 
     p|grad_threshold;
     p|head_node;
+    p|test_problem;
+    p|fault_tolerance;
+    p|flush_db;
   }
 
 #endif
@@ -159,6 +165,21 @@ typedef struct{
   double co2;
 
 } Tms;
+/** struct containing the initial values for the mini_app
+ * **/
+typedef struct{
+
+    string pot_name;
+    string pot_type;
+    int eam_on;
+    int dim_x;
+    int dim_y;
+    int dim_z;
+    int integration_steps;
+    double lattice_spacing;
+    double dt;
+
+} App;
 
 /** calc x,y coordiante out of index
  * @param index  1-dim index of the grid node   (input) 

@@ -69,10 +69,6 @@ extern "C"
 #define CIRCULAR
 /* laser impact testcase  */
 //#define HEAT
-/* autoflush database at the start of simulation */
-#define FLUSHDB
-/* enable fault tolerance/checkpointing */
-//#define FT_MODE
 /*****************OUTPUT****************/
 /* use no output for benchmark */
 //#define OUTPUT
@@ -161,7 +157,6 @@ double min_mod(double w_plus, double w, double w_minus){
  * **/
 void init_conserved_fields(Node* node_a, Input in, int grid_size){
 
-
   //init field and threshold values
   Values init;
   init.strain[0]=1.0;
@@ -189,56 +184,55 @@ void init_conserved_fields(Node* node_a, Input in, int grid_size){
     //node_a[index].w.w[6] = ((i < l.dim_x/2+l.dim_x/10)&&(i >= l.dim_x/2-l.dim_x/10)) ? init.energy+0.05 : init.energy;
     node_a[i].w.w[6] = init.energy;
     node_a[i].w.rho = init.rho;
-#if 0
-    if((x<l.dim_x/2+l.dim_x/10) && (x>=l.dim_x/2-l.dim_x/10) && (y<l.dim_y/2+l.dim_y/10) && (y>=l.dim_y/2-l.dim_y/10)){
-    //if(y==l.dim_y/2){
-       node_a[i].w.w[0] = 1.1;
-       node_a[i].w.w[3] = 1.1;
     }
-#endif
-#ifdef XWAVE
-//#########################################
+}
+/** test problem 1: flat wave in x-direction
+ *
+ */
+void init_test_problem1(Node* node_a, Input in, int grid_size){
     //xwave
+  int x,y;
+  for (int i=0; i<grid_size; ++i) {
+    index_to_xy(i, in, &x, &y);
     if((x<in.dim_x/2+in.dim_x/10) && (x>=in.dim_x/2-in.dim_x/10)){
-    //if(y==l.dim_y/2){
        node_a[i].w.w[0] = 1.04;
        //node_a[i].w.w[3] = 1.1;
     }
-//#########################################
-#endif//XWAVE
-    //if(x==y){
-    //if(x==l.dim_x/2 && y==l.dim_y/2){
-#if 0
-    //set w[2] = -w[1] for symmetric behaviour with xx, yy
-    if((x<l.dim_x/2+l.dim_x/10) && (x>=l.dim_x/2-l.dim_x/10) && (y<l.dim_y/2+l.dim_y/10) && (y>=l.dim_y/2-l.dim_y/10)){
-    //if(x==y){
-       node_a[i].w.w[1] = 0.1;
-       node_a[i].w.w[2] = -0.1;
-    }
-#endif
-#ifdef CIRCULAR
-//#########################################
-//ciruclar wave
-    //if((x<l.dim_x/2+l.dim_x/10) && (x>=l.dim_x/2-l.dim_x/10) && (y<l.dim_y/2+l.dim_y/10) && (y>=l.dim_y/2-l.dim_y/10)){
-      int r = floor(sqrt((x-in.dim_x/2)*(x-in.dim_x/2) + (y-in.dim_y/2)*(y-in.dim_y/2)));
-      if(r <= 3){
-#ifdef HEAT
-        node_a[i].w.w[6] = init.energy+0.02;
-#else
-        node_a[i].w.w[0] = 1.02;
-        node_a[i].w.w[3] = 1.02;
-        node_a[i].w.w[1] = 0.02;
-        node_a[i].w.w[2] = -0.02;
-#endif
-      }
-    //}
-//#########################################
-#endif//CIRCULAR    
-
-    //if(y==l.dim_y/2) node_a[i].w.w[3] = 1.02;
   }
-  //node_a[4].w.w[0] = 1.02;
-    //int half = floor(dimX/2);
+}
+
+/** test problem 2: circular inital expansion
+ *
+ */
+void init_test_problem2(Node* node_a, Input in, int grid_size){
+  int x,y;
+  for (int i=0; i<grid_size; ++i) {
+    index_to_xy(i, in, &x, &y);
+    int r = floor(sqrt((x-in.dim_x/2)*(x-in.dim_x/2) + (y-in.dim_y/2)*(y-in.dim_y/2)));
+    if(r <= 3){
+      node_a[i].w.w[0] = 1.02;
+      node_a[i].w.w[3] = 1.02;
+      node_a[i].w.w[1] = 0.02;
+      node_a[i].w.w[2] = -0.02;
+    }
+  }
+}
+
+/** test problem 3: thermal expansion
+ *
+ */
+void init_test_problem3(Node* node_a, Input in, int grid_size){
+  //FIXME move init struct into an new input struct
+  Values init;
+  init.energy=-0.295;
+  int x,y;
+  for (int i=0; i<grid_size; ++i) {
+    index_to_xy(i, in, &x, &y);
+    int r = floor(sqrt((x-in.dim_x/2)*(x-in.dim_x/2) + (y-in.dim_y/2)*(y-in.dim_y/2)));
+    if(r <= 3){
+      node_a[i].w.w[6] = init.energy+0.02;
+    }
+  }
 }
 
 /** zero flux boundaries
@@ -891,9 +885,9 @@ template <typename T> void half_step_second_order(Node* node_a, Node* node_b, in
 @para argv
 **/
 #ifdef CHARM
-void main_2DKriging(Input in, CProxy_krigingChare krigingChareProxy)
+void main_2DKriging(Input in, App CoMD, CProxy_krigingChare krigingChareProxy)
 #else
-void main_2DKriging(Input in)
+void main_2DKriging(Input in, App CoMD)
 #endif
 //template <typename T> void main_2DKriging(Input in, T context)
 {
@@ -961,10 +955,10 @@ void main_2DKriging(Input in)
     exit(0);
 #endif
   }
-#ifdef FLUSHDB
-  redisCommand(headRedis,"flushall");
-  redisCommand(headRedis,"flushdb");
-#endif//FLUSHDB
+  if(in.flush_db == 1){
+    redisCommand(headRedis,"flushall");
+    redisCommand(headRedis,"flushdb");
+  }
 #else
   redisContext *headRedis = NULL;
 #endif//DB
@@ -977,6 +971,24 @@ void main_2DKriging(Input in)
   //set all values to zero  
   init_nodes(nodes_a, grid_size);
   init_nodes(nodes_b, grid_size);
+
+  if(in.test_problem == 1){
+
+    init_test_problem1(nodes_a, in, grid_size);
+  }else if(in.test_problem == 2){
+
+    init_test_problem2(nodes_a, in, grid_size);
+  }else if(in.test_problem == 3){
+
+    init_test_problem3(nodes_a, in, grid_size);
+  }else{
+      printf("error unknown test problem!\n Set 1,2 or 3 in input.json\n");
+#ifdef CHARM
+    CkExit();
+#else
+    exit(0);
+#endif
+  }
 
   //initial fiels on nodes
   init_conserved_fields(nodes_a, in, grid_size);
@@ -994,10 +1006,10 @@ void main_2DKriging(Input in)
   double ttime_start = getUnixTime();
   double ttime_stop, stime_start;
   int prev_step = 0;
-#ifdef FT_MODE
-  prev_step = redisRead_fields(nodes_a, &in, headRedis);
-  prev_step++;
-#endif//FT_MODE
+  if(in.fault_tolerance == 1){
+    prev_step = redisRead_fields(nodes_a, &in, headRedis);
+    prev_step++;
+  }
 #ifdef CIRCLE
   MPI_Bcast(&in.int_steps, 1, MPI_INT, 0, MPI_COMM_WORLD);
   MPI_Bcast(&prev_step, 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -1010,10 +1022,10 @@ void main_2DKriging(Input in)
     printf_fields_vtk(i, nodes_a, in, grid_size);
 #endif//VTK_FIELDS
 #endif//OUTPUT
-#ifdef FT_MODE
-    redisWrite_fields(nodes_a, in, headRedis, i);
-    redisDel_fields(headRedis, i);
-#endif//FT_MODE
+    if(in.fault_tolerance == 1){
+      redisWrite_fields(nodes_a, in, headRedis, i);
+      redisDel_fields(headRedis, i);
+    }
     //main integration loop
     for (int j = 0; j < 1; j++){
 #ifdef LOADBAR

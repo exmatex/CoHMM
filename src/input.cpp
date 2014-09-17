@@ -19,7 +19,7 @@
 #define CkPrintf printf
 #endif
 
-void parse_input(string input_file, Input *in)
+void parse_input(string input_file, Input *in, App *CoMD)
 {
   std::ifstream file(input_file.c_str());
   boost::property_tree::ptree pt;
@@ -80,10 +80,42 @@ void parse_input(string input_file, Input *in)
             in->dt_y = v.second.get<double>("value");
             CkPrintf("set dt_y:                 %lf\n", in->dt_y);
         }
-        if(v.second.get<std::string>("id") == "grad_threshold" ){
+        if(v.second.get<std::string>("id") == "grad threshold" ){
             in->grad_threshold = v.second.get<double>("value");
-            CkPrintf("set grad_threshold:       %lf\n", in->grad_threshold);
+            CkPrintf("set gradient threshold:       %lf\n", in->grad_threshold);
         }
+        if(v.second.get<std::string>("id") == "test problem" ){
+            in->test_problem = v.second.get<int>("value");
+            CkPrintf("set test problem:       %i\n", in->test_problem);
+        }
+        if(v.second.get<std::string>("id") == "fault tolerance" ){
+            in->fault_tolerance = v.second.get<int>("value");
+            CkPrintf("set fault tolerance:       %i\n", in->fault_tolerance);
+        }
+        if(v.second.get<std::string>("id") == "flush db" ){
+            in->flush_db = v.second.get<int>("value");
+            CkPrintf("set flush database:       %i\n", in->flush_db);
+        }
+    }
+  }
+  catch (std::exception const& e)
+  {
+      std::cerr << e.what() << std::endl;
+#ifdef CHARM
+      CkExit();
+#elif CNC
+      exit(0);
+#endif
+  }
+  try
+  {
+    BOOST_FOREACH(const boost::property_tree::ptree::value_type &v, pt.get_child("parameter.mini_app"))
+    {
+        if(v.second.get<std::string>("id") == "pot name" ){
+            CoMD->eam_on = v.second.get<int>("value");
+            CkPrintf("set CoMD eam_on:       %i\n", CoMD->eam_on);
+        }
+        //FIXME include all other values and hand App struct to flux fkt
     }
   }
   catch (std::exception const& e)

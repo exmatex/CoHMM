@@ -32,10 +32,11 @@ Main::Main(CkArgMsg* msg) {
   mainProxy = thisProxy;
 
   //get input values from json file
+  App CoMD;
   Input in;
   char input_file[1024];
   strcpy(input_file, msg->argv[1]);
-  parse_input((string)input_file, &in);
+  parse_input((string)input_file, &in, &CoMD);
   
   if(msg->argc >2){ 
     char host[1024];
@@ -54,7 +55,7 @@ Main::Main(CkArgMsg* msg) {
   krigingChareProxy = CProxy_krigingChare::ckNew(opts);
 
   //start main program
-  mainProxy.go(in);
+  mainProxy.go(in, CoMD);
   //print exit msg after sucessful run
   CkPrintf("Exiting charm++\n");
 }
@@ -71,8 +72,8 @@ void main_2DKriging(Input in, CProxy_krigingChare krigingChareProxy);
 
 // executes main of 2D Kriging
 // and exits charm after sucessful run
-void Main::go(Input in) {
-    main_2DKriging(in, krigingChareProxy); 
+void Main::go(Input in, CoMD) {
+    main_2DKriging(in, CoMD, krigingChareProxy); 
     CkExit();
 }
 

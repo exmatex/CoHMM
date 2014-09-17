@@ -71,11 +71,12 @@ int main( int argc, char* argv[] )
   printf("**************************************************\n");
 
   //get input values from json file
+  App CoMD;
   Input in;
   char input_file[1024];
 
   strcpy(input_file, argv[1]);
-  parse_input((string)input_file, &in);
+  parse_input((string)input_file, &in, &CoMD);
 
   if(argc >2){ 
     char host[1024];
@@ -84,7 +85,7 @@ int main( int argc, char* argv[] )
     printf("Use single redis host on node: %s\n", in.head_node.c_str());
   }
 
-  main_2DKriging(in);
+  main_2DKriging(in, CoMD);
 #ifdef CIRCLE
   CIRCLE_finalize();
 #endif
