@@ -189,6 +189,21 @@ typedef struct{
   double lattice_spacing;
   double dt;
 
+#ifdef CHARM
+  void pup(PUP::er &p){
+    p|comd_on;
+    p|pot_name;
+    p|pot_type;
+    p|eam_on;
+    p|dim_x;
+    p|dim_y;
+    p|dim_z;
+    p|integration_steps;
+    p|lattice_spacing;
+    p|dt;
+  }
+#endif
+
 } App;
 
 /** calc x,y coordiante out of index

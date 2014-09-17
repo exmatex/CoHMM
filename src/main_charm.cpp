@@ -67,12 +67,12 @@ Main::Main(CkMigrateMessage* msg) { }
 /**Charm 2DKriging main
  *
  */
-void main_2DKriging(Input in, CProxy_krigingChare krigingChareProxy);
+void main_2DKriging(Input in, App CoMD, CProxy_krigingChare krigingChareProxy);
 
 
 // executes main of 2D Kriging
 // and exits charm after sucessful run
-void Main::go(Input in, CoMD) {
+void Main::go(Input in, App CoMD) {
     main_2DKriging(in, CoMD, krigingChareProxy); 
     CkExit();
 }

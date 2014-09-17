@@ -971,13 +971,13 @@ void main_2DKriging(Input in, App CoMD)
 
   if(in.test_problem == 1){
     init_test_problem1(nodes_a, in, grid_size);
-    printf("Executing test problem 1 ...\n\n");
+    printf("\nExecuting test problem 1 ...\n\n");
   }else if(in.test_problem == 2){
     init_test_problem2(nodes_a, in, grid_size);
-    printf("Executing test problem 2 ...\n\n");
+    printf("\nExecuting test problem 2 ...\n\n");
   }else if(in.test_problem == 3){
     init_test_problem3(nodes_a, in, grid_size);
-    printf("Executing test problem 3 ...\n\n");
+    printf("\nExecuting test problem 3 ...\n\n");
   }else{
       printf("Error unknown test problem!\n Set 1,2 or 3 in input.json\n");
 #ifdef CHARM

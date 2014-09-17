@@ -7,7 +7,7 @@ mainmodule main {
 
     mainchare Main{
         entry Main(CkArgMsg*);
-        entry [threaded] void go(Input in);
+        entry [threaded] void go(Input in, App CoMD);
     };
     
     extern module krigingMod;
