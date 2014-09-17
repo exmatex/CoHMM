@@ -169,15 +169,15 @@ typedef struct{
  * **/
 typedef struct{
 
-    string pot_name;
-    string pot_type;
-    int eam_on;
-    int dim_x;
-    int dim_y;
-    int dim_z;
-    int integration_steps;
-    double lattice_spacing;
-    double dt;
+  string pot_name;
+  string pot_type;
+  int eam_on;
+  int dim_x;
+  int dim_y;
+  int dim_z;
+  int integration_steps;
+  double lattice_spacing;
+  double dt;
 
 } App;
 

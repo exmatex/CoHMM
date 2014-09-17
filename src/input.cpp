@@ -82,17 +82,17 @@ void parse_input(string input_file, Input *in, App *CoMD)
         }
         if(v.second.get<std::string>("id") == "grad threshold" ){
             in->grad_threshold = v.second.get<double>("value");
-            CkPrintf("set gradient threshold:       %lf\n", in->grad_threshold);
+            CkPrintf("set gradient threshold:   %lf\n", in->grad_threshold);
         }
         if(v.second.get<std::string>("id") == "test problem" ){
             in->test_problem = v.second.get<int>("value");
-            CkPrintf("set test problem:       %i\n", in->test_problem);
+            CkPrintf("set test problem:         %i\n", in->test_problem);
         }
         if(v.second.get<std::string>("id") == "fault tolerance" ){
             in->fault_tolerance = v.second.get<int>("value");
-            CkPrintf("set fault tolerance:       %i\n", in->fault_tolerance);
+            CkPrintf("set fault tolerance:      %i\n", in->fault_tolerance);
         }
-        if(v.second.get<std::string>("id") == "flush db" ){
+        if(v.second.get<std::string>("id") == "flush database" ){
             in->flush_db = v.second.get<int>("value");
             CkPrintf("set flush database:       %i\n", in->flush_db);
         }
@@ -112,8 +112,40 @@ void parse_input(string input_file, Input *in, App *CoMD)
     BOOST_FOREACH(const boost::property_tree::ptree::value_type &v, pt.get_child("parameter.mini_app"))
     {
         if(v.second.get<std::string>("id") == "pot name" ){
+            CoMD->pot_name = v.second.get<std::string>("value");
+            CkPrintf("set CoMD pot name:        %s\n", CoMD->pot_name.c_str());
+        }
+        if(v.second.get<std::string>("id") == "pot type" ){
+            CoMD->pot_type = v.second.get<std::string>("value");
+            CkPrintf("set CoMD pot type:        %s\n", CoMD->pot_type.c_str());
+        }
+        if(v.second.get<std::string>("id") == "eam on" ){
             CoMD->eam_on = v.second.get<int>("value");
-            CkPrintf("set CoMD eam_on:       %i\n", CoMD->eam_on);
+            CkPrintf("set CoMD eam on:          %i\n", CoMD->eam_on);
+        }
+        if(v.second.get<std::string>("id") == "dim x" ){
+            CoMD->dim_x = v.second.get<int>("value");
+            CkPrintf("set CoMD dim x:           %i\n", CoMD->dim_x);
+        }
+        if(v.second.get<std::string>("id") == "dim y" ){
+            CoMD->dim_y = v.second.get<int>("value");
+            CkPrintf("set CoMD dim y:           %i\n", CoMD->dim_y);
+        }
+        if(v.second.get<std::string>("id") == "dim z" ){
+            CoMD->dim_z = v.second.get<int>("value");
+            CkPrintf("set CoMD dim z:           %i\n", CoMD->dim_z);
+        }
+        if(v.second.get<std::string>("id") == "integration steps" ){
+            CoMD->integration_steps = v.second.get<int>("value");
+            CkPrintf("set CoMD integr. steps:   %i\n", CoMD->integration_steps);
+        }
+        if(v.second.get<std::string>("id") == "lattice spacing" ){
+            CoMD->lattice_spacing = v.second.get<double>("value");
+            CkPrintf("set CoMD latt. spacing:   %lf\n", CoMD->lattice_spacing);
+        }
+        if(v.second.get<std::string>("id") == "dt" ){
+            CoMD->dt = v.second.get<double>("value");
+            CkPrintf("set CoMD dt:              %lf\n", CoMD->dt);
         }
         //FIXME include all other values and hand App struct to flux fkt
     }

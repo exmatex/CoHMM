@@ -174,14 +174,13 @@ void init_conserved_fields(Node* node_a, Input in, int grid_size){
 
   for (int i=0; i<grid_size; ++i) {
     index_to_xy(i, in, &x, &y);
-      //A0[i] = A[i] = (i < dimX/2) ? 1.01 : 1.0; // small initial step in deformation gradient
+    //A0[i] = A[i] = (i < dimX/2) ? 1.01 : 1.0; // small initial step in deformation gradient
     node_a[i].w.w[0] = 1.0;
     node_a[i].w.w[1] = 0.0;
     node_a[i].w.w[2] = 0.0;
     node_a[i].w.w[3] = 1.0;
     node_a[i].w.w[4] = 0.0;
     node_a[i].w.w[5] = 0.0;
-    //node_a[index].w.w[6] = ((i < l.dim_x/2+l.dim_x/10)&&(i >= l.dim_x/2-l.dim_x/10)) ? init.energy+0.05 : init.energy;
     node_a[i].w.w[6] = init.energy;
     node_a[i].w.rho = init.rho;
     }
@@ -190,10 +189,11 @@ void init_conserved_fields(Node* node_a, Input in, int grid_size){
  *
  */
 void init_test_problem1(Node* node_a, Input in, int grid_size){
-    //xwave
+  //xwave
   int x,y;
   for (int i=0; i<grid_size; ++i) {
     index_to_xy(i, in, &x, &y);
+
     if((x<in.dim_x/2+in.dim_x/10) && (x>=in.dim_x/2-in.dim_x/10)){
        node_a[i].w.w[0] = 1.04;
        //node_a[i].w.w[3] = 1.1;
@@ -958,6 +958,7 @@ void main_2DKriging(Input in, App CoMD)
   if(in.flush_db == 1){
     redisCommand(headRedis,"flushall");
     redisCommand(headRedis,"flushdb");
+    printf("flushed Redis DB\n");
   }
 #else
   redisContext *headRedis = NULL;
@@ -972,15 +973,18 @@ void main_2DKriging(Input in, App CoMD)
   init_nodes(nodes_a, grid_size);
   init_nodes(nodes_b, grid_size);
 
+  //initial fiels on nodes
+  init_conserved_fields(nodes_a, in, grid_size);
+
   if(in.test_problem == 1){
-
     init_test_problem1(nodes_a, in, grid_size);
+    printf("executing test problem 1\n");
   }else if(in.test_problem == 2){
-
     init_test_problem2(nodes_a, in, grid_size);
+    printf("executing test problem 2\n");
   }else if(in.test_problem == 3){
-
     init_test_problem3(nodes_a, in, grid_size);
+    printf("executing test problem 3\n");
   }else{
       printf("error unknown test problem!\n Set 1,2 or 3 in input.json\n");
 #ifdef CHARM
@@ -990,8 +994,6 @@ void main_2DKriging(Input in, App CoMD)
 #endif
   }
 
-  //initial fiels on nodes
-  init_conserved_fields(nodes_a, in, grid_size);
   //define warnings
 #ifndef DB
   printf("Database turned off!!!\n Check for defines\n");
