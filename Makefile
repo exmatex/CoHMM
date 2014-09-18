@@ -79,16 +79,27 @@ MKLINC=$(MKLROOT)/include
 MKLLIB=$(MKLROOT)/lib/$(ARCH)
 endif
 
+#LINALG
+LINALGLIB=
+LINALG=$(LINALGROOT)
+LINALGINC=$(LINALG)/include/
+#INCLUDE BLAS
+BLASROOT=
+BLAS=$(BLASROOT)
+BLASINC=$(BLAS)/include/gsl
+BLASLIB=$(BLAS)/lib64
+BLAS_CFLAG=-I$(BLASINC)
+
 ifeq ($(LINALGROOT), )
 #MKL flags
   #MKL_LDFLAG= -L$(MKLLIB) -lmkl_intel_ilp64 -lmkl_core -lmkl_sequential
   MKL_CFLAG=-I$(MKLINC) -DHAVE_MKL
   MKL_LDFLAG= -L$(MKLLIB) -lmkl_rt
 else
+  #LINALG_CFLAGS=-I$(LINALGINC) -llapack
   LINALG_LDFLAG= -lblas -llapack
 endif
 
-#-03 for icpc and -05 for gcc
 #OPTFLAGS=-g
 OPTFLAGS=-O3
 ifeq ($(CXX), $(CNC)) 
