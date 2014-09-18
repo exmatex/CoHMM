@@ -71,7 +71,7 @@ HIREDIS_CFLAG=-I$(HIREDISINC)
 HIREDIS_LDFLAG=-L$(HIREDISLIB) -lhiredis
 
 ifeq ($(MKLROOT), )
-$(info MKLROOT not set, using lapack/gsl, run 'module load mkl' or set MKLROOT first to use mkl)
+$(info MKLROOT not set, using llapack and lblas, run 'module load mkl' or set MKLROOT first to use mkl)
 LINALGROOT=/usr
 else
 LINALGROOT=
