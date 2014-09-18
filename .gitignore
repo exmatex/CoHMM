@@ -1,0 +1,9 @@
+*_obj/*
+*_bin/*
+src/*.decl.h
+src/*.def.h
+COMD_lib/libCoMD_2D.so
+COMD_lib/old/
+COMD_lib/src-lib/*.o
+COMD_lib/src-lib/.depend
+COMD_lib/src-lib/CoMD_info.h

@@ -1,0 +1,14 @@
+/** interface file for main.C charm code
+* **/
+
+mainmodule main {
+
+    include "types.h";
+
+    mainchare Main{
+        entry Main(CkArgMsg*);
+        entry [threaded] void go(Input in, App CoMD);
+    };
+    
+    extern module krigingMod;
+};
