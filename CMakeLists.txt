@@ -1,0 +1,111 @@
+cmake_minimum_required(VERSION 2.6)
+
+project(RedCoHMM)
+
+# Cmake modules/macros are in a subdirectory to keep this file cleaner
+set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMakeModules)
+
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CXX_FLAGS)
+  #release comes with -O3 by default
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel." FORCE)
+endif(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CXX_FLAGS)
+string(TOUPPER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE)
+
+enable_language(C)
+include(CMakeDetermineCCompiler)
+enable_language(CXX)
+include(CMakeDetermineCXXCompiler)
+
+######################################################################
+# compiler tests
+# these need ot be done early (before further tests).
+#####################################################################
+
+#for CoMD lib
+include(CheckCCompilerFlag)
+check_c_compiler_flag("-std=c99" HAVE_C99)
+if(NOT HAVE_C99)
+    message(FATAL_ERROR "flag '-std=c99' does not work")
+endif(NOT HAVE_C99)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
+
+include(CheckCXXCompilerFlag)
+
+########################################################################
+# User input options                                                   #
+########################################################################
+option(BUILD_SHARED_LIBS "Build shared libs" OFF)
+
+########################################################################
+#Find external packages
+########################################################################
+find_package(HIREDIS REQUIRED)
+include_directories(${HIREDIS_INCLUDE_DIRS})
+find_package(OpenMP REQUIRED)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+find_package(MKL)
+find_package(CBLAS)
+find_package(LAPACKE)
+
+if(MKL_FOUND)
+  include_directories(${MKL_INCLUDE_DIR})
+  set(LINALG_LIBRARIES ${MKL_LIBRARIES})
+  add_definitions(-DHAVE_MKL)
+elseif(CBLAS_FOUND AND LAPACKE_FOUND)
+  include_directories(${CLBAS_INCLUDE_DIR})
+  include_directories(${LAPACKE_INCLUDE_DIR})
+  set(LINALG_LIBRARIES ${LAPACKE_LIBRARIES} ${CBLAS_LIBRARIES})
+else()
+  message(FATAL_ERROR "Neither mkl nor (blas + cblas + lapack + lapacke ) found!")
+endif()
+
+########################################################################
+# Basic system tests (standard libraries, headers, functions, types)   #
+########################################################################
+include(CheckIncludeFile)
+foreach(HEADER math.h stdio.h stdlib.h string.h)
+  check_include_file(${HEADER} FOUND_${HEADER})
+  if(NOT FOUND_${HEADER})
+    message(FATAL_ERROR "Could not find needed header - ${HEADER}")
+  endif(NOT FOUND_${HEADER})
+endforeach(HEADER)
+
+include(CheckIncludeFileCXX)
+foreach(HEADER algorithm cassert cfloat cmath cstdio cstdlib cstring ctime iostream list map vector)
+  check_include_file_cxx(${HEADER} FOUND_${HEADER})
+  if(NOT FOUND_${HEADER})
+    message(FATAL_ERROR "Could not find needed header - ${HEADER}")
+  endif(NOT FOUND_${HEADER})
+endforeach(HEADER)
+
+set(MATH_LIBRARIES "m" CACHE STRING "math library")
+mark_as_advanced( MATH_LIBRARIES )
+include(CheckLibraryExists)
+foreach(FUNC sqrt)
+  check_library_exists(${MATH_LIBRARIES} ${FUNC} "" FOUND_${FUNC}_${MATH_LIBRARIES})
+  if(NOT FOUND_${FUNC}_${MATH_LIBRARIES})
+    message(FATAL_ERROR "Could not find needed math function - ${FUNC}")
+  endif(NOT FOUND_${FUNC}_${MATH_LIBRARIES})
+endforeach(FUNC)
+
+######################################
+# actual targets                     # 
+######################################
+add_custom_command(
+  OUTPUT CoMD_info.h 
+  COMMAND "${CMAKE_SOURCE_DIR}/COMD_lib/src-lib/generate_info_header" "${CMAKE_C_COMPILER}"
+  "${CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE}}"
+  "${CMAKE_EXE_LINKER_FLAGS_${CMAKE_BUILD_TYPE}}"
+  DEPENDS  "${CMAKE_SOURCE_DIR}/COMD_lib/src-lib/generate_info_header"
+  COMMENT "Generating CoMD_info.h ...")
+add_custom_target(comd_header DEPENDS CoMD_info.h)
+
+include_directories(${CMAKE_BINARY_DIR})
+file(GLOB COMD_SOURCES COMD_lib/src-lib/*.c)
+add_library(comd ${COMD_SOURCES})
+add_dependencies(comd comd_header)
+
+file(GLOB COHMM_SOURCES *.cpp)
+include_directories(COMD_lib/src-lib)
+add_executable(2DKriging ${COHMM_SOURCES})
+target_link_libraries(2DKriging comd ${LINALG_LIBRARIES} ${HIREDIS_LIBRARIES} -lrt)
