@@ -993,6 +993,7 @@ void main_2DKriging(Input in, App CoMD)
   int prev_step = 0;
   if(in.fault_tolerance == 1){
     prev_step = redisRead_fields(nodes_a, &in, headRedis);
+    prev_step++;
   }
 #ifdef CIRCLE
   MPI_Bcast(&in.int_steps, 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -1006,10 +1007,6 @@ void main_2DKriging(Input in, App CoMD)
     printf_fields_vtk(i, nodes_a, in, grid_size);
 #endif//VTK_FIELDS
 #endif//OUTPUT
-    if(in.fault_tolerance == 1){
-      redisWrite_fields(nodes_a, in, headRedis, i);
-      redisDel_fields(headRedis, i);
-    }
     //main integration loop
     for (int j = 0; j < 1; j++){
 #ifdef LOADBAR
@@ -1044,6 +1041,10 @@ void main_2DKriging(Input in, App CoMD)
         printf("time: %g time per step: %g\n", ttime_stop-ttime_start, ttime_stop-stime_start);
         fflush(fn3);
 #endif//OUTPUT
+    }
+    if(in.fault_tolerance == 1){
+      redisWrite_fields(nodes_a, in, headRedis, i);
+      redisDel_fields(headRedis, i);
     }
   }
   //exit output
