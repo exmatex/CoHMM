@@ -12,8 +12,6 @@
 //MKL
 #ifdef HAVE_MKL
 #include <mkl_cblas.h>
-#else
-#include <gsl_cblas.h>
 #endif
 #define lapack_int int
 
@@ -179,7 +177,7 @@ int kriging(double * w, int pointDims, std::vector<double *> oldWs, std::vector<
 #endif
     lapack_int info;
     dgetrf_(&n, &n, K, &n, ipiv, &info);   
-	//info = LAPACKE_dgetrf(LAPACK_ROW_MAJOR, n, n, K, n, ipiv);
+
 	if(info != 0)
 	{
 		fprintf(stderr, "LAPACK dgetrf failed on %d \n", info);
@@ -191,25 +189,20 @@ int kriging(double * w, int pointDims, std::vector<double *> oldWs, std::vector<
     char trans;
     trans = 'N';
     dgetrs_(&trans, &n, &nrhs, K, &n, ipiv, M, &n, &info);   
-	//info = LAPACKE_dgetrs(LAPACK_ROW_MAJOR, 'N', n, 1, K, n, ipiv, M, n);
-	//info = LAPACKE_dgetrs(LAPACK_ROW_MAJOR, 'N', n, 1, K, n, ipiv, M, 1);
 
-	//info = LAPACKE_dgetrs(LAPACK_ROW_MAJOR, 'N', n, 1, K, n, M, n, 1, ipiv);
 	if(info != 0)
 	{
 		fprintf(stderr, "LAPACK dgetrs failed on %d \n", info);
 		return 0;
 	}
-#ifndef HAVE_MKL
-    //c = new double[n];
-    //ftoc(c, M, n, n);
-#endif
+
 	double * W = M;
 
 	M = Mo;
 	//Process results
 
 	//Value = W.T*Z
+#ifdef HAVE_MKL
 	cblas_dgemm
 	(
 		CblasRowMajor,
@@ -227,6 +220,7 @@ int kriging(double * w, int pointDims, std::vector<double *> oldWs, std::vector<
 		&retVal[0],	//C
 		1	//ldc
 	);
+
 	//Error = W.T*M
 	cblas_dgemm
 	(
@@ -245,7 +239,24 @@ int kriging(double * w, int pointDims, std::vector<double *> oldWs, std::vector<
 		&retVal[1],	//C
 		1	//ldc
 	);
+#else
+    char transa='N';
+    char transb='T';
+    int rowsW = 1;
+    int colsZ = 1;
+    int colsW = n;
+    double alpha = 1.0;
+    double beta = 0.0;
+    int lda = 1;
+    int ldb = 1;
+    int ldc = 1;
 
+	//Value = W.T*Z
+	dgemm_(&transa, &transb, &rowsW, &colsZ, &colsW, &alpha, W, &lda, Z, &ldb, &beta, &retVal[0], &ldc);
+
+	//Error = W.T*M
+	dgemm_(&transa, &transb, &rowsW, &colsZ, &colsW, &alpha, W, &lda, M, &ldb, &beta, &retVal[1], &ldc);
+#endif
 	//Free stuff
 #ifndef HAVE_MKL
 	free(Z);
