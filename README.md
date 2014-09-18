@@ -15,3 +15,8 @@ B. Rouet-Leduc et al.,
 Comput. Phys. Commun. **185** (2014) 1857-1864
 ([link](http://dx.doi.org/10.1016/j.cpc.2014.03.011)).
 
+CoHMM augmented with Redis database support
+---------------------------------------------
+
+The code can be found on the `red` branch.
+
