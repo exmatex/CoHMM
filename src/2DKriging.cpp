@@ -993,7 +993,6 @@ void main_2DKriging(Input in, App CoMD)
   int prev_step = 0;
   if(in.fault_tolerance == 1){
     prev_step = redisRead_fields(nodes_a, &in, headRedis);
-    prev_step++;
   }
 #ifdef CIRCLE
   MPI_Bcast(&in.int_steps, 1, MPI_INT, 0, MPI_COMM_WORLD);

@@ -167,6 +167,7 @@ void parse_input(string input_file, Input *in, App *CoMD)
             CoMD->dt = v.second.get<double>("value");
             CkPrintf("set CoMD dt:              %lf\n", CoMD->dt);
         }
+        CkPrintf("Using input file values for CoMD not fully implemented yet!!!\n");
         //FIXME include all other values and hand App struct to flux fkt
     }
   }
