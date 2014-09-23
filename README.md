@@ -10,7 +10,7 @@ CoHMM is now maintained by ExMatEx: Exascale Co-Design Center for Materials
 in Extreme Environments ([exmatex.org](http://exmatex.org)).
 
 
-CoHMM augmented with spital adaptive sampling
+CoHMM augmented with spatial adaptive sampling
 ---------------------------------------------
 
 The code can be found on the `sad` branch.
