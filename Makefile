@@ -13,31 +13,28 @@ $(info Please establish Charmm++ environment variables before using this Makefil
 $(info E.g. by running setting CHARM_ROOT pr run 'module load charm++')
 $(error CHARM_ROOT is not set)
 endif
-CXXFLAGS=-DCHARM
+CXXFLAGS+=-DCHARM
 CHARMBIN=$(CHARM_ROOT)/bin
 CHARMINC=$(CHARM_ROOT)/include
-CHARMC=$(CHARMBIN)/charmc
-CXX=$(CHARMC)
+CXX=$(CHARMBIN)/charmc
 OBJDIR=charm_obj
 BINDIR=charm_bin
 #############CNC############
 else ifeq ($(SET), cnc) 
-CXXFLAGS=-DCNC
-CNC=icpc
-#CNC=/home/droehm/vampirTrace/bin/vtcxx
-CXX=$(CNC)
+CXXFLAGS+=-DCNC
+CXX=icpc
+#CXX=/home/droehm/vampirTrace/bin/vtcxx
 OBJDIR=cnc_obj
 BINDIR=cnc_bin
 #############OMP############
 else ifeq ($(SET), omp)
-CXXFLAGS=-DOMP
-OMP=g++
-CXX=$(OMP)
+CXXFLAGS+=-DOMP
+CXX=g++
 OBJDIR=omp_obj
 BINDIR=omp_bin
 #############CIRCLE############
 else ifeq ($(SET), circle)
-CXXFLAGS=-DCIRCLE
+CXXFLAGS+=-DCIRCLE
 CXX=mpicxx
 #CXX=/home/droehm/vampirTrace/bin/vtcxx -vt:cxx mpicxx
 LIBCIRCLELIBS=$(shell pkg-config --libs libcircle)
@@ -53,7 +50,7 @@ $(error please SET=cnc, SET=charm, SET=circle or SET=omp)
 endif
 endif
 
-ifeq ($(CXX), $(CNC))
+ifeq ($(SET), cnc)
 ifeq (,$(CNCROOT))
 $(info Please establish CnC environment variables before using this Makefile.)
 $(info E.g. by running cncvars.sh or cncvars.csh)
@@ -102,11 +99,11 @@ endif
 
 #OPTFLAGS=-g
 OPTFLAGS=-O3
-ifeq ($(CXX), $(CNC)) 
+ifeq ($(SET), cnc) 
   CNC_LDFLAG=-L$(CNCROOT)/lib/$(ARCH) -lcnc -ltbb -ltbbmalloc
   CNC_CFLAG= -D_DIST_ -I$(CNCROOT)/include -std=c++0x
   #CNC_CFLAG=-I$(CNCROOT)/include -std=c++0x
-else ifeq ($(CXX), $(OMP)) 
+else ifeq ($(SET), omp) 
   OMP_CFLAGS=-fopenmp
   OMP_LDFLAGS=-fopenmp
 endif
@@ -140,15 +137,15 @@ CXXFLAGS+=$(HIREDIS_CFLAG) $(LINALG_CFLAG) $(COMD_CFLAG) $(BOOST_CFLAG) $(OPTFLA
 LDFLAGS=$(HIREDIS_LDFLAG) $(LINALG_LDFLAG) $(COMD_LDFLAG) -lm -lrt 
 endif
 
-ifeq ($(CXX), $(CHARMC))
+ifeq ($(SET), charm)
 $(info compiling Charm files)
 OBJS+=$(OBJDIR)/main_charm.o
-else ifeq ($(CXX), $(CNC)) 
+else ifeq ($(SET), cnc) 
 $(info compiling CnC files)
 OBJS+=$(OBJDIR)/main_generic.o
 LDFLAGS+=$(CNC_LDFLAG) 
 CXXFLAGS+=$(CNC_CFLAG)
-else ifeq ($(CXX), $(OMP)) 
+else ifeq ($(SET), omp) 
 $(info compiling OpenMP files)
 OBJS+=$(OBJDIR)/main_generic.o
 CXXFLAGS+=$(OMP_CFLAGS)
@@ -165,7 +162,7 @@ NAME=$(BINDIR)/2D_Kriging
 default: all
 all: $(SUBDIRS) $(OBJDIR) $(NAME)
 
-ifeq ($(CXX), $(CHARMC))
+ifeq ($(SET), charm)
 $(OBJDIR)/%.d: $(SRCDIR)/%.cpp
 	@#1. sed:  put one file per line * * -> *\\\n*
 	@#2. sed gcc -MG does not know that missing files will be in $(SRCDIR)
@@ -206,7 +203,7 @@ $(OBJDIR):
 
 $(NAME): $(OBJS)
 	$(CXX) -o $@ $^ $(LDFLAGS)
-ifeq ($(CXX), $(CHARMC))
+ifeq ($(SET), charm)
 	@mv charmrun $(BINDIR)/
 endif
 
