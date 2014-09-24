@@ -1,0 +1,47 @@
+language: cpp
+
+before_install:
+ - if [[ $SET = cnc ]]; then sudo add-apt-repository -y ppa:yani/iatsl; fi
+ - sudo apt-get update
+ - sudo apt-get install libblas-dev liblapack-dev libhiredis-dev libboost-dev
+ - if [[ $SET = circle ]]; then sudo apt-get install libboost-serialization-dev libopenmpi-dev; fi
+ - if [[ $SET = cnc ]]; then sudo apt-get install libtbb-dev cmake; fi
+
+before_script:
+  - if [[ $SET = circle ]]; then 
+      git clone --depth=1 https://github.com/hpc/libcircle.git && 
+      cd libcircle && 
+      ./configure && make && sudo make install &&
+      cd ..;
+    fi
+  - if [[ $SET = charm ]]; then 
+      git clone --depth=1 http://charm.cs.uiuc.edu/gerrit/charm && 
+      cd charm && 
+      ./build charm++ net-linux-x86_64 -j4 && export CHARM_ROOT=$PWD &&
+      cd ..;
+    fi
+  - if [[ $SET = cnc ]]; then 
+      git clone --depth=1 https://github.com/icnc/icnc.git && 
+      cd icnc &&
+      sed -i '/find_library/s/_debug//' CMake.inc &&
+      cmake -DCMAKE_CXX_FLAGS="-DCNC_REQUIRED_TBB_VERSION=6101" . &&
+      make -j4 && sudo make install && export CNCROOT=/usr/local &&
+      cd ..;
+    fi
+
+env:
+  - SET=omp
+  - SET=circle
+  - SET=charm
+  - SET=cnc
+
+script:
+  - if [[ $SET = cnc ]]; then 
+    make -j4 SET="${SET}" OPTFLAGS="-O3 -Werror -DCNC_REQUIRED_TBB_VERSION=6101" HIREDIS_INCLUDES=/usr/include
+      BOOST_INCLUDES=/usr/include CXX="${CXX}";
+    else
+      make -j4 SET="${SET}" OPTFLAGS="-O3 -Werror" HIREDIS_INCLUDES=/usr/include BOOST_INCLUDES=/usr/include;
+    fi
+
+compiler:
+  - gcc
