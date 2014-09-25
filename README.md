@@ -26,3 +26,8 @@ CoHMM augmented with Redis database support
 
 The code can be found on the `red` branch.
 
+CoHMM augmented with bold and distributed runtimes
+---------------------------------------------
+
+The code can be found on the `bad` branch.
+
