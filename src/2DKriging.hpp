@@ -103,7 +103,7 @@ struct fluxFn
 #if 1
 struct fluxTuner: public CnC::step_tuner<>, public CnC::hashmap_tuner
 {
-#if 1
+#if __INTEL_COMPILER
 	template<class dependency_consumer>
 		void depends(const int &tag, flux_context &c, dependency_consumer & dC) const
 		{
