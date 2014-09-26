@@ -348,8 +348,8 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
 #ifdef CNC
 			fluxInArgs.push_back(fluxInput(*w, false, headNode, in.kr_threshold));
 			int taskID = fluxInArgs.size();
-			context->tags.put(taskID);
 			context->fluxInp.put(taskID, fluxInput(*w, false, headNode, in.kr_threshold));
+			context->tags.put(taskID);
 #elif CHARM
 			fluxInArgs.push_back(fluxInput(*w, false));
 #else
@@ -377,8 +377,8 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
 #ifdef CNC
 			fluxInArgs.push_back(fluxInput(*w, true, headNode, in.kr_threshold));
 			int taskID = fluxInArgs.size();
-			context->tags.put(taskID);
 			context->fluxInp.put(taskID, fluxInput(*w, true, headNode, in.kr_threshold));
+			context->tags.put(taskID);
 #elif CHARM
 			fluxInArgs.push_back(fluxInput(*w, true));
 #else
@@ -507,6 +507,14 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
 		freeClear(wVec);
 		freeClear(fVec);
 		freeClear(gVec);
+#if 0
+        redisAsyncContext *c = redisAsyncConnect(in.head_node.c_str(), 6379);
+        if (c->err) {
+            printf("Error: %s\n", c->errstr);
+            // handle error
+        }
+        redisAsyncCommand(c,NULL, NULL, "bgsave");
+#endif
 #endif
 	}
 #ifdef OMP

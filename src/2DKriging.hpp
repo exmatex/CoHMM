@@ -110,7 +110,7 @@ struct fluxTuner: public CnC::step_tuner<>, public CnC::hashmap_tuner
 			dC.depends(c.fluxInp, tag);
 		}
 #endif   
-    bool preschedule() const { return true; }
+    //bool preschedule() const { return true; }
 #if 0
     int compute_on( const int & tag, flux_context & ) const
     {
