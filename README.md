@@ -47,3 +47,9 @@ Generating a Trace of Database Accesses
 3. run 2DKriging normally
 
 4. when 2DKriging is complete, terminate the redisTrace process and examine the resulting redisTrace.log file
+
+Copyright and license
+---------------------
+
+Los Alamos National Security, LLC (LANS) owns the copyright to CoHMM, which it identifies internally as LA-CC-2012-065 (ExMatEx: Scale-Bridging Materials Evaluation and Test Suite, Version 1). The license is BSD-sh with a "modifications must be indicated" clause.  See LICENSE.md for the full text.
+
