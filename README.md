@@ -161,5 +161,5 @@ Generating a Trace of Database Accesses
 Copyright and license
 ---------------------
 
-Los Alamos National Security, LLC (LANS) owns the copyright to CoHMM, which it identifies internally as LA-CC-2012-065 (ExMatEx: Scale-Bridging Materials Evaluation and Test Suite, Version 1). The license is BSD-sh with a "modifications must be indicated" clause.  See LICENSE.md for the full text.
+Los Alamos National Security, LLC (LANS) owns the copyright to CoHMM, which it identifies as LA-CC-2012-065 (ExMatEx: Scale-Bridging Materials Evaluation and Test Suite, Version 1). The license is BSD-sh with a "modifications must be indicated" clause.  See LICENSE.md for the full text.
 
