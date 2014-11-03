@@ -12,31 +12,21 @@ Dependencies
 
 2. [hredis](https://github.com/redis/hiredis)
 
-3. [mkl] or (another implementation of the cblas and lapacke interfaces)
+3. [mkl](https://software.intel.com/en-us/intel-mkl) or (another implementation of the cblas and lapacke interfaces)
 
-4. [mkl](define mkl="mkl install path" in Makefile)
-
-5. [comd](define COMD="comd install path" in Makefile) 
-
-6. [comd](define BOOST="boost install path" in Makefile) 
+4. [boost](http://www.boost.org/)
 
 Charm++:
 
-7. [charm](http://charm.cs.illinois.edu/software)
-
-   or git repo  http://charm.cs.illinois.edu/gerrit/charm
-
-8. [charm](define CHARMDIR="Charm install path" in Makefile) 
+5. [charm](http://charm.cs.illinois.edu/software)
 
 CnC:
 
-7. [cnc](https://software.intel.com/en-us/articles/intel-concurrent-collections-for-cc)
+6. [cnc](https://software.intel.com/en-us/articles/intel-concurrent-collections-for-cc)
 
-8. [cnc](Load the latest Intel Compiler, Intel MPI, and MKL) 
+libcircle:
 
-9. [cnc](define CNCDIR="CnC install path" in Makefile) 
-
-10. [cnc](Make sure that the CoMD library is compiled with the intel mpi) 
+7. [libcircle](https://github.com/hpc/libcircle)
 
 
 Installation
