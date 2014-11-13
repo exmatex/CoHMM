@@ -61,7 +61,7 @@ Charm++:
 
 CnC:
 
-2. MPI: run 2D_Kriging distributed with 'env DIST_CNC=MPI mpirun -n $(NPROCS*48) ./2D_Kriging input.json' 
+2. MPI: run 2D_Kriging distributed with 'env DIST_CNC=MPI mpirun -n $(NPROCS x 48) ./2D_Kriging input.json' 
 
    on Darwin (no infiniband) 'env DIST_CNC=MPI mpirun -n 96 -env I_MPI_FABRICS shm:tcp -hostfile hostfile ~/2014/CoHMM/2D_Kriging input.json'
 

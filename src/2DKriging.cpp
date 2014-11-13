@@ -395,7 +395,7 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
     //CnC::debug::trace(context->tags);
     //CnC::debug::collect_scheduler_statistics(*context);
     //***************************************************//
-	context->wait();
+	//context->wait();
 #endif
 #ifndef LOADBAR
 	printf("About to run parallel kriging & MD: %d args, %d MD, %d kriging\n", (int)fluxInArgs.size(), ca->comd, ca->krig);
@@ -415,7 +415,7 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
 #endif
 #ifdef OMP
     fluxOutput * fluxOutOmp = new fluxOutput[fluxInArgs.size()];
-#pragma omp parallel for
+#pragma omp parallel for schedule(dynamic)
     for(int i = 0; i < int(fluxInArgs.size()); i++){
         fluxFn(&fluxInArgs[i], &fluxOutOmp[i], dbCache, in);
     }
