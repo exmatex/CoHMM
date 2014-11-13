@@ -317,7 +317,7 @@ bool ifConservedFieldsMatch(double * w0, std::vector<double *> * wVec, double db
  * @return *out       returns flux output information about computed fluxes on specific node (output)
  * @param *dbCache    database cache pointer (input)
  * **/
-template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input in, std::list<gridPoint> * comdTasks, std::list<gridPoint> * krigTasks, std::map<std::string, std::vector<char *> > *dbCache, Calls* ca, Tms *tm, T context)
+template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input in, std::list<gridPoint> * comdTasks, std::list<gridPoint> * krigTasks, std::map<std::string, std::vector<char *> > *dbCache, Calls* ca, Tms *tm, T context, redisContext *headRedis)
 {
 	//fprintf(stdout, "Starting parallel \n");
 	//fflush(stdout);
@@ -427,18 +427,18 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
     //redisCommand(context,"sync");
 #endif//CIRCLE
 
-	//Process the results of OMP'd tasks
+	//Process the results of the tasks
 	for(int i = 0; i < int(fluxInArgs.size()); i++)
 	{
 #ifdef CNC
 		fluxOutput fluxOutCnc;
 		context->fluxOutp.get(i+1, fluxOutCnc);
-        //printf("got val %d from task %d\n\n", fluxOut.index, i+1);
+    //printf("got val %d from task %d\n\n", fluxOut.index, i+1);
 #elif CIRCLE
 		std::vector<double *> wVec;
 		std::vector<double *> fVec;
 		std::vector<double *> gVec;
-    		//get results from db
+ 		//get results from db
 		if (fluxInArgs[i].callCoMD){
 		  getSortedSubBucketNearZero(fluxInArgs[i].w.w, (char *)"comd", context, comdDigits, 1, &wVec, &fVec, &gVec, zeroThresh);
 		} else {
@@ -464,56 +464,63 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
 #ifdef CHARM
 			memcpy(f->f, &fluxOutCharm[i].f, sizeof(double)*7);
 			memcpy(g->f, &fluxOutCharm[i].g, sizeof(double)*7);
-            fluxInArgs[i].callCoMD = fluxOutCharm[i].callCoMD;
+      fluxInArgs[i].callCoMD = fluxOutCharm[i].callCoMD;
 #elif CNC
-	    	memcpy(f->f, fluxOutCnc.f, sizeof(double)*7);
+	   	memcpy(f->f, fluxOutCnc.f, sizeof(double)*7);
 			memcpy(g->f, fluxOutCnc.g, sizeof(double)*7);
-            fluxInArgs[i].callCoMD = fluxOutCnc.callCoMD;
+      fluxInArgs[i].callCoMD = fluxOutCnc.callCoMD;
 #elif OMP
-            memcpy(f->f, &fluxOutOmp[i].f, sizeof(double)*7);
-            memcpy(g->f, &fluxOutOmp[i].g, sizeof(double)*7);
-            fluxInArgs[i].callCoMD = fluxOutOmp[i].callCoMD;
+      memcpy(f->f, &fluxOutOmp[i].f, sizeof(double)*7);
+      memcpy(g->f, &fluxOutOmp[i].g, sizeof(double)*7);
+      fluxInArgs[i].callCoMD = fluxOutOmp[i].callCoMD;
 #elif CIRCLE
-            memcpy(f->f, fVec[0], sizeof(double)*7);
-            memcpy(g->f, gVec[0], sizeof(double)*7);
-            //fluxInArgs[i].callCoMD = fluxOut[i].callCoMD;
+      memcpy(f->f, fVec[0], sizeof(double)*7);
+      memcpy(g->f, gVec[0], sizeof(double)*7);
+      //fluxInArgs[i].callCoMD = fluxOut[i].callCoMD;
 #else
 #error Something is wrong.
 #endif
 			if(fluxInArgs[i].callCoMD == true)
-            {
-                if(fields[x + dim_x*y].f.ca != 1 && fields[x + dim_x*y].f.ca != 2){
-                fields[x + dim_x*y].f.ca = 7;
-                //fields[x + dim_x*y].f.ca = 1;
-                ca->kFail++;
-                //printf("kfail++\n\n");
-                }
-            }
+      {
+         if(fields[x + dim_x*y].f.ca != 1 && fields[x + dim_x*y].f.ca != 2){
+           fields[x + dim_x*y].f.ca = 7;
+            //fields[x + dim_x*y].f.ca = 1;
+            ca->kFail++;
+            //printf("kfail++\n\n");
+         }
+      }
 		}
+    
 #ifdef CHARM
-        //timings
-        tm->kr += fluxOutCharm[i].diffKr;
-        tm->co += fluxOutCharm[i].diffCo;
+    //add result to database
+		putData(fluxInArgs[i].w.w, fluxOutCharm[i].f, fluxOutCharm[i].g, (char *)"comd", headRedis, comdDigits);		
+    //timings
+    tm->kr += fluxOutCharm[i].diffKr;
+    tm->co += fluxOutCharm[i].diffCo;
 #elif CNC
-        //timings
-        tm->kr += fluxOutCnc.diffKr;
-        tm->co += fluxOutCnc.diffCo;
+    //add result to database
+		putData(fluxInArgs[i].w.w, fluxOutCnc.f, fluxOutCnc.g, (char *)"comd", headRedis, comdDigits);		
+    //timings
+    tm->kr += fluxOutCnc.diffKr;
+    tm->co += fluxOutCnc.diffCo;
 #elif OMP
-        //timings
-        tm->kr += fluxOutOmp[i].diffKr;
-        tm->co += fluxOutOmp[i].diffCo;
+    //add result to database
+		putData(fluxInArgs[i].w.w, fluxOutOmp[i].f, fluxOutOmp[i].g, (char *)"comd", headRedis, comdDigits);		
+    //timings
+    tm->kr += fluxOutOmp[i].diffKr;
+    tm->co += fluxOutOmp[i].diffCo;
 #endif
 #ifdef CIRCLE
 		freeClear(wVec);
 		freeClear(fVec);
 		freeClear(gVec);
 #if 0
-        redisAsyncContext *c = redisAsyncConnect(in.head_node.c_str(), 6379);
-        if (c->err) {
-            printf("Error: %s\n", c->errstr);
-            // handle error
-        }
-        redisAsyncCommand(c,NULL, NULL, "bgsave");
+    redisAsyncContext *c = redisAsyncConnect(in.head_node.c_str(), 6379);
+    if (c->err) {
+        printf("Error: %s\n", c->errstr);
+        // handle error
+    }
+    redisAsyncCommand(c,NULL, NULL, "bgsave");
 #endif
 #endif
 	}
@@ -725,7 +732,7 @@ template <typename T> void doFluxes(Node* fields, Node* fluxes, int grid_size, I
   //fflush(stdout);
   startCa = getUnixTime();
   //At this point, we know who is getting krig'd and who is getting comd'd, so let's do it
-  doParallelCalls(fields, fluxes, *in, &comdTasks, &krigTasks, &dbCache, &ca, &tm, context);
+  doParallelCalls(fields, fluxes, *in, &comdTasks, &krigTasks, &dbCache, &ca, &tm, context, headRedis);
   stopCa = getUnixTime();
   tm.ca = stopCa - startCa;
 
@@ -1078,12 +1085,12 @@ void main_2DKriging(Input in, App CoMD)
 //template void main_2DKriging(Input in, CProxy_krigingChare krigingChareProxy);
 template void half_step_second_order(Node* node_a, Node* node_b, int grid_size, Input* in, CProxy_krigingChare krigingChareProxy, redisContext *headRedis);
 template void doFluxes(Node* fields, Node* fluxes, int grid_size, Input* in, CProxy_krigingChare krigingChareProxy, redisContext *headRedis);
-template void doParallelCalls(Node * fields, Node * fluxes, Input in, std::list<gridPoint> * comdTasks, std::list<gridPoint> * krigTasks, std::map<std::string, std::vector<char *> > *dbCache, Calls* ca, Tms *tm, CProxy_krigingChare krigingChareProxy);
+template void doParallelCalls(Node * fields, Node * fluxes, Input in, std::list<gridPoint> * comdTasks, std::list<gridPoint> * krigTasks, std::map<std::string, std::vector<char *> > *dbCache, Calls* ca, Tms *tm, CProxy_krigingChare krigingChareProxy, redisContext *headRedis);
 #elif CNC
 //template void main_2DKriging(Input in, flux_context* fluxText);
 template void half_step_second_order(Node* node_a, Node* node_b, int grid_size, Input* in, flux_context* fluxText, redisContext *headRedis);
 template void doFluxes(Node* fields, Node* fluxes, int grid_size, Input* in, flux_context* fluxText, redisContext *headRedis);
-template void doParallelCalls(Node * fields, Node * fluxes, Input in, std::list<gridPoint> * comdTasks, std::list<gridPoint> * krigTasks, std::map<std::string, std::vector<char *> > *dbCache, Calls* ca, Tms *tm, flux_context* fluxText);
+template void doParallelCalls(Node * fields, Node * fluxes, Input in, std::list<gridPoint> * comdTasks, std::list<gridPoint> * krigTasks, std::map<std::string, std::vector<char *> > *dbCache, Calls* ca, Tms *tm, flux_context* fluxText, redisContext *headRedis);
 #else
 //template void main_2DKriging(Input in, int * context);
 #ifdef CIRCLE
@@ -1093,7 +1100,7 @@ template void doParallelCalls(Node * fields, Node * fluxes, Input in, std::list<
 #else
 template void doFluxes(Node* fields, Node* fluxes, int grid_size, Input* in, int* context, redisContext *headRedis);
 template void half_step_second_order(Node* node_a, Node* node_b, int grid_size, Input* in, int* context, redisContext *headRedis);
-template void doParallelCalls(Node * fields, Node * fluxes, Input in, std::list<gridPoint> * comdTasks, std::list<gridPoint> * krigTasks, std::map<std::string, std::vector<char *> > *dbCache, Calls* ca, Tms *tm, int* context);
+template void doParallelCalls(Node * fields, Node * fluxes, Input in, std::list<gridPoint> * comdTasks, std::list<gridPoint> * krigTasks, std::map<std::string, std::vector<char *> > *dbCache, Calls* ca, Tms *tm, int* context, redisContext *headRedis);
 #endif
 #endif
 

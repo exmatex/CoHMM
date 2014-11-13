@@ -21,7 +21,7 @@ extern "C"
 #endif
 #include "types.h"
 /* enable redis database */
-#define DB
+//#define DISTDB
 /* enable CoMD lib */
 #define CoMD
 /* enable Gaussian noise */
@@ -54,35 +54,35 @@ void fluxFn(CIRCLE_handle *handle)
 	fluxInput * in = &inVal;
 	fluxOutput outVal;
 	fluxOutput* out = &outVal;
-    Input inp;
-    inp.head_node = in->headNode;
-    inp.kr_threshold = in->kr_threshold;
-    //printf("id %d cnc input %s\n", id, inp.head_node.c_str());
-    //printf("id %d cnc input %lf\n", id, in->w.w[0]);
+  Input inp;
+  inp.head_node = in->headNode;
+  inp.kr_threshold = in->kr_threshold;
+  //printf("id %d cnc input %s\n", id, inp.head_node.c_str());
+  //printf("id %d cnc input %lf\n", id, in->w.w[0]);
 #endif//CNC
 #ifdef CIRCLE
-    char str[CIRCLE_MAX_STRING_LEN];
-    handle->dequeue(&str[0]);
-    //de-serialize
+  char str[CIRCLE_MAX_STRING_LEN];
+  handle->dequeue(&str[0]);
+  //de-serialize
 	std::stringstream archive_stream(str);
-    boost::archive::text_iarchive archive(archive_stream);
+  boost::archive::text_iarchive archive(archive_stream);
 	fluxInput inVal;
 	archive >> inVal;
 	fluxInput * in = &inVal;
 	fluxOutput outVal;
 	fluxOutput* out = &outVal;
-    Input inp;
-    inp.head_node = in->headNode;
-    inp.kr_threshold = in->kr_threshold;
+  Input inp;
+  inp.head_node = in->headNode;
+  inp.kr_threshold = in->kr_threshold;
 #endif//CIRCLE
 	//Prep outputs
-    out->callCoMD = false;
+  out->callCoMD = false;
 	out->error = 0.0;
-    double startKr = 0.0;
-    double stopKr = 0.0;
-#ifdef DB
-	//Make redis context
+  double startKr = 0.0;
+  double stopKr = 0.0;
 	redisContext * rTask;
+#ifdef DISTDB
+	//Make redis context
 	rTask = redisConnect(inp.head_node.c_str(), 6379);
 	//CkPrintf("Redis headnode: %s\n", headNode.c_str());
 	if(rTask == NULL || rTask->err)
@@ -90,19 +90,19 @@ void fluxFn(CIRCLE_handle *handle)
 		//printf("Redis error: %s\n", rTask->errstr);
 		//printf("Redis error: %s\n", in->headNode);
 		printf("Redis connection delay\n");
-        //sleep(20);
-	    rTask = redisConnect(inp.head_node.c_str(), 6379);
+    //sleep(20);
+	  rTask = redisConnect(inp.head_node.c_str(), 6379);
 		//return NULL;
 	}
-    //if(diff1 > 1.0) printf("CONNECTION timing %lf\n", diff1);
+  //if(diff1 > 1.0) printf("CONNECTION timing %lf\n", diff1);
 	if(rTask == NULL || rTask->err)
 	{
 		printf("Redis error: %s\n", rTask->errstr);
 		printf("Redis error: %s\n", inp.head_node.c_str());
 #ifdef CHARM
-        CkExit();
+    CkExit();
 #else
-        exit(0);
+    exit(0);
 #endif
 		//return NULL;
 	}
@@ -110,7 +110,7 @@ void fluxFn(CIRCLE_handle *handle)
 	//Is this CoMD?
 	if(in->callCoMD == true)
 	{
-        double startCo = getUnixTime();
+    double startCo = getUnixTime();
 		//Call CoMD
 		//4 strains
 		double strain_xx = in->w.w[0];
@@ -173,41 +173,41 @@ void fluxFn(CIRCLE_handle *handle)
 		out->f[6] = -theRet.energyDensX;
 		out->g[6] = -theRet.energyDensY;
 #elif defined(C_RAND)
-        //gaussian noise, gamma = strength
-        unsigned int tid = omp_get_thread_num();
-        unsigned s_seed = 1103515245 * tid + floor(1000*(*startCo));
-        std::srand(s_seed);
-        int seed = rand()%10000; 
-        //fake comd values
-	    //4 stresses
-	    double rho = 1.0;
-	    //out.f[0] = theRet.momX;
-        double *num;
-        num = new double[2];
-        gaussian_random(&seed, num);
-        //printf("num %lf %lf\n", num[0], num[1]);
-        out->f[0] = momentum_x/rho + (inp.noise*num[0]);
-        out->f[1] = momentum_y/rho + (inp.noise*num[1]);
-        out->f[2] = 0.0;
-        //o->t.f[2] = theRet.momY;
-        out->f[3] = 0.0;
-        gaussian_random(&seed, num);
-        out->f[4] = strain_xx-1 + 0.75*(strain_yy-1) + (strain_gamma*num[0]);
-        out->f[5] = 1.9*strain_xy + (strain_gamma*num[1]);
-        out->g[0] = 0.0;
-        //o->t.g[1] = theRet.momX;
-        out->g[1] = 0.0;
-        gaussian_random(&seed, num);
-	    out->g[2] = momentum_x/rho + (inp.noise*num[0]);
-	    //o->t.g[3] = theRet.momY;
-	    out->g[3] = momentum_y/rho + (inp.noise*num[1]);
-        gaussian_random(&seed, num);
-	    out->g[4] = 1.9*strain_yx + (strain_gamma*num[0]);
-	    out->g[5] = strain_yy-1 + 0.75*(strain_xx-1) + (strain_gamma*num[1]);
-	    //f->6] = g[6] = -0.295;
-	    out->f[6] = -out->f[0]*sqrt(out->f[4]*out->f[4] + out->f[5]*out->f[5]);
-	    out->g[6] = -out->g[3]*sqrt(out->g[4]*out->g[4] + out->g[5]*out->g[5]);
-        delete[] num;
+    //gaussian noise, gamma = strength
+    unsigned int tid = omp_get_thread_num();
+    unsigned s_seed = 1103515245 * tid + floor(1000*(*startCo));
+    std::srand(s_seed);
+    int seed = rand()%10000; 
+    //fake comd values
+	  //4 stresses
+	  double rho = 1.0;
+	  //out.f[0] = theRet.momX;
+    double *num;
+    num = new double[2];
+    gaussian_random(&seed, num);
+    //printf("num %lf %lf\n", num[0], num[1]);
+    out->f[0] = momentum_x/rho + (inp.noise*num[0]);
+    out->f[1] = momentum_y/rho + (inp.noise*num[1]);
+    out->f[2] = 0.0;
+    //o->t.f[2] = theRet.momY;
+    out->f[3] = 0.0;
+    gaussian_random(&seed, num);
+    out->f[4] = strain_xx-1 + 0.75*(strain_yy-1) + (strain_gamma*num[0]);
+    out->f[5] = 1.9*strain_xy + (strain_gamma*num[1]);
+    out->g[0] = 0.0;
+    //o->t.g[1] = theRet.momX;
+    out->g[1] = 0.0;
+    gaussian_random(&seed, num);
+	  out->g[2] = momentum_x/rho + (inp.noise*num[0]);
+	  //o->t.g[3] = theRet.momY;
+	  out->g[3] = momentum_y/rho + (inp.noise*num[1]);
+    gaussian_random(&seed, num);
+	  out->g[4] = 1.9*strain_yx + (strain_gamma*num[0]);
+	  out->g[5] = strain_yy-1 + 0.75*(strain_xx-1) + (strain_gamma*num[1]);
+	  //f->6] = g[6] = -0.295;
+	  out->f[6] = -out->f[0]*sqrt(out->f[4]*out->f[4] + out->f[5]*out->f[5]);
+	  out->g[6] = -out->g[3]*sqrt(out->g[4]*out->g[4] + out->g[5]*out->g[5]);
+    delete[] num;
 #else
     //fake comd values
 		//4 stresses
@@ -232,32 +232,57 @@ void fluxFn(CIRCLE_handle *handle)
 		out->f[6] = -out->f[0]*sqrt(out->f[4]*out->f[4] + out->f[5]*out->f[5]);
 		out->g[6] = -out->g[3]*sqrt(out->g[4]*out->g[4] + out->g[5]*out->g[5]);
 #endif//COMD
-#ifdef DB
+#ifdef DISTDB
 		//Write result to database
 		putData(in->w.w, out->f, out->g, (char *)"comd", rTask, comdDigits);		
-        double stopCo = getUnixTime();
-        //if(diff1 > 1.0) printf("put timing %lf\n", diff1);
-        out->diffCo = stopCo - startCo;
+    double stopCo = getUnixTime();
+    //if(diff1 > 1.0) printf("put timing %lf\n", diff1);
+    out->diffCo = stopCo - startCo;
 #endif
 	}
 	//It is kriging time!
 	else
 	{
-        startKr = getUnixTime();
-        //printf("krigingtime\n");
+    startKr = getUnixTime();
+    //printf("krigingtime\n");
 		//Get data for kriging
 		std::vector<double *> oldWs;
 		std::vector<double *> oldFs;
 		std::vector<double *> oldGs;
 		//getCachedSortedSubBucketNearZero(in->w.w, (char *)"comd", rTask, comdDigits, 10, &oldWs, &oldFs, &oldGs, zeroThresh, dbCache); 
-#ifdef DB
-		getSortedSubBucketNearZero(in->w.w, (char*)"comd", rTask, comdDigits, 10, &oldWs, &oldFs, &oldGs, zeroThresh); 
+#ifndef DISTDB
+    //Make redis context
+  	rTask = redisConnect(inp.head_node.c_str(), 6379);
+  	//CkPrintf("Redis headnode: %s\n", headNode.c_str());
+  	if(rTask == NULL || rTask->err)
+  	{
+  		//printf("Redis error: %s\n", rTask->errstr);
+  		//printf("Redis error: %s\n", in->headNode);
+  		printf("Redis connection delay\n");
+      //sleep(20);
+  	  rTask = redisConnect(inp.head_node.c_str(), 6379);
+  		//return NULL;
+  	}
+    //if(diff1 > 1.0) printf("CONNECTION timing %lf\n", diff1);
+  	if(rTask == NULL || rTask->err)
+  	{
+  		printf("Redis error: %s\n", rTask->errstr);
+  		printf("Redis error: %s\n", inp.head_node.c_str());
+#ifdef CHARM
+      CkExit();
+#else
+      exit(0);
 #endif
+	  	//return NULL;
+	  }
+#endif
+		getSortedSubBucketNearZero(in->w.w, (char*)"comd", rTask, comdDigits, 10, &oldWs, &oldFs, &oldGs, zeroThresh); 
+
 
 		//Call Kriging on each point
-        double *resF = new double[2];
-        double *resG = new double[2];
-        int info;
+    double *resF = new double[2];
+    double *resG = new double[2];
+    int info;
 		for(int i = 0; i < 7; i++)
 		{
 			///TODO: Consider refactoring this in to kriging.cpp
@@ -292,9 +317,9 @@ void fluxFn(CIRCLE_handle *handle)
         //printf("error %lf\n", out->error);
         if(out->error > inp.kr_threshold)
         {
-            stopKr = getUnixTime();
+          stopKr = getUnixTime();
 	        out->error = 0.0;
-            double startCo = getUnixTime();
+          double startCo = getUnixTime();
 		    //Call CoMD
 		    //4 strains
 		    double strain_xx = in->w.w[0];
@@ -356,43 +381,43 @@ void fluxFn(CIRCLE_handle *handle)
 		    out->g[5] = theRet.stressYY;
 		    out->f[6] = -theRet.energyDensX;
 		    out->g[6] = -theRet.energyDensY;
-            //delete &theRet;
+        //delete &theRet;
 #elif defined(C_RAND)
-            //gaussian noise, gamma = strength
-            unsigned int tid = omp_get_thread_num();
-            unsigned s_seed = 1103515245 * tid + floor(1000*(*startCo));
-            std::srand(s_seed);
-            int seed = rand()%10000; 
-            //fake comd values
+        //gaussian noise, gamma = strength
+        unsigned int tid = omp_get_thread_num();
+        unsigned s_seed = 1103515245 * tid + floor(1000*(*startCo));
+        std::srand(s_seed);
+        int seed = rand()%10000; 
+        //fake comd values
 		    //4 stresses
 		    double rho = 1.0;
 		    //out.f[0] = theRet.momX;
-            double *num;
-            num = new double[2];
-            gaussian_random(&seed, num);
-            //printf("num %lf %lf\n", num[0], num[1]);
+        double *num;
+        num = new double[2];
+        gaussian_random(&seed, num);
+        //printf("num %lf %lf\n", num[0], num[1]);
 		    out->f[0] = momentum_x/rho + (inp.noise*num[0]);
 		    out->f[1] = momentum_y/rho + (inp.noise*num[1]);
 		    out->f[2] = 0.0;
 		    //o->t.f[2] = theRet.momY;
 		    out->f[3] = 0.0;
-            gaussian_random(&seed, num);
+        gaussian_random(&seed, num);
 		    out->f[4] = strain_xx-1 + 0.75*(strain_yy-1) + (strain_gamma*num[0]);
 		    out->f[5] = 1.9*strain_xy + (strain_gamma*num[1]);
 		    out->g[0] = 0.0;
 		    //o->t.g[1] = theRet.momX;
 		    out->g[1] = 0.0;
-            gaussian_random(&seed, num);
+        gaussian_random(&seed, num);
 		    out->g[2] = momentum_x/rho + (inp.noise*num[0]);
 		    //o->t.g[3] = theRet.momY;
 		    out->g[3] = momentum_y/rho + (inp.noise*num[1]);
-            gaussian_random(&seed, num);
+        gaussian_random(&seed, num);
 		    out->g[4] = 1.9*strain_yx + (strain_gamma*num[0]);
 		    out->g[5] = strain_yy-1 + 0.75*(strain_xx-1) + (strain_gamma*num[1]);
 		    //f->6] = g[6] = -0.295;
 		    out->f[6] = -out->f[0]*sqrt(out->f[4]*out->f[4] + out->f[5]*out->f[5]);
 		    out->g[6] = -out->g[3]*sqrt(out->g[4]*out->g[4] + out->g[5]*out->g[5]);
-            delete[] num;
+        delete[] num;
 #else
             //fake comd values
     		//4 stresses
@@ -412,41 +437,39 @@ void fluxFn(CIRCLE_handle *handle)
     		//o->t.g[3] = theRet.momY;
     		out->g[3] = momentum_y/rho;
     		out->g[4] = 1.9*strain_yx;
-            out->g[5] = strain_yy-1 + 0.75*(strain_xx-1);
-            //f->6] = g[6] = -0.295;
-            out->f[6] = -out->f[0]*sqrt(out->f[4]*out->f[4] + out->f[5]*out->f[5]);
-            out->g[6] = -out->g[3]*sqrt(out->g[4]*out->g[4] + out->g[5]*out->g[5]);
+        out->g[5] = strain_yy-1 + 0.75*(strain_xx-1);
+        //f->6] = g[6] = -0.295;
+        out->f[6] = -out->f[0]*sqrt(out->f[4]*out->f[4] + out->f[5]*out->f[5]);
+        out->g[6] = -out->g[3]*sqrt(out->g[4]*out->g[4] + out->g[5]*out->g[5]);
 #endif//COMD
-            //mark as CoMD'd
-            out->callCoMD = true;
-#ifdef DB
+        //mark as CoMD'd
+        out->callCoMD = true;
+#ifdef DISTDB
 		    //Write result to database
 		    putData(in->w.w, out->f, out->g, (char *)"comd", rTask, comdDigits);		
 #endif
-             double stopCo = getUnixTime();
+        double stopCo = getUnixTime();
         }
         else
         {
-#ifdef DB
             //Write result to database
             putData(in->w.w, out->f, out->g, (char *)"krig", rTask, krigDigits);		
-#endif
         }
 
         stopKr = getUnixTime();
 	}
-    out->diffKr = stopKr - startKr;
+  out->diffKr = stopKr - startKr;
 
-#ifdef DB
+#ifdef DISTDB 
 	//All pertinent values are set, let's disconneect from Redis and return
 	redisFree(rTask);
 #endif
 //#endif//CHARM
 #ifdef CNC
 	outVal.index=id;
-    //printf("outval %d\n", outVal.index);
+  //printf("outval %d\n", outVal.index);
 	fluxText.fluxOutp.put(id, outVal);
 
-    return CnC::CNC_Success;
+  return CnC::CNC_Success;
 #endif
 }
