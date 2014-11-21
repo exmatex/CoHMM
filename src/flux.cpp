@@ -454,6 +454,7 @@ void fluxFn(CIRCLE_handle *handle)
         {
             //Write result to database
             putData(in->w.w, out->f, out->g, (char *)"krig", rTask, krigDigits);		
+	          redisFree(rTask);
         }
 
         stopKr = getUnixTime();

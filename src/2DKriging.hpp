@@ -83,12 +83,12 @@ CNC_BITWISE_SERIALIZABLE(fluxInput);
 typedef struct
 {
 	int index;
-    double f[7];
+  double f[7];
 	double g[7];
 	double error;
-    //timedifference[]
-    double diffCo;
-    double diffKr;
+  //timedifference[]
+  double diffCo;
+  double diffKr;
 	bool callCoMD;
 } fluxOutput;
 #ifdef CNC
@@ -103,7 +103,7 @@ struct fluxFn
 #if 1
 struct fluxTuner: public CnC::step_tuner<>, public CnC::hashmap_tuner
 {
-    template<class dependency_consumer>
+  template<class dependency_consumer>
   void depends(const int &tag, flux_context &c, dependency_consumer & dC) const
   {
      dC.depends(c.fluxInp, tag);
@@ -158,22 +158,22 @@ struct flux_context : public CnC::context< flux_context > // derive from CnC::co
 {
     // the step collection for the instances of the compute-kernel
     //CnC::step_collection< fluxFn > steps;
-	CnC::step_collection<fluxFn, fluxTuner> steps;
+	  CnC::step_collection<fluxFn, fluxTuner> steps;
     // item collection holding the flux number(s)
-	//CnC::item_collection<int, fluxInput> fluxInp;
-	//CnC::item_collection<int, fluxOutput> fluxOutp;
-	CnC::item_collection<int, fluxInput, fluxTuner> fluxInp;
-	CnC::item_collection<int, fluxOutput, fluxTuner> fluxOutp;
+	  //CnC::item_collection<int, fluxInput> fluxInp;
+	  //CnC::item_collection<int, fluxOutput> fluxOutp;
+	  CnC::item_collection<int, fluxInput, fluxTuner> fluxInp;
+	  CnC::item_collection<int, fluxOutput, fluxTuner> fluxOutp;
     // tag collection to control steps
     CnC::tag_collection<int> tags;
 
     // constructor
     flux_context(): CnC::context< flux_context >(),
-          // pass context to collection constructors
-          steps( *this ),
+      // pass context to collection constructors
+      steps( *this ),
 		  fluxInp(*this),
 		  fluxOutp(*this),
-          tags( *this )
+      tags( *this )
 
     {
         // prescribe compute steps with this (context) as argument

@@ -493,19 +493,25 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
     
 #ifdef CHARM
     //add result to database
+#ifndef DISTDB
 		putData(fluxInArgs[i].w.w, fluxOutCharm[i].f, fluxOutCharm[i].g, (char *)"comd", headRedis, comdDigits);		
+#endif
     //timings
     tm->kr += fluxOutCharm[i].diffKr;
     tm->co += fluxOutCharm[i].diffCo;
 #elif CNC
     //add result to database
+#ifndef DISTDB
 		putData(fluxInArgs[i].w.w, fluxOutCnc.f, fluxOutCnc.g, (char *)"comd", headRedis, comdDigits);		
+#endif
     //timings
     tm->kr += fluxOutCnc.diffKr;
     tm->co += fluxOutCnc.diffCo;
 #elif OMP
     //add result to database
+#ifndef DISTDB
 		putData(fluxInArgs[i].w.w, fluxOutOmp[i].f, fluxOutOmp[i].g, (char *)"comd", headRedis, comdDigits);		
+#endif
     //timings
     tm->kr += fluxOutOmp[i].diffKr;
     tm->co += fluxOutOmp[i].diffCo;
@@ -1096,7 +1102,7 @@ template void doParallelCalls(Node * fields, Node * fluxes, Input in, std::list<
 #ifdef CIRCLE
 template void doFluxes(Node* fields, Node* fluxes, int grid_size, Input* in, redisContext *context, redisContext *headRedis);
 template void half_step_second_order(Node* node_a, Node* node_b, int grid_size, Input* in, redisContext *context, redisContext *headRedis);
-template void doParallelCalls(Node * fields, Node * fluxes, Input in, std::list<gridPoint> * comdTasks, std::list<gridPoint> * krigTasks, std::map<std::string, std::vector<char *> > *dbCache, Calls* ca, Tms *tm, redisContext *context);
+template void doParallelCalls(Node * fields, Node * fluxes, Input in, std::list<gridPoint> * comdTasks, std::list<gridPoint> * krigTasks, std::map<std::string, std::vector<char *> > *dbCache, Calls* ca, Tms *tm, redisContext *context, redisContext *headRedis);
 #else
 template void doFluxes(Node* fields, Node* fluxes, int grid_size, Input* in, int* context, redisContext *headRedis);
 template void half_step_second_order(Node* node_a, Node* node_b, int grid_size, Input* in, int* context, redisContext *headRedis);
