@@ -22,8 +22,8 @@ BINDIR=charm_bin
 #############CNC############
 else ifeq ($(SET), cnc) 
 CXXFLAGS+=-DCNC
-#CXX=icpc
-CXX=g++
+CXX=icpc
+#CXX=g++
 #CXX=/home/droehm/vampirTrace/bin/vtcxx
 OBJDIR=cnc_obj
 BINDIR=cnc_bin
