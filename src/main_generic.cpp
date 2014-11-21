@@ -75,6 +75,10 @@ int main( int argc, char* argv[] )
   Input in;
   char input_file[1024];
 
+  if(argc < 2) {
+    fprintf(stderr,"Missing argument - json file\n");
+    exit(1);
+  }
   strcpy(input_file, argv[1]);
   parse_input((string)input_file, &in, &CoMD);
 
