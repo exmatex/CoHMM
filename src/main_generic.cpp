@@ -8,12 +8,12 @@
 
 #include <cstring>
 #include <stdio.h>
+#include <stdlib.h>
 #ifdef OMP
 #include <omp.h>
 #endif//OMP
 
 #ifdef CIRCLE
-#include <stdlib.h>
 #include <mpi.h>
 #include <libcircle.h>
 #include "flux.hpp"
