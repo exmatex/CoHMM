@@ -329,8 +329,9 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
 	std::map<Conserved, std::list<gridPoint>, ConservedComparator_c> taskMap;
 
 	std::vector<fluxInput> fluxInArgs;
-    char headNode[1024];
+  char headNode[1024];
 	strcpy(headNode, in.head_node.c_str());
+  int taskId=0;
 
 	//Do kriging first so as to prioritize the cheaper solution
 	for(std::list<gridPoint>::iterator iter = krigTasks->begin(); iter != krigTasks->end(); iter++)
@@ -339,26 +340,27 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
 		int y = iter->y;
 		Conserved *w = &fields[x + dim_x*y].w;
 		taskMap[*w].push_back(*iter);
-        fields[x + dim_x*y].f.ca = 6;
-        ca->kPoints++;
+    fields[x + dim_x*y].f.ca = 6;
+    ca->kPoints++;
 		//Check if it was unique
 		if(taskMap[*w].size() == 1)
 		{
 			//It was, add it to the task queue
 #ifdef CNC
-			fluxInArgs.push_back(fluxInput(*w, false, headNode, in.kr_threshold));
+			fluxInArgs.push_back(fluxInput(taskId, *w, false, headNode, in.kr_threshold));
 			int taskID = fluxInArgs.size();
-			context->fluxInp.put(taskID, fluxInput(*w, false, headNode, in.kr_threshold));
+			context->fluxInp.put(taskID, fluxInput(taskId, *w, false, headNode, in.kr_threshold));
 			context->tags.put(taskID);
 #elif CHARM
-			fluxInArgs.push_back(fluxInput(*w, false));
+			fluxInArgs.push_back(fluxInput(taskId, *w, false));
 #else
-			fluxInArgs.push_back(fluxInput(*w, false, headNode, in.kr_threshold));
+			fluxInArgs.push_back(fluxInput(taskId, *w, false, headNode, in.kr_threshold));
 
 #endif
             ca->krig++;
             ca->kPoints--;
             fields[x + dim_x*y].f.ca = 5;
+            taskId++;
 		}
 	}
     //Collect CoMD tasks
@@ -368,25 +370,26 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
 		int y = iter->y;
 		Conserved *w = &fields[x+dim_x*y].w;
 		taskMap[*w].push_back(*iter);
-        fields[x + dim_x*y].f.ca = 2;
-        ca->cPoints++;
+    fields[x + dim_x*y].f.ca = 2;
+    ca->cPoints++;
 		//Check if it was unique
 		if(taskMap[*w].size() == 1)
 		{
 			//It was, add it to the task queue
 #ifdef CNC
-			fluxInArgs.push_back(fluxInput(*w, true, headNode, in.kr_threshold));
+			fluxInArgs.push_back(fluxInput(taskId, *w, true, headNode, in.kr_threshold));
 			int taskID = fluxInArgs.size();
-			context->fluxInp.put(taskID, fluxInput(*w, true, headNode, in.kr_threshold));
+			context->fluxInp.put(taskID, fluxInput(taskId, *w, true, headNode, in.kr_threshold));
 			context->tags.put(taskID);
 #elif CHARM
-			fluxInArgs.push_back(fluxInput(*w, true));
+			fluxInArgs.push_back(fluxInput(taskId, *w, true));
 #else
-			fluxInArgs.push_back(fluxInput(*w, true, headNode, in.kr_threshold));
+			fluxInArgs.push_back(fluxInput(taskId, *w, true, headNode, in.kr_threshold));
 #endif
             ca->comd++;
             ca->cPoints--;
             fields[x + dim_x*y].f.ca = 1;
+            taskId++;
 		}
 	}
 #ifdef CNC

@@ -48,6 +48,9 @@ void fluxFn(CIRCLE_handle *handle)
 #error Something is wrong
 #endif
 {
+#ifdef CHARM
+  int tid = in->taskId;
+#endif
 #ifdef CNC
 	fluxInput inVal;
 	fluxText.fluxInp.get(id, inVal);
@@ -57,6 +60,7 @@ void fluxFn(CIRCLE_handle *handle)
   Input inp;
   inp.head_node = in->headNode;
   inp.kr_threshold = in->kr_threshold;
+  int tid =id;
   //printf("id %d cnc input %s\n", id, inp.head_node.c_str());
   //printf("id %d cnc input %lf\n", id, in->w.w[0]);
 #endif//CNC
@@ -74,6 +78,7 @@ void fluxFn(CIRCLE_handle *handle)
   Input inp;
   inp.head_node = in->headNode;
   inp.kr_threshold = in->kr_threshold;
+  int tid = in->taskId;
 #endif//CIRCLE
 	//Prep outputs
   out->callCoMD = false;
@@ -83,7 +88,7 @@ void fluxFn(CIRCLE_handle *handle)
 	redisContext * rTask;
 #ifdef DISTDB
 	//Make redis context
-	rTask = redisConnect(inp.head_node.c_str(), 6379);
+	rTask = redisConnect(inp.head_node.c_str(), 6379+(tid%1024));
 	//CkPrintf("Redis headnode: %s\n", headNode.c_str());
 	if(rTask == NULL || rTask->err)
 	{
@@ -91,7 +96,7 @@ void fluxFn(CIRCLE_handle *handle)
 		//printf("Redis error: %s\n", in->headNode);
 		printf("Redis connection delay\n");
     //sleep(20);
-	  rTask = redisConnect(inp.head_node.c_str(), 6379);
+	  rTask = redisConnect(inp.head_node.c_str(), 6379+(tid%1024));
 		//return NULL;
 	}
   //if(diff1 > 1.0) printf("CONNECTION timing %lf\n", diff1);
@@ -252,15 +257,15 @@ void fluxFn(CIRCLE_handle *handle)
 		//getCachedSortedSubBucketNearZero(in->w.w, (char *)"comd", rTask, comdDigits, 10, &oldWs, &oldFs, &oldGs, zeroThresh, dbCache); 
 #ifndef DISTDB
     //Make redis context
-  	rTask = redisConnect(inp.head_node.c_str(), 6379);
+  	rTask = redisConnect(inp.head_node.c_str(), 6379+(tid%1024));
   	//CkPrintf("Redis headnode: %s\n", headNode.c_str());
   	if(rTask == NULL || rTask->err)
   	{
   		//printf("Redis error: %s\n", rTask->errstr);
   		//printf("Redis error: %s\n", in->headNode);
-  		printf("Redis connection delay\n");
+  		printf("Redis connection delay at port %i\n", 6379+(tid%1024));
       //sleep(20);
-  	  rTask = redisConnect(inp.head_node.c_str(), 6379);
+  	  rTask = redisConnect(inp.head_node.c_str(), 6379+(tid%1024));
   		//return NULL;
   	}
     //if(diff1 > 1.0) printf("CONNECTION timing %lf\n", diff1);
