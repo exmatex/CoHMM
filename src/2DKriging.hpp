@@ -38,28 +38,30 @@ struct gridPoint
 struct fluxInput
 {
 #if defined (CNC) || (OMP) || (CIRCLE) 
-    char headNode[1024];
-    double kr_threshold; 
+  char headNode[1024];
+  double kr_threshold; 
 #endif
-    //enable char here or make add collection input
+  //enable char here or make add collection input
+  int taskId;
 	Conserved w;
 	bool callCoMD;
 
     fluxInput() { }
 #if defined (CNC) || (OMP) || (CIRCLE)
     // constructor
-    fluxInput(Conserved w_, bool callCoMD_, char* headNode_, double kr_threshold_)
-    : w(w_), callCoMD(callCoMD_), kr_threshold(kr_threshold_)
+    fluxInput(int taskId_, Conserved w_, bool callCoMD_, char* headNode_, double kr_threshold_)
+    : taskId(taskId_), w(w_), callCoMD(callCoMD_), kr_threshold(kr_threshold_)
     {
 	    strcpy(headNode, headNode_);
     }
 
 #elif CHARM
-    fluxInput(Conserved w_, bool callCoMD_)
-    : w(w_), callCoMD(callCoMD_)
+    fluxInput(int taskId_, Conserved w_, bool callCoMD_)
+    : taskId(taskId_), w(w_), callCoMD(callCoMD_)
     {
     }
   void pup(PUP::er &p) {
+    p|taskId;
     p|w;
     p|callCoMD;
   }
@@ -71,6 +73,7 @@ struct fluxInput
     ar & w;
     ar & callCoMD;
     ar & kr_threshold;
+    ar & taskId;
   }
 #endif//CIRCLE
 };
