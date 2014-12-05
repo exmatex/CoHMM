@@ -155,6 +155,13 @@ void putData(double w0[7], double f0[7], double g0[7], char * tag, redisContext 
 	redisReply *reply;
 	reply = (redisReply *) redisCommand(redis, "SADD %s %b", key, retBuffer, sizeof(double)*21);
 	freeReplyObject(reply);
+#ifdef TRACE
+	char fBuff[1024];
+	sprintf(fBuff, "%e:%e:%e:%e:%e:%e:%e",w0[0], w0[1], w0[2], w0[3], w0[4], w0[5], w0[6]);
+        redisReply * traceRep;
+        traceRep = (redisReply *)redisCommand(redis, "ECHO REAL_DATA_%s", fBuff);
+        freeReplyObject(traceRep);
+#endif
   //delete value;
   delete[] key;
   delete[] retBuffer;
