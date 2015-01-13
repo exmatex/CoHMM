@@ -1049,6 +1049,10 @@ void createFiles(int xp){
   char dirname2[1000];
   char dirname3[1000];
 
+  if (stat("output", &st) == -1) {
+    mkdir("output", 0700);
+  }
+
   sprintf(dirname,"output/simulation%i",xp);
   sprintf(dirname1,"output/simulation%i/storage",xp);
   sprintf(dirname2,"output/simulation%i/adaptive",xp);
