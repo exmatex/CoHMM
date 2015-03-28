@@ -16,40 +16,63 @@ Dependencies
 
 4. [boost](http://www.boost.org/)
 
-Charm++:
+###Additional for Charm++:
 
 5. [charm](http://charm.cs.illinois.edu/software)
 
-CnC:
+###Additional for CnC:
 
 6. [cnc](https://software.intel.com/en-us/articles/intel-concurrent-collections-for-cc)
 
-libcircle:
+###Additional for libcircle:
 
 7. [libcircle](https://github.com/hpc/libcircle)
 
 
-Installation
-------------
+Build
+-----
 
-1. make SET=charm, make SET=cnc, make SET=omp or make SET=circle
+For Charm++:
+```
+make SET=charm
+```
+For Cnc:
+```
+make SET=cnc
+```
+For OpenMP
+```
+make SET=omp
+```
+For libcircle
+```
+make SET=circle
+```
+
+Your might want to add `BOOST_INCLUDES=/path/to/boost/include` and `HIREDIS_INCLUDES=/path/to/hiredis/include` to the make call, e.g.
+```
+make -j4 SET=omp OPTFLAGS="-O3 -Werror" HIREDIS_INCLUDES=/usr/include BOOST_INCLUDES=/usr/include
+```
+to system provided boost and hiredis.
 
 Execution
 ---------
 
+###Starting the redis server
+
 1. start redis server in background (`redis-server &`)
 
-1.1. distributed -> start redis using ./start_redis.sh hostfile
+  1. distributed -> start redis using ./start_redis.sh hostfile
 
-1.2. hostfile includes the name of the available hosts (e.g. cn40;cn41;...)
+  2. hostfile includes the name of the available hosts (e.g. cn40;cn41;...)
 
-Charm++:
+###Charm++
 
-2. run 2D_Kriging with './charmrun +p#processes  ++mpiexec ./2D_Kriging input.json +stacksize 512000'
+1. run 2D_Kriging with './charmrun +p#processes  ++mpiexec ./2D_Kriging input.json +stacksize 512000'
 
-2.1. optional +isomalloc_sync
+  1. optional +isomalloc_sync
 
-2.2. example command line:
+  2. example command line:
 
      distributed: ./charmrun +p96  ++mpiexec ./2D_Kriging input.json +stacksize 512000
      local: ./charmrun +p8  ++local ./2D_Kriging input.json +stacksize 512000
@@ -59,45 +82,43 @@ Charm++:
     
      distributed: ./charmrun +p96  ++mpiexec ./2D_Kriging input.json `hostname` +stacksize 512000
 
-CnC:
+###CnC
 
-2. MPI: run 2D_Kriging distributed with 'env DIST_CNC=MPI mpirun -n $(NPROCS x 48) ./2D_Kriging input.json' 
+1. MPI: run 2D_Kriging distributed with 'env DIST_CNC=MPI mpirun -n $(NPROCS x 48) ./2D_Kriging input.json' 
 
    on Darwin (no infiniband) 'env DIST_CNC=MPI mpirun -n 96 -env I_MPI_FABRICS shm:tcp -hostfile hostfile ~/2014/CoHMM/2D_Kriging input.json'
 
    hint: use the hostfile generated for Redis as input for Intel MPI, too.
 
-3. SOCKETS: write client nodes in hostfile (eg.g cn30;cn31)
+2. SOCKETS: write client nodes in hostfile (eg.g cn30;cn31)
 
-4. run 'env DIST_CNC=SOCKETS HOST_FILE=hostfile CNC_SOCKET_HOST=./start.sh ./2D_Kriging input.json'
+  1. run 'env DIST_CNC=SOCKETS HOST_FILE=hostfile CNC_SOCKET_HOST=./start.sh ./2D_Kriging input.json'
 
-5. SHARED MEM: in Makefile remove -D_DIST_ option in CNC_FLAG and rebuild 
+3. SHARED MEM: in Makefile remove -D_DIST_ option in CNC_FLAG and rebuild 
 
-6. run './2D_Kriging input.json'
+  1. run './2D_Kriging input.json'
 
-OpenMP:
+###OpenMP
 
-2. set $OMP_NUM_THREADS e.g. to the number of processors
+1. set $OMP_NUM_THREADS e.g. to the number of processors
 
-3. run './2D_Kriging input.json'
+2. run './2D_Kriging input.json'
 
-libcircle:
+###libcircle
 
-2. run 'mpirun -np XXX ./2D_Kriging input.json'
+1. run 'mpirun -np XXX ./2D_Kriging input.json'
 
-Test Problems:
+##Test Problems
 
-TP1
+###TP1
 
-1. in 2DKriging.cpp enable define XWAVE (disable CIRCULAR)
+1. features: define DB, KRIGING, KR_DB, FLUSHDB
 
-2. features: define DB, KRIGING, KR_DB, FLUSHDB
+2. in flux.cpp enable define COMD and DB !!! (disable C_RAND)
 
-3. in flux.cpp enable define COMD and DB !!! (disable C_RAND)
+3. for total execution time measurement only disable define OUTPUT in 2DKriging.cpp
 
-4. for total execution time measurement only disable define OUTPUT in 2DKriging.cpp
-
-5. inout.json macro_solver:
+4. inout.json macro_solver:
 
         {"id": "dim x",                     "value": 100},
         {"id": "dim y",                     "value": 10},
@@ -109,19 +130,18 @@ TP1
         {"id": "dx",                        "value": 1.0},
         {"id": "dy",                        "value": 1.0},
         {"id": "dt_x",                      "value": 0.1},
-        {"id": "dt_y",                      "value": 0.1}
+        {"id": "dt_y",                      "value": 0.1},
+        {"id": "test problem",              "value": 1}
 
-TP2
+###TP2
 
-1. in 2DKriging.cpp enable define CIRCULAR (disable XWAVE)
+1. features: define DB, KRIGING, KR_DB, FLUSHDB
 
-2. features: define DB, KRIGING, KR_DB, FLUSHDB
+2. in flux.cpp enable define COMD and DB !!! (disable C_RAND)
 
-3. in flux.cpp enable define COMD and DB !!! (disable C_RAND)
+3. for total execution time measurement only disable define OUTPUT in 2DKriging.cpp
 
-4. for total execution time measurement only disable define OUTPUT in 2DKriging.cpp
-
-5. inout.json macro_solver:
+4. inout.json macro_solver:
 
         {"id": "dim x",                     "value": 50},
         {"id": "dim y",                     "value": 50},
@@ -133,16 +153,16 @@ TP2
         {"id": "dx",                        "value": 1.0},
         {"id": "dy",                        "value": 1.0},
         {"id": "dt_x",                      "value": 0.1},
-        {"id": "dt_y",                      "value": 0.1}
+        {"id": "dt_y",                      "value": 0.1},
+        {"id": "test problem",              "value": 2}
 
 
-#TODO deprecated
-Generating a Trace of Database Accesses
+##Generating a Trace of Database Accesses
 ---------
 
 1. start redis server in background (`redis-server &`)
 
-2. ()start tools/redisTrace.sh in the background (From the source directory, './tools/redisTrace.sh &')
+2. start `tools/redisTrace.sh` in the background (From the source directory, `./tools/redisTrace.sh &`)
 
 3. run 2DKriging normally
 
