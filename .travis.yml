@@ -3,8 +3,8 @@ language: cpp
 before_install:
  - if [[ $SET = cnc ]]; then sudo add-apt-repository -y ppa:yani/iatsl; fi
  - sudo apt-get update
- - sudo apt-get install libblas-dev liblapack-dev libhiredis-dev libboost-dev
- - if [[ $SET = circle ]]; then sudo apt-get install libboost-serialization-dev libopenmpi-dev; fi
+ - sudo apt-get install libblas-dev liblapack-dev libhiredis-dev libboost-dev redis-server
+ - if [[ $SET = circle ]]; then sudo apt-get install libboost-serialization-dev libopenmpi-dev openmpi-bin; fi
  - if [[ $SET = cnc ]]; then sudo apt-get install libtbb-dev cmake; fi
 
 before_script:
@@ -12,6 +12,7 @@ before_script:
       git clone --depth=1 https://github.com/hpc/libcircle.git && 
       cd libcircle && 
       ./configure && make && sudo make install &&
+      export LD_LIBRARY_PATH=/usr/local/lib &&
       cd ..;
     fi
   - if [[ $SET = charm ]]; then 
@@ -26,6 +27,7 @@ before_script:
       sed -i '/find_library/s/_debug//' CMake.inc &&
       cmake -DCMAKE_CXX_FLAGS="-DCNC_REQUIRED_TBB_VERSION=6101" . &&
       make -j4 && sudo make install && export CNCROOT=/usr/local &&
+      export LD_LIBRARY_PATH=/usr/local/lib/intel64 &&
       cd ..;
     fi
 
@@ -38,11 +40,15 @@ env:
 
 script:
   - if [[ $SET = cnc ]]; then 
-    make -j4 SET="${SET}" OPTFLAGS="-O3 -Werror -DCNC_REQUIRED_TBB_VERSION=6101" HIREDIS_INCLUDES=/usr/include
-      BOOST_INCLUDES=/usr/include CXX="${CXX}";
+      make -j4 SET="${SET}" OPTFLAGS="-O3 -Werror -DCNC_REQUIRED_TBB_VERSION=6101" HIREDIS_INCLUDES=/usr/include BOOST_INCLUDES=/usr/include CXX="${CXX}";
+    elif [[ $SET = circle ]]; then
+      make -j4 SET="${SET}" OPTFLAGS="-O3 -Werror -U_FORTIFY_SOURCE" HIREDIS_INCLUDES=/usr/include BOOST_INCLUDES=/usr/include;
     else
       make -j4 SET="${SET}" OPTFLAGS="-O3 -Werror" HIREDIS_INCLUDES=/usr/include BOOST_INCLUDES=/usr/include;
     fi
+  - nohup redis-server &
+  - sed -i '/integration steps/s/25/1/' input.json
+  - ${SET}_bin/2D_Kriging input.json;
 
 compiler:
   - gcc
