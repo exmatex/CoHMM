@@ -34,6 +34,7 @@ env:
   - SET=circle
   - SET=charm
   - SET=cnc
+  - SET=serial
 
 script:
   - if [[ $SET = cnc ]]; then 

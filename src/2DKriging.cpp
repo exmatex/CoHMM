@@ -532,7 +532,7 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
 #endif
 #endif
 	}
-#ifdef defined (SERIAL) || (OMP)
+#if defined (SERIAL) || (OMP)
   delete[] fluxOutOmp;
 #endif
 
