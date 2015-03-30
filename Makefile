@@ -106,6 +106,8 @@ endif
 
 #OPTFLAGS=-g
 OPTFLAGS=-O3
+#other features
+#DEFS=-DTRACE
 ifeq ($(SET), cnc) 
   CNC_LDFLAG=-L$(CNCROOT)/lib/$(ARCH) -lcnc -ltbb -ltbbmalloc
   CNC_CFLAG= -D_DIST_ -I$(CNCROOT)/include -std=c++0x
@@ -137,10 +139,10 @@ COMD_LDFLAG=-L$(COMDLIB) -Wl,-rpath,$(COMDLIB) -lCoMD_2D
 
 OBJS:=$(addprefix $(OBJDIR)/, 2DKriging.o kriging.o flux.o redisBuckets.o output.o input.o)
 ifeq ($(LINALGROOT), )
-CXXFLAGS+=$(HIREDIS_CFLAG) $(MKL_CFLAG) $(COMD_CFLAG) $(BOOST_CFLAG) $(OPTFLAGS)
+CXXFLAGS+=$(HIREDIS_CFLAG) $(MKL_CFLAG) $(COMD_CFLAG) $(BOOST_CFLAG) $(OPTFLAGS) $(DEFS)
 LDFLAGS=$(HIREDIS_LDFLAG) $(MKL_LDFLAG) $(COMD_LDFLAG) -lm -lrt
 else
-CXXFLAGS+=$(HIREDIS_CFLAG) $(LINALG_CFLAG) $(COMD_CFLAG) $(BOOST_CFLAG) $(OPTFLAGS)
+CXXFLAGS+=$(HIREDIS_CFLAG) $(LINALG_CFLAG) $(COMD_CFLAG) $(BOOST_CFLAG) $(OPTFLAGS) $(DEFS)
 LDFLAGS=$(HIREDIS_LDFLAG) $(LINALG_LDFLAG) $(COMD_LDFLAG) -lm -lrt 
 endif
 
@@ -232,7 +234,7 @@ subdirclean:
 	done
 
 clean: subdirclean
-	rm -f $(SRCDIR)/*.decl.h $(SRCDIR)/*.def.h charmrun
+	rm -f $(SRCDIR)/*.decl.h $(SRCDIR)/*.def.h $(OBJDIR)/charmrun
 	rm -f *.vtk *.dat core.* 
 	rm -f $(OBJS) $(DEPS) $(NAME) $(OBJDIR)/main_*.[od]
 
