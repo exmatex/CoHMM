@@ -57,7 +57,7 @@ int main( int argc, char* argv[] )
 #elif defined SERIAL
   printf("**   Running \"serial Kriging                **\n");
 #elif defined OMP
-  printf("**   Running \"OpenMP 2D Kriging processors    **\n"
+  printf("**   Running \"OpenMP 2D Kriging processors    **\n",
          omp_get_max_threads());
 #elif CIRCLE
   int size;
