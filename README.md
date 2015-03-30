@@ -44,6 +44,10 @@ For OpenMP
 ```
 make SET=omp
 ```
+For Serial
+```
+make SET=serial
+```
 For libcircle
 ```
 make SET=circle
@@ -103,6 +107,10 @@ Execution
 1. set $OMP_NUM_THREADS e.g. to the number of processors
 
 2. run './2D_Kriging input.json'
+
+###Serial
+
+1. run './2D_Kriging input.json'
 
 ###libcircle
 

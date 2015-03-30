@@ -40,7 +40,7 @@ char  potDir[] = "../pots";
 void fluxFn(fluxInput *in, fluxOutput *out, Input inp)
 #elif CNC
 int fluxFn::execute(const int & id, flux_context & fluxText) const
-#elif OMP
+#elif defined (SERIAL) || (OMP)
 void fluxFn(fluxInput *in, fluxOutput *out, std::map<std::string, std::vector<char *> > *dbCache, Input inp)
 #elif CIRCLE
 void fluxFn(CIRCLE_handle *handle)

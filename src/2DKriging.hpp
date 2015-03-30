@@ -37,7 +37,7 @@ struct gridPoint
  * **/
 struct fluxInput
 {
-#if defined (CNC) || (OMP) || (CIRCLE) 
+#if defined (CNC) || (OMP) || (SERIAL) || (CIRCLE) 
     char headNode[1024];
     double kr_threshold; 
 #endif
@@ -46,7 +46,7 @@ struct fluxInput
 	bool callCoMD;
 
     fluxInput() { }
-#if defined (CNC) || (OMP) || (CIRCLE)
+#if defined (CNC) || (OMP) || (SERIAL) || (CIRCLE)
     // constructor
     fluxInput(Conserved w_, bool callCoMD_, char* headNode_, double kr_threshold_)
     : w(w_), callCoMD(callCoMD_), kr_threshold(kr_threshold_)

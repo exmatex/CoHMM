@@ -33,6 +33,12 @@ CXXFLAGS+=-DOMP
 CXX=g++
 OBJDIR=omp_obj
 BINDIR=omp_bin
+#############SERIAL############
+else ifeq ($(SET), serial)
+CXXFLAGS+=-DSERIAL
+CXX=g++
+OBJDIR=serial_obj
+BINDIR=serial_bin
 #############CIRCLE############
 else ifeq ($(SET), circle)
 CXXFLAGS+=-DCIRCLE
@@ -47,7 +53,7 @@ OBJDIR=circle_obj
 BINDIR=circle_bin
 else
 ifneq "$(MAKECMDGOALS)" "clean"
-$(error please SET=cnc, SET=charm, SET=circle or SET=omp)
+$(error please SET=cnc, SET=charm, SET=circle, SET=serial or SET=omp)
 endif
 endif
 
@@ -151,6 +157,9 @@ $(info compiling OpenMP files)
 OBJS+=$(OBJDIR)/main_generic.o
 CXXFLAGS+=$(OMP_CFLAGS)
 LDFLAGS+=$(OMP_LDFLAGS)
+else ifeq ($(SET), serial) 
+$(info compiling Serial files)
+OBJS+=$(OBJDIR)/main_generic.o
 else ifeq ($(SET), circle)
 OBJS+=$(OBJDIR)/main_generic.o
 CXXFLAGS+=$(LIBCIRCLE_CFLAGS)

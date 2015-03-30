@@ -5,7 +5,7 @@
 
 #include "types.h"
 
-#if defined (CNC) || (OMP) || (CIRCLE)
+#if defined (CNC) || (OMP) || (SERIAL) || (CIRCLE)
 //call 2D_main from main.cpp
 void main_2DKriging(Input in, App CoMD);
 #endif//CNC||OMP||CIRCLE

@@ -413,9 +413,11 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
 
     std::sort(fluxOutCharm, fluxOutCharm + fluxInArgs.size(), fluxOutOrder());
 #endif
-#ifdef OMP
+#if defined (SERIAL) || (OMP)
     fluxOutput * fluxOutOmp = new fluxOutput[fluxInArgs.size()];
+#ifdef OMP
 #pragma omp parallel for schedule(dynamic)
+#endif
     for(int i = 0; i < int(fluxInArgs.size()); i++){
         fluxFn(&fluxInArgs[i], &fluxOutOmp[i], dbCache, in);
     }
@@ -469,7 +471,7 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
 	   	memcpy(f->f, fluxOutCnc.f, sizeof(double)*7);
 			memcpy(g->f, fluxOutCnc.g, sizeof(double)*7);
       fluxInArgs[i].callCoMD = fluxOutCnc.callCoMD;
-#elif OMP
+#elif defined (SERIAL) || (OMP)
       memcpy(f->f, &fluxOutOmp[i].f, sizeof(double)*7);
       memcpy(g->f, &fluxOutOmp[i].g, sizeof(double)*7);
       fluxInArgs[i].callCoMD = fluxOutOmp[i].callCoMD;
@@ -507,7 +509,7 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
     //timings
     tm->kr += fluxOutCnc.diffKr;
     tm->co += fluxOutCnc.diffCo;
-#elif OMP
+#elif defined (SERIAL) || (OMP)
     //add result to database
 #ifndef DISTDB
 		putData(fluxInArgs[i].w.w, fluxOutOmp[i].f, fluxOutOmp[i].g, (char *)"comd", headRedis, comdDigits);		
@@ -530,7 +532,7 @@ template <typename T> void doParallelCalls(Node * fields, Node * fluxes, Input i
 #endif
 #endif
 	}
-#ifdef OMP
+#ifdef defined (SERIAL) || (OMP)
   delete[] fluxOutOmp;
 #endif
 
@@ -908,7 +910,7 @@ void main_2DKriging(Input in, App CoMD)
 #ifdef CNC
   flux_context context;
 #endif//CNC
-#ifdef OMP
+#if defined (SERIAL) || (OMP)
   //dummy var
   int context;
 #endif//OMP
