@@ -10,7 +10,7 @@ ifeq ($(SET), charm)
 #CHARM_ROOT=$(HOME)/charm
 ifeq (,$(CHARM_ROOT))
 $(info Please establish Charmm++ environment variables before using this Makefile.)
-$(info E.g. by running setting CHARM_ROOT pr run 'module load charm++')
+$(info E.g. by running setting CHARM_ROOT or run 'module load charm++')
 $(error CHARM_ROOT is not set)
 endif
 CXXFLAGS+=-DCHARM
@@ -67,7 +67,12 @@ endif
 
 #HIREDIS_INCLUDES=$(HOME)/hiredis
 ifeq ($(HIREDIS_INCLUDES), )
+ifeq ($(wildcard /usr/include/hiredis/hiredis.h), )
 $(error Set HIREDIS_INCLUDES or run 'module load hiredis' first)
+else
+$(info Found hiredis in /usr/include, setting HIREDIS_INCLUDES=/usr/include)
+HIREDIS_INCLUDES=/usr/include
+endif
 endif
 HIREDISLIB=$(HIREDIS_INCLUDES)/../lib
 HIREDISINC=$(HIREDIS_INCLUDES)/hiredis
@@ -101,7 +106,11 @@ ifeq ($(LINALGROOT), )
   MKL_LDFLAG= -L$(MKLLIB) -lmkl_rt
 else
   #LINALG_CFLAGS=-I$(LINALGINC) -llapack
+  LINALG_LDFLAG=$(shell pkg-config --silence-errors --libs lapack blas || true)
+  ifeq ($(LINALG_LDFLAG), )
+  $(info No pkg-config for blas/lapack using LINALG_LDFLAG='-lblas -llapack' instead.)
   LINALG_LDFLAG= -lblas -llapack
+  endif
 endif
 
 #OPTFLAGS=-g
@@ -118,15 +127,19 @@ else ifeq ($(SET), omp)
 endif
 
 ifeq ($(BOOST_INCLUDES), )
+ifeq ($(wildcard /usr/include/boost/property_tree/json_parser.hpp), )
 $(error Set BOOST_INCLUDES or run 'module load boost' first)
 else
-BOOST_CFLAG=-I$(BOOST_INCLUDES)
+$(info Found Boost in /usr/include, setting BOOST_INCLUDES=/usr/include)
+BOOST_INCLUDES=/usr/include
 endif
+endif
+BOOST_CFLAG=-I$(BOOST_INCLUDES)
 #We use boost header only so far
 BOOSTLIB=$(BOOST_INCLUDES)/../lib
 BOOST_LDFLAG=-L$(BOOSTLIB)
 
-COMD=$(PWD)/COMD_lib
+COMD=COMD_lib
 COMDINC=$(COMD)/src-lib
 SUBDIRS=$(COMDINC)
 ifeq ($(wildcard $(COMDINC)/CoMD_lib.h), )
