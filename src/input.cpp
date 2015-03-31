@@ -30,7 +30,19 @@ void parse_input(string input_file, Input *in, App *CoMD)
      buffer << file.rdbuf();
 
      file.close();
-     boost::property_tree::read_json(buffer, pt);
+     try
+     {
+         boost::property_tree::read_json(buffer, pt);
+     }
+     catch (std::exception const& e)
+     {
+        std::cerr << "Something went wrong in read_json" << std::endl;
+        std::cerr << e.what() << std::endl;
+	exit(1);
+     }
+  } else {
+      std::cerr << "Could not open json file " << input_file << std::endl;
+      exit(1);
   }
   try
   {
@@ -116,11 +128,12 @@ void parse_input(string input_file, Input *in, App *CoMD)
   }
   catch (std::exception const& e)
   {
+      std::cerr << "Something went wrong in parsing section 'parameter.macro_solver'" << std::endl;
       std::cerr << e.what() << std::endl;
 #ifdef CHARM
       CkExit();
-#elif CNC
-      exit(0);
+#else
+      exit(1);
 #endif
   }
   try
@@ -173,11 +186,12 @@ void parse_input(string input_file, Input *in, App *CoMD)
   }
   catch (std::exception const& e)
   {
+      std::cerr << "Something went wrong in parsing section 'parameter.mini_app'" << std::endl;
       std::cerr << e.what() << std::endl;
 #ifdef CHARM
       CkExit();
-#elif CNC
-      exit(0);
+#else
+      exit(1);
 #endif
   }
 }
