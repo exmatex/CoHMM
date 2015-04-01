@@ -105,5 +105,6 @@ depend:
 	@$(MAKE) CoMD_info.h
 	@makedepend -f .depend -Y. --$(CFLAGS)-- $(SOURCES) 2> /dev/null
 
-
+ifneq "$(MAKECMDGOALS)" "clean"
 -include .depend
+endif

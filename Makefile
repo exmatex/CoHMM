@@ -247,7 +247,8 @@ subdirclean:
 	done
 
 clean: subdirclean
-	rm -f $(SRCDIR)/*.decl.h $(SRCDIR)/*.def.h $(OBJDIR)/charmrun
+	rm -f $(SRCDIR)/*.decl.h $(SRCDIR)/*.def.h
 	rm -f *.vtk *.dat core.* 
-	rm -f $(OBJS) $(DEPS) $(NAME) $(OBJDIR)/main_*.[od]
+	[ -z $(OBJDIR) ] || rm -f $(OBJS) $(DEPS)  $(OBJDIR)/main_*.[od]
+	[ -z $(BINDIR) ] || rm -f $(NAME)
 
