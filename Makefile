@@ -238,7 +238,7 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
 
 .PHONY: $(SUBDIRS)
 $(SUBDIRS):
-	$(MAKE) $(MFLAGS) -C $@
+	$(MAKE) $(MFLAGS) -C $@ OPTFLAGS='$(OPTFLAGS)'
 
 subdirclean:
 	@for i in $(SUBDIRS); do \
