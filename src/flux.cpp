@@ -81,7 +81,7 @@ void fluxFn(CIRCLE_handle *handle)
   double startKr = 0.0;
   double stopKr = 0.0;
 	redisContext * rTask;
-#ifdef DISTDB
+#if defined (DISTDB) || (CIRCLE)
 	//Make redis context
 	rTask = redisConnect(inp.head_node.c_str(), 6379);
 	//CkPrintf("Redis headnode: %s\n", headNode.c_str());
@@ -232,7 +232,7 @@ void fluxFn(CIRCLE_handle *handle)
 		out->f[6] = -out->f[0]*sqrt(out->f[4]*out->f[4] + out->f[5]*out->f[5]);
 		out->g[6] = -out->g[3]*sqrt(out->g[4]*out->g[4] + out->g[5]*out->g[5]);
 #endif//COMD
-#ifdef DISTDB
+#if defined (DISTDB) || (CIRCLE)
 		//Write result to database
 		putData(in->w.w, out->f, out->g, (char *)"comd", rTask, comdDigits);		
     double stopCo = getUnixTime();
@@ -251,6 +251,7 @@ void fluxFn(CIRCLE_handle *handle)
 		std::vector<double *> oldGs;
 		//getCachedSortedSubBucketNearZero(in->w.w, (char *)"comd", rTask, comdDigits, 10, &oldWs, &oldFs, &oldGs, zeroThresh, dbCache); 
 #ifndef DISTDB
+#ifndef CIRCLE
     //Make redis context
   	rTask = redisConnect(inp.head_node.c_str(), 6379);
   	//CkPrintf("Redis headnode: %s\n", headNode.c_str());
@@ -275,6 +276,7 @@ void fluxFn(CIRCLE_handle *handle)
 #endif
 	  	//return NULL;
 	  }
+#endif
 #endif
 		getSortedSubBucketNearZero(in->w.w, (char*)"comd", rTask, comdDigits, 10, &oldWs, &oldFs, &oldGs, zeroThresh); 
 
@@ -444,7 +446,7 @@ void fluxFn(CIRCLE_handle *handle)
 #endif//COMD
         //mark as CoMD'd
         out->callCoMD = true;
-#ifdef DISTDB
+#if defined (DISTDB) || (CIRCLE)
 		    //Write result to database
 		    putData(in->w.w, out->f, out->g, (char *)"comd", rTask, comdDigits);		
 #endif
@@ -461,7 +463,7 @@ void fluxFn(CIRCLE_handle *handle)
 	}
   out->diffKr = stopKr - startKr;
 
-#ifdef DISTDB 
+#if defined (DISTDB) || (CIRCLE)
 	//All pertinent values are set, let's disconneect from Redis and return
 	redisFree(rTask);
 #endif
