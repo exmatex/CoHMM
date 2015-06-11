@@ -31,7 +31,7 @@ typedef struct BasePotentialSt
    real_t mass;            //!< mass of atoms in intenal units
    real_t lat;             //!< lattice spacing (angs) of unit cell
    char latticeType[8];    //!< lattice type, e.g. FCC, BCC, etc.
-   char  name[3];	   //!< element name
+   char  name[256];	   //!< element name
    int	 atomicNo;	   //!< atomic number  
    int  (*force)(struct SimFlatSt* s); //!< function pointer to force routine
    void (*print)(FILE* file, struct BasePotentialSt* pot);
@@ -42,7 +42,7 @@ typedef struct BasePotentialSt
 /// species data: chosen to match the data found in the setfl/funcfl files
 typedef struct SpeciesDataSt
 {
-   char  name[3];   //!< element name
+   char  name[256];   //!< element name
    int	 atomicNo;  //!< atomic number  
    real_t mass;     //!< mass in internal units
 } SpeciesData;
