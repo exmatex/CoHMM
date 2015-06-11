@@ -1425,9 +1425,16 @@ void half_step_second_order(Node* node_a, Node* node_b, int grid_size, Lattice l
 int main(int argc, char **argv) {
 
   //default values
-  Lattice l = {.dim_x=10, .dim_y=10,
-               .dx=1.0, .dy=1.0,
-               .dt_x=0.1, .dt_y=0.1};
+	Lattice l;
+	l.dim_x = 10;
+	l.dim_y = 10;
+	l.dx = 10;
+	l.dy = 1.0;
+	l.dt_x = 0.1;
+	l.dt_y = 0.1;
+//  Lattice l = {.dim_x=10, .dim_y=10,
+//               .dx=1.0, .dy=1.0,
+//               .dt_x=0.1, .dt_y=0.1};
 #ifdef OUTPUT
 //#######################################//
   // open pipe to gnuplot instance

@@ -1,3 +1,9 @@
+/** redis database utilities
+ * calc buckets
+ * sort
+ * (un)pack
+ * **/
+
 #include "redisBuckets.hpp"
 
 #include <hiredis.h>
@@ -21,6 +27,87 @@ struct SortableRedisEntry_s
 bool SortableRedisEntry_c(SortableRedisEntry_s &lhs, SortableRedisEntry_s &rhs)
 {
 	return lhs.distance < rhs.distance;
+}
+
+void redisWrite_fields(Node* nodes, Input in, redisContext* redis, int cur_step)
+{
+	redisReply * reply;
+    int grid_size = in.dim_x*in.dim_y;
+	
+	//Buld the keys
+	char nKey[1024];
+	char stepKey[1024];
+	sprintf(nKey, "macro:%d:nodes:", cur_step);
+	sprintf(stepKey, "macro:step:");
+	
+	//Write W, F, and G
+	reply = (redisReply *)redisCommand(redis, "HMSET %s stat %b", nKey, nodes, sizeof(Node)*grid_size);
+    //printf("Save nodes %s\n", reply->str);//that shows +OK
+	freeReplyObject(reply);
+
+	//Update the current timestep in the database.
+	reply = (redisReply *)redisCommand(redis, "HMSet %s stat %b", stepKey, &cur_step, sizeof(int));
+    //put input with curr grad_threshold in db
+	freeReplyObject(reply);
+    Save_Input tmp = in;
+	reply = (redisReply *)redisCommand(redis, "HMSet %s stat1 %b", stepKey, &tmp, sizeof(Save_Input));
+    //printf("Save step %s\n", reply->str);//that shows +OK
+	freeReplyObject(reply);
+
+}
+
+int redisRead_fields(Node* nodes, Input* in, redisContext * redis)
+{
+    int saved_step = 0;
+	redisReply * reply;
+	char stepKey[1024];
+	char nKey[1024];
+    //get last saved integration step
+	sprintf(stepKey, "macro:step:");
+	reply = (redisReply *)redisCommand(redis, "HMGet %s stat", stepKey);
+    int* save_buffer = (int*)reply->element[0]->str;
+    if(save_buffer){
+	    memcpy(&saved_step, &save_buffer[0], sizeof(int));
+        //printf("savedstep: %d\n", saved_step);
+	    sprintf(nKey, "macro:%d:nodes:", saved_step);
+	    freeReplyObject(reply);
+	    reply = (redisReply *)redisCommand(redis, "HMGet %s stat1", stepKey);
+        Save_Input* in_buffer = (Save_Input*)reply->element[0]->str;
+        //Save_Input tmp;
+	    //memcpy(&tmp, &in_buffer[0], sizeof(Save_Input));
+	    memcpy(in, &in_buffer[0], sizeof(Save_Input));
+        int grid_size = in->dim_x*in->dim_y;
+        //printf("gradthresh %lf \n", in->grad_threshold);
+	    freeReplyObject(reply);
+        //load node field
+	    reply = (redisReply *)redisCommand(redis, "HMGet %s stat", nKey);
+        Node* node_buffer = (Node*)reply->element[0]->str;
+	    memcpy(nodes, &node_buffer[0], sizeof(Node)*grid_size);
+        //printf("nodes %lf\n", nodes[1].f.f[6]);
+	    freeReplyObject(reply);
+
+        //CkExit();
+        printf("Loaded field of integration step %d\n", saved_step);
+	return saved_step;
+    }
+    else{
+        printf("No field loaded\n");
+	    return -1;
+    }
+}
+
+void redisDel_fields(redisContext* redis, int cur_step){
+
+  redisReply * reply;
+  if(cur_step>5){
+	char nKey[1024];
+	sprintf(nKey, "macro:%d:nodes:", cur_step-5);
+	//Delete field
+	reply = (redisReply *)redisCommand(redis, "HDEL %s stat", nKey);
+    //printf("Del fields %s\n", reply->str);//that shows +OK
+	freeReplyObject(reply);
+
+  }
 }
 
 void buildKey(char* key, double w0[7], char * tag, int keyDigits)
@@ -68,6 +155,15 @@ void putData(double w0[7], double f0[7], double g0[7], char * tag, redisContext 
 	redisReply *reply;
 	reply = (redisReply *) redisCommand(redis, "SADD %s %b", key, retBuffer, sizeof(double)*21);
 	freeReplyObject(reply);
+#ifdef TRACE
+        redisReply * traceRep;
+        traceRep = (redisReply *)redisCommand(redis, "ECHO SAVED:DATA:w:%e:%e:%e:%e:%e:%e:%e", w0[0], w0[1], w0[2], w0[3], w0[4], w0[5], w0[6]);
+        freeReplyObject(traceRep);
+        traceRep = (redisReply *)redisCommand(redis, "ECHO SAVED:DATA:f:%e:%e:%e:%e:%e:%e:%e", f0[0], f0[1], f0[2], f0[3], f0[4], f0[5], f0[6]);
+        freeReplyObject(traceRep);
+        traceRep = (redisReply *)redisCommand(redis, "ECHO SAVED:DATA:g:%e:%e:%e:%e:%e:%e:%e", g0[0], g0[1], g0[2], g0[3], g0[4], g0[5], g0[6]);
+        freeReplyObject(traceRep);
+#endif
   //delete value;
   delete[] key;
   delete[] retBuffer;
@@ -87,13 +183,18 @@ void getBucket(char * key, redisContext *redis, std::vector<double *> * wOut, st
 		freeReplyObject(reply);
 #ifdef TRACE
         redisReply * traceRep;
-        traceRep = (redisReply *)redisCommand(redis, "ECHO MISS_%s", key);
+        traceRep = (redisReply *)redisCommand(redis, "ECHO MISS:%s", key);
         freeReplyObject(traceRep);
 #endif
 		return;
 	}
 	else
 	{
+#ifdef TRACE
+        redisReply * traceRep;
+        traceRep = (redisReply *)redisCommand(redis, "ECHO HIT:%s:values:%i", key,nVals);
+        freeReplyObject(traceRep);
+#endif
 		for(int i=0; i<nVals; ++i)
 		{
 			double * writeW = new double[7];
@@ -102,19 +203,22 @@ void getBucket(char * key, redisContext *redis, std::vector<double *> * wOut, st
 
 			char *val = (reply->element)[i]->str;
 			unpackValue(val, writeW, writeF, writeG);
+#ifdef TRACE
+        traceRep = (redisReply *)redisCommand(redis, "ECHO FETCHED:DATA:%i:w:%e:%e:%e:%e:%e:%e:%e", i, writeW[0], writeW[1], writeW[2], writeW[3], writeW[4], writeW[5], writeW[6]);
+        freeReplyObject(traceRep);
+        traceRep = (redisReply *)redisCommand(redis, "ECHO FETCHED:DATA:%i:f:%e:%e:%e:%e:%e:%e:%e", i, writeF[0], writeF[1], writeF[2], writeF[3], writeF[4], writeF[5], writeF[6]);
+        freeReplyObject(traceRep);
+        traceRep = (redisReply *)redisCommand(redis, "ECHO FETCHED:DATA:%i:g:%e:%e:%e:%e:%e:%e:%e", i, writeG[0], writeG[1], writeG[2], writeG[3], writeG[4], writeG[5], writeG[6]);
+        freeReplyObject(traceRep);
+#endif
 			wOut->push_back(writeW);
 			fOut->push_back(writeF);
 			gOut->push_back(writeG);
-      delete[] writeW;
-      delete[] writeF;
-      delete[] writeG;
+            delete[] writeW;
+            delete[] writeF;
+            delete[] writeG;
 		}
 		freeReplyObject(reply);
-#ifdef TRACE
-        redisReply * traceRep;
-        traceRep = (redisReply *)redisCommand(redis, "ECHO HIT_%s", key);
-        freeReplyObject(traceRep);
-#endif
 		return;
 	}
 }
@@ -143,7 +247,7 @@ void getSortedSubBucket(double w0[7], char * tag, redisContext *redis, int keyDi
 		freeReplyObject(reply);
 #ifdef TRACE
         redisReply * traceRep;
-        traceRep = (redisReply *)redisCommand(redis, "ECHO MISS_%s", key);
+        traceRep = (redisReply *)redisCommand(redis, "ECHO MISS:%s", key);
         freeReplyObject(traceRep);
 #endif
 		return;
@@ -156,18 +260,31 @@ void getSortedSubBucket(double w0[7], char * tag, redisContext *redis, int keyDi
 		freeReplyObject(reply);
 #ifdef TRACE
         redisReply * traceRep;
-        traceRep = (redisReply *)redisCommand(redis, "ECHO MISS_%s", key);
+        traceRep = (redisReply *)redisCommand(redis, "ECHO MISS:%s", key);
         freeReplyObject(traceRep);
 #endif
 		return;
 	}
 	else
 	{
+#ifdef TRACE
+        redisReply * traceRep;
+        traceRep = (redisReply *)redisCommand(redis, "ECHO HIT:%s:values:%i", key,nVals);
+        freeReplyObject(traceRep);
+#endif
 		for(int i=0; i<nVals; ++i)
 		{
 			SortableRedisEntry_s entry;
 			char *val = (reply->element)[i]->str;
 			unpackValue(val, entry.w, entry.f, entry.g);
+#ifdef TRACE
+        traceRep = (redisReply *)redisCommand(redis, "ECHO FETCHED:DATA:%i:w:%e:%e:%e:%e:%e:%e:%e", i, entry.w[0], entry.w[1], entry.w[2], entry.w[3], entry.w[4], entry.w[5], entry.w[6]);
+        freeReplyObject(traceRep);
+        traceRep = (redisReply *)redisCommand(redis, "ECHO FETCHED:DATA:%i:f:%e:%e:%e:%e:%e:%e:%e", i, entry.f[0], entry.f[1], entry.f[2], entry.f[3], entry.f[4], entry.f[5], entry.f[6]);
+        freeReplyObject(traceRep);
+        traceRep = (redisReply *)redisCommand(redis, "ECHO FETCHED:DATA:%i:g:%e:%e:%e:%e:%e:%e:%e", i, entry.g[0], entry.g[1], entry.g[2], entry.g[3], entry.g[4], entry.g[5], entry.g[6]);
+        freeReplyObject(traceRep);
+#endif
 			entry.distance = 0.0;
 			//Compute distance
 			for(int j = 0; j < 7; j++)
@@ -177,11 +294,6 @@ void getSortedSubBucket(double w0[7], char * tag, redisContext *redis, int keyDi
 			sortSet.push_back(entry);
 		}
 		freeReplyObject(reply);
-#ifdef TRACE
-        redisReply * traceRep;
-        traceRep = (redisReply *)redisCommand(redis, "ECHO HIT_%s", key);
-        freeReplyObject(traceRep);
-#endif
 	}
 
 	//Sort the Set/List
@@ -298,17 +410,30 @@ void getCachedSortedSubBucketNearZero(double w0[7], char * tag, redisContext *re
 				freeReplyObject(reply);
 #ifdef TRACE
                 redisReply * traceRep;
-                traceRep = (redisReply *)redisCommand(redis, "ECHO MISS_%s", *iter);
+                traceRep = (redisReply *)redisCommand(redis, "ECHO MISS:%s", *iter);
                 freeReplyObject(traceRep);
 #endif
 			}
 			else
 			{
+#ifdef TRACE
+                redisReply * traceRep;
+                traceRep = (redisReply *)redisCommand(redis, "ECHO HIT:%s:values:%i", *iter,nVals);
+                freeReplyObject(traceRep);
+#endif
 				for(int i=0; i<nVals; ++i)
 				{
 					SortableRedisEntry_s entry;
 					char *val = (reply->element)[i]->str;
 					unpackValue(val, entry.w, entry.f, entry.g);
+#ifdef TRACE
+        traceRep = (redisReply *)redisCommand(redis, "ECHO FETCHED:DATA:%i:w:%e:%e:%e:%e:%e:%e:%e", i, entry.w[0], entry.w[1], entry.w[2], entry.w[3], entry.w[4], entry.w[5], entry.w[6]);
+        freeReplyObject(traceRep);
+        traceRep = (redisReply *)redisCommand(redis, "ECHO FETCHED:DATA:%i:f:%e:%e:%e:%e:%e:%e:%e", i, entry.f[0], entry.f[1], entry.f[2], entry.f[3], entry.f[4], entry.f[5], entry.f[6]);
+        freeReplyObject(traceRep);
+        traceRep = (redisReply *)redisCommand(redis, "ECHO FETCHED:DATA:%i:g:%e:%e:%e:%e:%e:%e:%e", i, entry.g[0], entry.g[1], entry.g[2], entry.g[3], entry.g[4], entry.g[5], entry.g[6]);
+        freeReplyObject(traceRep);
+#endif
 					entry.distance = 0.0;
 					//Compute distance
 					for(int j = 0; j < 7; j++)
@@ -322,11 +447,6 @@ void getCachedSortedSubBucketNearZero(double w0[7], char * tag, redisContext *re
 					(*dbCache)[mapKey].push_back(mapVal);
 				}
 				freeReplyObject(reply);
-#ifdef TRACE
-                redisReply * traceRep;
-                traceRep = (redisReply *)redisCommand(redis, "ECHO HIT_%s", *iter);
-                freeReplyObject(traceRep);
-#endif
 			}
 		}
 
@@ -443,17 +563,30 @@ void getSortedSubBucketNearZero(double w0[7], char * tag, redisContext *redis, i
 			freeReplyObject(reply);
 #ifdef TRACE
             redisReply * traceRep;
-            traceRep = (redisReply *)redisCommand(redis, "ECHO MISS_%s", *iter);
+            traceRep = (redisReply *)redisCommand(redis, "ECHO MISS:%s", *iter);
             freeReplyObject(traceRep);
 #endif
 		}
 		else
 		{
+#ifdef TRACE
+            redisReply * traceRep;
+            traceRep = (redisReply *)redisCommand(redis, "ECHO HIT:%s:values:%i", *iter,nVals);
+            freeReplyObject(traceRep);
+#endif
 			for(int i=0; i<nVals; ++i)
 			{
 				SortableRedisEntry_s entry;
 				char *val = (reply->element)[i]->str;
 				unpackValue(val, entry.w, entry.f, entry.g);
+#ifdef TRACE
+        traceRep = (redisReply *)redisCommand(redis, "ECHO FETCHED:DATA:%i:w:%e:%e:%e:%e:%e:%e:%e", i, entry.w[0], entry.w[1], entry.w[2], entry.w[3], entry.w[4], entry.w[5], entry.w[6]);
+        freeReplyObject(traceRep);
+        traceRep = (redisReply *)redisCommand(redis, "ECHO FETCHED:DATA:%i:f:%e:%e:%e:%e:%e:%e:%e", i, entry.f[0], entry.f[1], entry.f[2], entry.f[3], entry.f[4], entry.f[5], entry.f[6]);
+        freeReplyObject(traceRep);
+        traceRep = (redisReply *)redisCommand(redis, "ECHO FETCHED:DATA:%i:g:%e:%e:%e:%e:%e:%e:%e", i, entry.g[0], entry.g[1], entry.g[2], entry.g[3], entry.g[4], entry.g[5], entry.g[6]);
+        freeReplyObject(traceRep);
+#endif
 				entry.distance = 0.0;
 				//Compute distance
 				for(int j = 0; j < 7; j++)
@@ -463,11 +596,6 @@ void getSortedSubBucketNearZero(double w0[7], char * tag, redisContext *redis, i
 				sortSet.push_back(entry);
 			}
 			freeReplyObject(reply);
-#ifdef TRACE
-            redisReply * traceRep;
-            traceRep = (redisReply *)redisCommand(redis, "ECHO HIT_%s", *iter);
-            freeReplyObject(traceRep);
-#endif
 		}
 	}
 
@@ -548,14 +676,5 @@ std::set<char *> * rebuildDB(std::set<char *> * keyDict, char * tag, redisContex
 	}
 
 	return retSet;
-}
-
-
-void writeMessage(char * message, redisContext *redis)
-{
-	redisReply * redRep;
-	redRep = (redisReply *)redisCommand(redis, "ECHO %s", message);
-	freeReplyObject(redRep);
-
 }
 

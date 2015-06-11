@@ -39,6 +39,7 @@ typedef struct{
 
 } Conserved;
 
+
 /** struct containing the 2D field 
  * **/
 typedef struct{
@@ -49,8 +50,37 @@ typedef struct{
   double dy;
   double dt_x;
   double dt_y;
+  int int_steps;
+  int redis_db;
+  int flush_db;
+  double db_threshold;
+  int kriging;
+  double kr_threshold;
+  int kriging_db;
+  int gauss_noise;
+  double noise; 
+  double grad_threshold;
+  int test_problem;
+  int fault_tolerance;
 
-} Lattice;
+} Save_Input;
+
+
+
+/** struct containing the 2D field 
+ * **/
+struct Lattice : public Save_Input{
+
+  int dim_x;
+  int dim_y;
+  double dx;
+  double dy;
+  double dt_x;
+  double dt_y;
+
+};
+
+typedef Lattice Input;
 
 /** struct containing the node values
  *  **/
