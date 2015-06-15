@@ -9,7 +9,8 @@
 #include <map>
 #include <string>
 #include <vector>
-#include "types.h"
+
+#include "2DKriging.hpp"
 
 void redisWrite_fields(Node* nodes, Input in, redisContext* redis, int cur_step);
 int redisRead_fields(Node* nodes, Input* in, redisContext * redis);

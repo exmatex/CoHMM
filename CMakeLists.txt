@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.6)
 
-project(RedCoHMM)
+project(CoHMM_dad)
 
 # Cmake modules/macros are in a subdirectory to keep this file cleaner
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMakeModules)
@@ -27,7 +27,8 @@ check_c_compiler_flag("-std=c99" HAVE_C99)
 if(NOT HAVE_C99)
     message(FATAL_ERROR "flag '-std=c99' does not work")
 endif(NOT HAVE_C99)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -std=c99 -fPIC")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -fPIC")
 
 include(CheckCXXCompilerFlag)
 
@@ -43,6 +44,10 @@ find_package(HIREDIS REQUIRED)
 include_directories(${HIREDIS_INCLUDE_DIRS})
 find_package(OpenMP REQUIRED)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+find_package(SWIG)
+if(SWIG_FOUND)
+	INCLUDE(${SWIG_USE_FILE})
+endif()
 find_package(MKL)
 find_package(CBLAS)
 find_package(LAPACKE)
@@ -89,7 +94,7 @@ foreach(FUNC sqrt)
 endforeach(FUNC)
 
 ######################################
-# actual targets                     # 
+# actual targets                     #
 ######################################
 add_custom_command(
   OUTPUT CoMD_info.h 
@@ -105,7 +110,18 @@ file(GLOB COMD_SOURCES COMD_lib/src-lib/*.c)
 add_library(comd ${COMD_SOURCES})
 add_dependencies(comd comd_header)
 
-file(GLOB COHMM_SOURCES *.cpp)
+file(GLOB COHMM_SOURCES COHMM_lib/*.cpp)
 include_directories(COMD_lib/src-lib)
-add_executable(2DKriging ${COHMM_SOURCES})
-target_link_libraries(2DKriging comd ${LINALG_LIBRARIES} ${HIREDIS_LIBRARIES} -lrt)
+
+if(SWIG_FOUND)
+	set_source_files_properties(COHMM_lib/CoHMM_SwiftWrapper.i PROPERTIES CPLUSPLUS ON)
+	swig_add_module(cohmm_swiftt tcl8 COHMM_lib/CoHMM_SwiftWrapper.i ${COHMM_SOURCES})
+	target_link_libraries(cohmm_swiftt comd ${LINALG_LIBRARIES} ${HIREDIS_LIBRARIES} -lrt)
+endif()
+
+add_library(cohmm ${COHMM_SOURCES})
+target_link_libraries(cohmm comd ${LINALG_LIBRARIES} ${HIREDIS_LIBRARIES} -lrt)
+
+include_directories(COHMM_lib)
+add_executable(2D_DaDTest 2D_DaDTest.cpp)
+target_link_libraries(2D_DaDTest cohmm comd ${LINALG_LIBRARIES} ${HIREDIS_LIBRARIES} -lrt)
