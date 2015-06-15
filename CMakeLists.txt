@@ -48,6 +48,7 @@ find_package(SWIG)
 if(SWIG_FOUND)
 	INCLUDE(${SWIG_USE_FILE})
 endif()
+find_package(ChunksAndTasks)
 find_package(MKL)
 find_package(CBLAS)
 find_package(LAPACKE)
@@ -113,6 +114,7 @@ add_dependencies(comd comd_header)
 file(GLOB COHMM_SOURCES COHMM_lib/*.cpp)
 include_directories(COMD_lib/src-lib)
 
+#If SWIG found, build SWIG library
 if(SWIG_FOUND)
 	set_source_files_properties(COHMM_lib/CoHMM_SwiftWrapper.i PROPERTIES CPLUSPLUS ON)
 	swig_add_module(cohmm_swiftt tcl8 COHMM_lib/CoHMM_SwiftWrapper.i ${COHMM_SOURCES})
@@ -121,6 +123,15 @@ endif()
 
 add_library(cohmm ${COHMM_SOURCES})
 target_link_libraries(cohmm comd ${LINALG_LIBRARIES} ${HIREDIS_LIBRARIES} -lrt)
+
+#If Chunks And Tasks found, build Chunks and Tasks based driver
+if(CHUNKSANDTASKS_FOUND)
+	file(GLOB CANDT_SOURCES 2D_ChunksAndTasks/*.cpp)
+	include_directories(${CHUNKSANDTASKS_INCLUDE_DIRS})
+	add_executable(2D_ChunksAndTasks ${CANDT_SOURCES})
+	target_link_libraries(2D_ChunksAndTasks cohmm comd ${CHUNKSANDTASKS_LIBRARY} ${LINALG_LIBRARIES} ${HIREDIS_LIBRARIES} -lrt)
+endif()
+
 
 include_directories(COHMM_lib)
 add_executable(2D_DaDTest 2D_DaDTest.cpp)
