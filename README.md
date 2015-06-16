@@ -1,4 +1,4 @@
-Database Assisted Decomposition
+Database Assisted Distribution
 =========
 
 HMM code based on CoHMM-Red with the addition of a distributed shared memory implemented through the use of a database so as to facilitate fault tolerance and an alternative method of utilizing a wide range of
@@ -34,7 +34,7 @@ Execution
 
 1. start redis server in background (`redis-server &`)
 
-2. run 2D_dadTest with `./2D_dadTest <dim_x> <dim_y> <nsteps> <redis_server>`
+2. run 2D_DaDTest with `./2D_dadTest <dim_x> <dim_y> <nsteps> <redis_server>`
 
    example command line:
 
