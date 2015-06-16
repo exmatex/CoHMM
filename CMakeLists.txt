@@ -28,9 +28,14 @@ if(NOT HAVE_C99)
     message(FATAL_ERROR "flag '-std=c99' does not work")
 endif(NOT HAVE_C99)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -std=c99 -fPIC")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -fPIC")
 
 include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag("-std=c++11" HAVE_CXX11)
+if(NOT HAVE_CXX11)
+    message(FATAL_ERROR "flag '-std=c++11' does not work")
+endif()
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++11 -fPIC")
+
 
 ########################################################################
 # User input options                                                   #
@@ -48,9 +53,9 @@ find_package(SWIG)
 if(SWIG_FOUND)
 	INCLUDE(${SWIG_USE_FILE})
 endif()
-find_package(ChunksAndTasks)
-if(CHUNKSANDTASKS_FOUND)
-	find_package(MPI REQUIRED)
+find_package(MPI)
+if(MPI_FOUND)
+	find_package(ChunksAndTasks)
 endif()
 find_package(MKL)
 find_package(CBLAS)
