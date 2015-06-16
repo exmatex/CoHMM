@@ -132,22 +132,13 @@ endif()
 add_library(cohmm ${COHMM_SOURCES})
 target_link_libraries(cohmm comd ${LINALG_LIBRARIES} ${HIREDIS_LIBRARIES} -lrt)
 
+include_directories(COHMM_lib)
+
 #If Chunks And Tasks found, build Chunks and Tasks based driver
 if(CHUNKSANDTASKS_FOUND)
-	file(GLOB CANDT_SOURCES 2D_ChunksAndTasks/*.cpp)
-	include_directories(${CHUNKSANDTASKS_INCLUDE_DIRS})
-	add_executable(2D_ChunksAndTasks ${CANDT_SOURCES})
-	target_link_libraries(2D_ChunksAndTasks cohmm comd
-		${CHUNKSANDTASKS_LIBRARY} ${MPI_LIBRARIES} ${LINALG_LIBRARIES} ${HIREDIS_LIBRARIES} -lrt)
-	if(MPI_COMPILE_FLAGS)
-		set_target_properties(2D_ChunksAndTasks PROPERTIES COMPILE_FLAGS "${MPI_COMPILE_FLAGS}")
-	endif()
-	if(MPI_LINK_FLAGS)
-		set_target_properties(2D_ChunksAndTasks PROPERTIES LINK_FLAGS "${MPI_LINK_FLAGS}")
-	endif()
+	add_subdirectory(2D_ChunksAndTasks)
 endif()
 
 #Either way, build the test driver
-include_directories(COHMM_lib)
 add_executable(2D_DaDTest 2D_DaDTest.cpp)
 target_link_libraries(2D_DaDTest cohmm comd ${LINALG_LIBRARIES} ${HIREDIS_LIBRARIES} -lrt)

@@ -55,11 +55,16 @@ int main(int argc, char ** argv)
 
 	//<dim_x> <dim_y> <nsteps> <redis_server> <database error threshold> <Kriging error threshold> <Gaussian noise strength>
 	//dimX dimY nSteps redis_server 
-	if( argc != 5)
+	if( argc != 6)
 	{
-		std::cerr <<  "./2D_DaDTest <dim_x> <dim_y> <nsteps> <redis_server>" << std::endl;
+		std::cerr <<  "mpirun -np 1 ./2D_ChunksAndTasks <dim_x> <dim_y> <nsteps> <redis_server> <nWorkers>" << std::endl;
 		return 1;
 	}
+	//Start CHT
+	std::cout << "Trying to start CHT" << std::endl;
+	cht::start();
+	cht::extras::setNWorkers(atoi(argv[5]));
+	std::cout << "Succeeded to start CHT" << std::endl;
 	//Set up parameters
 	bool doKriging = true;
 	bool doCoMD = false;
@@ -71,7 +76,7 @@ int main(int argc, char ** argv)
 	gamma[1] = gamma[0]; //strain_gamma
 	gamma[2] = 0.1 * gamma[1];//en_gamma
 
-	unsigned int numSteps = 10;
+	unsigned int numSteps = atoi(argv[3]);
 
 	//Initialize
 	std::cout << "Initializing " << dims[0] << " by " << dims[1] << " grid" << std::endl;
@@ -87,35 +92,19 @@ int main(int argc, char ** argv)
 		std::cout << t << ": First Flux" << std::endl;
 		nTasks = prepFirstFlux(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
 		std::cout << t << ": Doing " << nTasks << " fluxes" << std::endl;
-		#pragma omp parallel for
-		for(unsigned int i = 0; i < nTasks; i++)
-		{
-			cloudFlux(doKriging, doCoMD, t, 0, i, argv[4]);
-		}
+		fluxParallelFor(doKriging, doCoMD, t, 0, nTasks, argv[4]);
 		std::cout << t << ": Second Flux" << std::endl;
 		nTasks = prepSecondFlux(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
 		std::cout << t << ": Doing " << nTasks << " fluxes" << std::endl;
-		#pragma omp parallel for
-		for(unsigned int i = 0; i < nTasks; i++)
-		{
-			cloudFlux(doKriging, doCoMD, t, 1, i, argv[4]);
-		}
+		fluxParallelFor(doKriging, doCoMD, t, 1, nTasks, argv[4]);
 		std::cout << t << ": Third Flux" << std::endl;
 		nTasks = prepThirdFlux(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
 		std::cout << t << ": Doing " << nTasks << " fluxes" << std::endl;
-		#pragma omp parallel for
-		for(unsigned int i = 0; i < nTasks; i++)
-		{
-			cloudFlux(doKriging, doCoMD, t, 2, i, argv[4]);
-		}
+		fluxParallelFor(doKriging, doCoMD, t, 2, nTasks, argv[4]);
 		std::cout << t << ": Last Flux" << std::endl;
 		nTasks = prepLastFlux(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
 		std::cout << t << ": Doing " << nTasks << " fluxes" << std::endl;
-		#pragma omp parallel for
-		for(unsigned int i = 0; i < nTasks; i++)
-		{
-			cloudFlux(doKriging, doCoMD, t, 3, i, argv[4]);
-		}
+		fluxParallelFor(doKriging, doCoMD, t, 3, nTasks, argv[4]);
 		std::cout << t << ": Finish Step, no Fluxes" << std::endl;
 		finishStep(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
 	}
@@ -123,7 +112,8 @@ int main(int argc, char ** argv)
 	std::cout << numSteps << ": Vising to Verifying" << std::endl;
 	outputVTK(doKriging, doCoMD, dims, dt, delta, gamma, numSteps, argv[4]);
 	std::cout << "Ran for " << numSteps << " iterations" << std::endl;
-
+	//End CHT
+	cht::stop();
 	return 0;
 }
 

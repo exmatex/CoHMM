@@ -24,7 +24,7 @@ int main(int argc, char ** argv)
 	gamma[1] = gamma[0]; //strain_gamma
 	gamma[2] = 0.1 * gamma[1];//en_gamma
 
-	unsigned int numSteps = 10;
+	unsigned int numSteps = atoi(argv[3]);
 
 	//Initialize
 	std::cout << "Initializing " << dims[0] << " by " << dims[1] << " grid" << std::endl;
