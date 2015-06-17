@@ -55,10 +55,14 @@ if(SWIG_FOUND)
 	INCLUDE(${SWIG_USE_FILE})
 endif()
 
-
 find_package(MPI)
 if(MPI_FOUND)
 	find_package(ChunksAndTasks)
+endif()
+
+find_package(TBB)
+if(TBB_FOUND)
+	find_package(CNC)
 endif()
 
 find_package(MKL)
@@ -142,6 +146,12 @@ include_directories(COHMM_lib)
 if(CHUNKSANDTASKS_FOUND)
 	message(STATUS "Chunks and Tasks Driver Enabled")
 	add_subdirectory(2D_ChunksAndTasks)
+endif()
+
+#If (Intel) CnC found, build CnC based driver
+if(INTELCNC_FOUND)
+	message(STATUS "Intel CnC Driver Enabled")
+	add_subdirectory(2D_CnC)
 endif()
 
 #Either way, build the test driver
