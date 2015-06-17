@@ -89,24 +89,33 @@ int main(int argc, char ** argv)
 		int nTasks;
 		std::cout << t << ": Vising to Verifying" << std::endl;
 		outputVTK(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
-		std::cout << t << ": First Flux" << std::endl;
-		nTasks = prepFirstFlux(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
-		std::cout << t << ": Doing " << nTasks << " fluxes" << std::endl;
-		fluxParallelFor(doKriging, doCoMD, t, 0, nTasks, argv[4]);
-		std::cout << t << ": Second Flux" << std::endl;
-		nTasks = prepSecondFlux(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
-		std::cout << t << ": Doing " << nTasks << " fluxes" << std::endl;
-		fluxParallelFor(doKriging, doCoMD, t, 1, nTasks, argv[4]);
-		std::cout << t << ": Third Flux" << std::endl;
-		nTasks = prepThirdFlux(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
-		std::cout << t << ": Doing " << nTasks << " fluxes" << std::endl;
-		fluxParallelFor(doKriging, doCoMD, t, 2, nTasks, argv[4]);
-		std::cout << t << ": Last Flux" << std::endl;
-		nTasks = prepLastFlux(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
-		std::cout << t << ": Doing " << nTasks << " fluxes" << std::endl;
-		fluxParallelFor(doKriging, doCoMD, t, 3, nTasks, argv[4]);
-		std::cout << t << ": Finish Step, no Fluxes" << std::endl;
-		finishStep(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
+		//Do a short circuit test
+		if(tryShortCircuit(dims, t, argv[4]))
+		{
+			//Short circuit succeeded
+			std::cout << t << ": Short Circuit Successful, on to the next step!" << std::endl;
+		}
+		else
+		{
+			std::cout << t << ": First Flux" << std::endl;
+			nTasks = prepFirstFlux(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
+			std::cout << t << ": Doing " << nTasks << " fluxes" << std::endl;
+			fluxParallelFor(doKriging, doCoMD, t, 0, nTasks, argv[4]);
+			std::cout << t << ": Second Flux" << std::endl;
+			nTasks = prepSecondFlux(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
+			std::cout << t << ": Doing " << nTasks << " fluxes" << std::endl;
+			fluxParallelFor(doKriging, doCoMD, t, 1, nTasks, argv[4]);
+			std::cout << t << ": Third Flux" << std::endl;
+			nTasks = prepThirdFlux(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
+			std::cout << t << ": Doing " << nTasks << " fluxes" << std::endl;
+			fluxParallelFor(doKriging, doCoMD, t, 2, nTasks, argv[4]);
+			std::cout << t << ": Last Flux" << std::endl;
+			nTasks = prepLastFlux(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
+			std::cout << t << ": Doing " << nTasks << " fluxes" << std::endl;
+			fluxParallelFor(doKriging, doCoMD, t, 3, nTasks, argv[4]);
+			std::cout << t << ": Finish Step, no Fluxes" << std::endl;
+			finishStep(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
+		}
 	}
 	//Final vis
 	std::cout << numSteps << ": Vising to Verifying" << std::endl;
