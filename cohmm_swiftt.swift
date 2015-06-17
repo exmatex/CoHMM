@@ -38,4 +38,8 @@
 	"set <<done>> [ cohmm_swiftt::cloudFluxWrapper <<doKriging>> <<doCoMD>> <<step>> <<phase>> <<task>> ]"
 ];
 
+(boolean success) shortCircuitWrapper (blob dims, int step) "cohmm_swiftt" "1.0"
+[
+    "set <<success>> [ cohmm_swiftt::shortCircuitWrapper <<dims>> <<step>> ]"
+];
 
