@@ -49,18 +49,21 @@ find_package(HIREDIS REQUIRED)
 include_directories(${HIREDIS_INCLUDE_DIRS})
 find_package(OpenMP REQUIRED)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+
 find_package(SWIG)
 if(SWIG_FOUND)
 	INCLUDE(${SWIG_USE_FILE})
 endif()
+
+
 find_package(MPI)
 if(MPI_FOUND)
 	find_package(ChunksAndTasks)
 endif()
+
 find_package(MKL)
 find_package(CBLAS)
 find_package(LAPACKE)
-
 if(MKL_FOUND)
   include_directories(${MKL_INCLUDE_DIR})
   set(LINALG_LIBRARIES ${MKL_LIBRARIES})
@@ -124,6 +127,7 @@ include_directories(COMD_lib/src-lib)
 
 #If SWIG found, build SWIG library
 if(SWIG_FOUND)
+	message(STATUS "SWIG Library Enabled")
 	set_source_files_properties(COHMM_lib/CoHMM_SwiftWrapper.i PROPERTIES CPLUSPLUS ON)
 	swig_add_module(cohmm_swiftt tcl8 COHMM_lib/CoHMM_SwiftWrapper.i ${COHMM_SOURCES})
 	target_link_libraries(cohmm_swiftt comd ${LINALG_LIBRARIES} ${HIREDIS_LIBRARIES} -lrt)
@@ -136,6 +140,7 @@ include_directories(COHMM_lib)
 
 #If Chunks And Tasks found, build Chunks and Tasks based driver
 if(CHUNKSANDTASKS_FOUND)
+	message(STATUS "Chunks and Tasks Driver Enabled")
 	add_subdirectory(2D_ChunksAndTasks)
 endif()
 
