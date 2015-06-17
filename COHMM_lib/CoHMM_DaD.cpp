@@ -631,4 +631,43 @@ bool outputVTK(bool doKriging, bool doCoMD, int * dims, double * dt, double * de
 	return outputVTK(doKriging, doCoMD, dims, dt, delta, gamma, curStep, "localhost");
 }
 
+bool tryShortCircuit(int * dims, int curStep, const char * redis_host)
+{
+	//For short circuiting purposes, we do it on a per-step basis
+	//Just check for all tiles  of phase 0 of the next timestep
+	///WARNING: This could fail if the job crashes partway through a puts
+	//Connect to redis
+	redisContext * headRedis = redisConnect(redis_host, 6379);
+	if(headRedis == NULL || headRedis->err)
+	{
+		printf("Redis error: %s\n", headRedis->errstr);
+		return false;
+	}
+	//Check each tile
+	bool retBool = true;
+	unsigned int nTiles = getNumBlocks(dims[0], dims[1]);
+	for(unsigned int i = 0; i < nTiles; i++)
+	{
+		//Build Key
+		char keyBuffer[maxKeyLength];
+		buildBlockKey(keyBuffer, curStep+1, 0, i, dims[0], dims[1], "FIELD");
+		//Use Key to check for existence
+		redisReply * reply;
+		reply = (redisReply *) redisCommand(headRedis, "EXISTS %s", keyBuffer);
+		assert(reply->type == REDIS_REPLY_INTEGER);
+		if(reply->integer == 0)
+		{
+			retBool = false;
+			i = nTiles + 1;
+		}
+		freeReplyObject(reply);
+	}
+	//Kill redis
+	redisFree(headRedis);
+	return retBool;
+}
+bool tryShortCircuit(int * dims, int curStep)
+{
+	return tryShortCircuit(dims, curStep, "localhost");
+}
 
