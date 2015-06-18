@@ -1,0 +1,8 @@
+mainmodule cohmm_dad
+{
+	mainchare Main
+	{
+		entry Main(CkArgMsg *m);
+	};
+
+};
