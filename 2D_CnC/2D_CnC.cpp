@@ -34,6 +34,19 @@ int Flux_Task::execute(const Flux_Tag &tag, DaDContext &c) const
 	return CnC::CNC_Success;
 }
 
+void parallelFor(unsigned int step, unsigned int phase, unsigned int nTasks, DaDContext &ctxt)
+{
+	for(unsigned int i = 0; i < nTasks; i++)
+	{
+		//Make task tag
+		Flux_Tag tag(step, phase, i);
+		//Put task tag
+		ctxt.fluxTags.put(tag);
+	}
+	ctxt.wait();
+	return;
+}
+
 int main(int argc, char ** argv)
 {
 	//dimX dimY nSteps redis_server 
@@ -42,6 +55,11 @@ int main(int argc, char ** argv)
 		std::cerr <<  "./2D_DaDTest <dim_x> <dim_y> <nsteps> <redis_server>" << std::endl;
 		return 1;
 	}
+	//Initialize CnC
+#ifdef CNC_DIST
+	CnC::dist_cnc_init<DaDContext> dinit;
+#endif
+	DaDContext ctxt;
 	//Set up parameters
 	bool doKriging = true;
 	bool doCoMD = false;
@@ -52,6 +70,13 @@ int main(int argc, char ** argv)
 	gamma[0] = 0; //mom_gamma
 	gamma[1] = gamma[0]; //strain_gamma
 	gamma[2] = 0.1 * gamma[1];//en_gamma
+
+	//Put the one item
+	Flux_Item runConfig;
+	strcpy(runConfig.redis_host, argv[4]);
+	runConfig.doKriging = doKriging;
+	runConfig.doCoMD = doCoMD;
+	ctxt.globalItem.put(0, runConfig);
 
 	unsigned int numSteps = atoi(argv[3]);
 
@@ -77,35 +102,19 @@ int main(int argc, char ** argv)
 			std::cout << t << ": First Flux" << std::endl;
 			nTasks = prepFirstFlux(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
 			std::cout << t << ": Doing " << nTasks << " fluxes" << std::endl;
-			#pragma omp parallel for
-			for(unsigned int i = 0; i < nTasks; i++)
-			{
-				cloudFlux(doKriging, doCoMD, t, 0, i, argv[4]);
-			}
+			parallelFor(t, 0, nTasks, ctxt);
 			std::cout << t << ": Second Flux" << std::endl;
 			nTasks = prepSecondFlux(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
 			std::cout << t << ": Doing " << nTasks << " fluxes" << std::endl;
-			#pragma omp parallel for
-			for(unsigned int i = 0; i < nTasks; i++)
-			{
-				cloudFlux(doKriging, doCoMD, t, 1, i, argv[4]);
-			}
+			parallelFor(t, 1, nTasks, ctxt);
 			std::cout << t << ": Third Flux" << std::endl;
 			nTasks = prepThirdFlux(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
 			std::cout << t << ": Doing " << nTasks << " fluxes" << std::endl;
-			#pragma omp parallel for
-			for(unsigned int i = 0; i < nTasks; i++)
-			{
-				cloudFlux(doKriging, doCoMD, t, 2, i, argv[4]);
-			}
+			parallelFor(t, 2, nTasks, ctxt);
 			std::cout << t << ": Last Flux" << std::endl;
 			nTasks = prepLastFlux(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
 			std::cout << t << ": Doing " << nTasks << " fluxes" << std::endl;
-			#pragma omp parallel for
-			for(unsigned int i = 0; i < nTasks; i++)
-			{
-				cloudFlux(doKriging, doCoMD, t, 3, i, argv[4]);
-			}
+			parallelFor(t, 3, nTasks, ctxt);
 			std::cout << t << ": Finish Step, no Fluxes" << std::endl;
 			finishStep(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
 		}

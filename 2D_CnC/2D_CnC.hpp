@@ -3,7 +3,11 @@
 
 #include <tuple>
 
+#ifdef CNC_DIST
+#include <cnc/dist_cnc.h>
+#else
 #include <cnc/cnc.h>
+#endif
 
 #include "CoHMM_DaD.hpp"
 
