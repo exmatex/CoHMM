@@ -74,7 +74,11 @@ class Main : public CBase_Main
 		initEverything(gDoKriging, gDoCoMD, gDims, gDt, gDelta, gGamma, gRedis_host);
 		ckout << "Initialized" << endl;
 		ckout << "Running for " << nSteps << " iterations" << endl;
-	
+
+		//Init vars	
+		curPhase = 0;
+		nTasks = 0;
+		curStep = 0;
 		//Call the countCallBacks method
 		countCallBacks();
 	};
@@ -112,9 +116,6 @@ class Main : public CBase_Main
 							ckout << curStep << ": Short Circuit Successful, on to the next step!" << endl;
 							//Increment step
 							curStep++;
-							//Recursively calll
-							///WARNING: A sufficiently long run that is recovering from a fault could be very bad due to too much recursion
-							countCallBacks();
 						}
 						else
 						{
@@ -154,11 +155,15 @@ class Main : public CBase_Main
 					curStep++;
 					//Reset phase
 					curPhase = 0;
-					//Recursively call this again
-					countCallBacks();
 					break;
 				default:
 					break;
+			}
+			//Are we waiting for any tasks?
+			if(nTasks == 0)
+			{
+				//Nope
+				countCallBacks();
 			}
 		}
 	}
