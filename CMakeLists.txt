@@ -142,6 +142,12 @@ target_link_libraries(cohmm comd ${LINALG_LIBRARIES} ${HIREDIS_LIBRARIES} -lrt)
 
 include_directories(COHMM_lib)
 
+find_program(CHARMC NAMES charmc DOC "path to charmc")
+if(CHARMC)
+	message(STATUS "Charm++ Driver Enabled")
+	add_subdirectory(2D_Charm++)
+endif()
+
 #If Chunks And Tasks found, build Chunks and Tasks based driver
 if(CHUNKSANDTASKS_FOUND)
 	message(STATUS "Chunks and Tasks Driver Enabled")

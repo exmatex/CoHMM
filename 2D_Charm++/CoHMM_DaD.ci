@@ -1,0 +1,22 @@
+mainmodule cohmm_dad
+{
+	readonly char gRedis_host[48];
+	readonly bool gDoKriging;
+	readonly bool gDoCoMD;
+	readonly int gDims[2];
+	readonly double gDt[2];
+	readonly double gGamma[3];
+	readonly double gDelta[2];
+
+	readonly CProxy_Main mainProxy;
+
+	mainchare Main
+	{
+		entry Main(CkArgMsg *m);
+		entry void countCallBacks();
+	};
+	chare Flux
+	{
+		entry Flux(unsigned int step, unsigned int phase, unsigned int tid);
+	};
+};
