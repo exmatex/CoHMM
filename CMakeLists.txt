@@ -56,7 +56,7 @@ if(SWIG_FOUND)
 endif()
 
 find_package(MPI)
-if(MPI_FOUND)
+if(MPI_CXX_FOUND)
 	find_package(ChunksAndTasks)
 endif()
 
