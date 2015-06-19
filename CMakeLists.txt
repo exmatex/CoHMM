@@ -167,7 +167,6 @@ if(LIBCIRCLE_FOUND)
 	add_subdirectory(2D_Libcircle)
 endif()
 
-
 #Either way, build the test driver
 add_executable(2D_DaDTest 2D_DaDTest.cpp)
 target_link_libraries(2D_DaDTest cohmm comd ${LINALG_LIBRARIES} ${HIREDIS_LIBRARIES} -lrt)
