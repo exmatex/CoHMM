@@ -1,10 +1,11 @@
 #include <iostream>
 #include <cstdlib>
 #include <cstring>
+#include <cassert>
 
 #include <mpi.h>
 #include <libcircle.h>
-
+#include <hiredis.h>
 
 #include "CoHMM_DaD.hpp"
 
@@ -15,6 +16,9 @@ unsigned int nTasks;
 bool doKriging;
 bool doCoMD;
 char redis_host[48];
+redisContext * spawnRedis;
+const char * redisBarString = "THISISPROBABLYDANGEROUS";
+
 
 //Methods to convert tasks to libcircle tasks (strings)
 void buildTaskString(char * buffer, bool doKriging, bool doCoMD, unsigned int step, unsigned int phase, unsigned int tid, const char * redis_host)
@@ -54,7 +58,7 @@ void unBuildTaskString(char * taskString, bool & doKriging, bool & doCoMD, unsig
 	phase = atoi(token);
 	//tid
 	token = std::strtok(nullptr, " ");
-	phase = atoi(token);
+	tid = atoi(token);
 	//Host
 	token = std::strtok(nullptr, " ");
 	strcpy(redis_host, token);
@@ -72,8 +76,13 @@ void processTasks(CIRCLE_handle *handle)
 	unsigned int i;
 	char redis[48];
 	unBuildTaskString(taskString, krig, comd, t, p, i, redis);
-	std::cout << "Test" << std::endl;
+	std::cout << "Unpacked " << krig << " " << comd << " " << t << " " << p << " " << i << " " << redis  << std::endl;
 	cloudFlux(krig, comd, t, p, i, redis);
+	std::cout << "Test" << std::endl;
+	//Increment redis barrier
+	redisReply * reply = (redisReply * ) redisCommand(spawnRedis, "INCR %s", redisBarString);
+	std::cout << "Incremented " << reply->integer << std::endl;
+	freeReplyObject(reply);
 	//Is libcircle okay with not having a return? Becuase we don't
 }
 
@@ -85,36 +94,20 @@ void buildTasks(CIRCLE_handle *handle)
 	std::cout << "nTasks: " << nTasks << std::endl;
 	for(unsigned int i = 0; i < nTasks; i++)
 	{
+		std::cout << "Push i" << std::endl;
 		buildTaskString(taskString, doKriging, doCoMD, step, phase, i, redis_host);
+		std::cout << "Packed " << doKriging << " " << doCoMD << " " << step << " " << phase << " " << i << " " << redis_host  << std::endl;
 		handle->enqueue(taskString);
 	}
 }
 
 void doLibcircleTasks()
 {
-	///TODO: Is there a way to not pay the cost of init and finalize on every single flux?
-	//Init libcircle(?): Don't pass args as we do that stuff on our own
-	int rank = CIRCLE_init(0, nullptr, CIRCLE_DEFAULT_FLAGS);
 	//Run task creation method
-	std::cout << "Trying to build?" << std::endl;
 	CIRCLE_cb_create(&buildTasks);
-	/*
-	CIRCLE_handle * handle = CIRCLE_get_handle();
-	char taskString[96];
-	for(unsigned int i = 0; i < nTasks; i++)
-	{
-		buildTaskString(taskString, doKriging, doCoMD, step, phase, i, redis_host);
-		//buildTaskString(taskString, false , true , 4, 5, 2, "localhost");
-		handle->enqueue(taskString);
-	}
-	*/
-	//Say what to do with tasks
-	CIRCLE_cb_process(&processTasks);
 	//Run tasks
-	//CIRCLE_begin();
-	//Finalize libcircle (?)
-	CIRCLE_finalize();
-
+	CIRCLE_begin();
+	//CIRCLE_begin() blocks, so we are good
 }
 
 int main(int argc, char ** argv)
@@ -126,7 +119,12 @@ int main(int argc, char ** argv)
 		std::cerr <<  "./2D_DaDTest <dim_x> <dim_y> <nsteps> <redis_server>" << std::endl;
 		return 1;
 	}
-	//Set up parameters
+
+	int rank = CIRCLE_init(argc, argv, CIRCLE_DEFAULT_FLAGS);
+	CIRCLE_cb_process(&processTasks);
+	CIRCLE_enable_logging(CIRCLE_LOG_ERR);
+
+	//Set up parameters for everyone
 	doKriging = true;
 	doCoMD = false;
 	int dims[2] = {atoi(argv[1]), atoi(argv[2])};
@@ -140,6 +138,35 @@ int main(int argc, char ** argv)
 
 	unsigned int numSteps = atoi(argv[3]);
 
+	spawnRedis = redisConnect(redis_host, 6379);
+	if(spawnRedis == NULL || spawnRedis->err)
+	{
+		printf("Redis error: %s\n", spawnRedis->errstr);
+		return 1;
+	}
+
+	//If not rank 0, wait
+	if(rank != 0)
+	{
+		for(step = 0; step < numSteps; step++)
+		{
+			//Set Phase and do all four fluxes
+			phase = 0;
+			CIRCLE_begin();
+			phase = 1;
+			CIRCLE_begin();
+			phase = 2;
+			CIRCLE_begin();
+			phase = 3;
+			CIRCLE_begin();
+		}
+		redisFree(spawnRedis);
+		CIRCLE_finalize();
+		return 0;
+	}
+	//Initialize the "barrier"
+	redisReply * reply = (redisReply *) redisCommand(spawnRedis, "SET %s 0", redisBarString);
+	freeReplyObject(reply);
 	//Initialize
 	std::cout << "Initializing " << dims[0] << " by " << dims[1] << " grid" << std::endl;
 	initEverything(doKriging, doCoMD, dims, dt, delta, gamma);
@@ -150,13 +177,25 @@ int main(int argc, char ** argv)
 	{
 		std::cout << step << ": Vising to Verifying" << std::endl;
 		outputVTK(doKriging, doCoMD, dims, dt, delta, gamma, step, argv[4]);
+		///TODO: Find a way to get short circuits to work that won't segfault libcircle
 		//Do a short circuit test
+		/*
 		if(tryShortCircuit(dims, step, argv[4]))
 		{
 			//Short circuit succeeded
 			std::cout << step << ": Short Circuit Successful, on to the next step!" << std::endl;
+			//Hopefully do the libcircle stuff with comparatively fast runs
+			phase = 0;
+			CIRCLE_begin();
+			phase = 1;
+			CIRCLE_begin();
+			phase = 2;
+			CIRCLE_begin();
+			phase = 3;
+			CIRCLE_begin();
 		}
 		else
+		*/
 		{
 			std::cout << step << ": First Flux" << std::endl;
 			nTasks = prepFirstFlux(doKriging, doCoMD, dims, dt, delta, gamma, step, argv[4]);
@@ -186,6 +225,9 @@ int main(int argc, char ** argv)
 	std::cout << numSteps << ": Vising to Verifying" << std::endl;
 	outputVTK(doKriging, doCoMD, dims, dt, delta, gamma, numSteps, argv[4]);
 	std::cout << "Ran for " << numSteps << " iterations" << std::endl;
+	//Clean-up
+	redisFree(spawnRedis);
+	CIRCLE_finalize();
 	return 0;
 }
 
