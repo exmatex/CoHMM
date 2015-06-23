@@ -57,6 +57,7 @@ endif()
 
 find_package(MPI)
 if(MPI_CXX_FOUND)
+	find_package(Libcircle)
 	find_package(ChunksAndTasks)
 endif()
 
@@ -158,6 +159,12 @@ endif()
 if(INTELCNC_FOUND)
 	message(STATUS "Intel CnC Driver Enabled")
 	add_subdirectory(2D_CnC)
+endif()
+
+#If Libcircle found, build Libcircle driver
+if(LIBCIRCLE_FOUND)
+	message(STATUS "Libcircle Driver Enabled")
+	add_subdirectory(2D_Libcircle)
 endif()
 
 #Either way, build the test driver
