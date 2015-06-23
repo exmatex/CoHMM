@@ -177,25 +177,23 @@ int main(int argc, char ** argv)
 	{
 		std::cout << step << ": Vising to Verifying" << std::endl;
 		outputVTK(doKriging, doCoMD, dims, dt, delta, gamma, step, argv[4]);
-		///TODO: Find a way to get short circuits to work that won't segfault libcircle
 		//Do a short circuit test
-		/*
 		if(tryShortCircuit(dims, step, argv[4]))
 		{
 			//Short circuit succeeded
 			std::cout << step << ": Short Circuit Successful, on to the next step!" << std::endl;
+			nTasks = 0;
 			//Hopefully do the libcircle stuff with comparatively fast runs
 			phase = 0;
-			CIRCLE_begin();
+			doLibcircleTasks();
 			phase = 1;
-			CIRCLE_begin();
+			doLibcircleTasks();
 			phase = 2;
-			CIRCLE_begin();
+			doLibcircleTasks();
 			phase = 3;
-			CIRCLE_begin();
+			doLibcircleTasks();
 		}
 		else
-		*/
 		{
 			std::cout << step << ": First Flux" << std::endl;
 			nTasks = prepFirstFlux(doKriging, doCoMD, dims, dt, delta, gamma, step, argv[4]);
