@@ -13,7 +13,7 @@ Dependencies
 
 2. [hredis](https://github.com/redis/hiredis)
 
-3. mkl or (another implementation of the cblas and lapacke interfaces)
+3. [Intel Math Kernel Library](https://software.intel.com/en-us/intel-mkl) or (another implementation of the cblas and lapacke interfaces)
 
 4. Optionally [SWIG](http://www.swig.org/) if using the [Swift/T](swift-lang.org/Swift-T/) example
 
@@ -46,7 +46,7 @@ Execution
 
    example command line:
 
-   `./2D_dadTest 100 100 1000 localhost 0.0001 0.0001 0`
+   `./2D_dadTest 100 100 1000 localhost`
 
 Swift/T Example
 ---------
