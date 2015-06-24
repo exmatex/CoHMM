@@ -42,31 +42,31 @@ Execution
 
 1. start redis server in background (`redis-server &`)
 
-2. run 2D_DaDTest with `./2D_dadTest <dim_x> <dim_y> <nsteps> <redis_server>`
+2. run 2D_DaDTest with `./2D_DaDTest <dim_x> <dim_y> <nsteps> <redis_server>`
 
    example command line:
 
-   `./2D_dadTest 100 100 1000 localhost`
+   `./2D_DaDTest 100 100 1000 localhost`
 
 Swift/T Example
 ---------
-To build and execute the Swift/T example, ensure that the CoHMM library has been built in a subdirectory `bld` and execute ./swiftTBuild to generate .tic files
+To build and execute the Swift/T example, ensure that the CoHMM library has been built in a subdirectory `bld` and execute `swiftTBuild` to generate .tic files
 
 Chunks and Tasks
 ---------
-If Chunks and Tasks is detected, it will be automatically built alongside the 2D_DaDTest driver in the 2D_ChunksAndTasks subdirectory.
+If Chunks and Tasks is detected, it will be automatically built alongside the 2D_DaDTest driver in the `2D_ChunksAndTasks` subdirectory.
 
 Intel Concurrent Collections
 ---------
-If Inel CnC is detected, it will be automatically built alongside the 2D_DaDTest driver in the 2D_CnC subdirectory.
+If Intel CnC is detected, it will be automatically built alongside the 2D_DaDTest driver in the `2D_CnC` subdirectory.
 
 Libcircle
 ---------
-If Libcircle is detected, it will be automatically built alongside the 2D_DaDTest driver in the 2D_Libcircle subdirectory.
+If Libcircle is detected, it will be automatically built alongside the 2D_DaDTest driver in the `2D_Libcircle` subdirectory.
 
 Charm++
 ---------
-If Charm++ is detected, it will be automatically built alongside the 2D_DaDTest driver in the 2D_Charm++ subdirectory.
+If Charm++ is detected, it will be automatically built alongside the 2D_DaDTest driver in the `2D_Charm++` subdirectory.
 
 Copyright and license
 ---------------------
