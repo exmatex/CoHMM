@@ -33,10 +33,12 @@ template <typename T> bool putBlocks(T * field, int dimX, int dimY, int curStep,
 		freeReplyObject(reply);
 	}
 	//See if last block is full
-	int i = nBlocks - 1;
+	unsigned int i = nBlocks - 1;
 	buildBlockKey(keyBuffer, curStep, curPhase, i, dimX, dimY, tag);
-	if( (dimX*dimY) % fieldBlockSize == 0)
+	unsigned int lastBlock = (dimX*dimY) % fieldBlockSize;
+	if( lastBlock == 0)
 	{
+		std::cout << "In here" << std::endl;
 		//It was, so same as above
 		//Do a redis push
 		redisReply *reply;
@@ -45,6 +47,7 @@ template <typename T> bool putBlocks(T * field, int dimX, int dimY, int curStep,
 	}
 	else
 	{
+		std::cout << "Also in here?" << std::endl;
 		//It was not, so only copy what we need
 		unsigned int lastBlock = (dimX*dimY) % fieldBlockSize;
 		//Do a redis push
@@ -120,4 +123,3 @@ template <typename T> bool getSingle(T * item, int curStep, int curPhase, int ID
 }
 
 #endif
-
