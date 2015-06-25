@@ -19,11 +19,10 @@ void buildSingleKey(char * key, int curStep, int curPhase, int ID, const char * 
 unsigned int getNumBlocks(int dimX, int dimY)
 {
 	unsigned int numBlocks = (dimX * dimY) / fieldBlockSize;
-	if(fieldBlockSize % (dimX*dimY) != 0)
+	if((dimX*dimY) % fieldBlockSize != 0)
 	{
 		numBlocks++;
 	}
 
     return numBlocks;
 }
-
