@@ -2,8 +2,13 @@
 #include <vector>
 #include <string>
 #include <cassert>
+#include <cstring>
+#include <fstream>
 
 #include <hiredis.h>
+
+///TODO: Find a more OS neutral way to do this
+#include <unistd.h>
 
 extern "C"
 {
@@ -15,7 +20,6 @@ extern "C"
 #include "redisBuckets.hpp"
 #include "kriging.hpp"
 
-#include <iostream>
 
 
 bool backToTheFuture(Node * fields, FluxFuture * futures, int * dims, int curStep, int curPhase, redisContext * headRedis)
@@ -68,7 +72,7 @@ int prepTasks(Node * fields, FluxFuture * futures, bool doKriging, int * dims, d
 			std::vector<double *> fVec;
 			std::vector<double *> gVec;
 			getSortedSubBucketNearZero(fields[x + dims[0]*y].w.w, (char *)"comd", headRedis, comdDigits, 2, &wVec, &fVec, &gVec, zeroThresh);
-			
+
 			//Check for exact value
 			bool useDB = ifConservedFieldsMatch(fields[x+dims[0]*y].w.w, &wVec, dbT);
 			//We actually found it
@@ -473,13 +477,13 @@ FluxOut fluxFn(bool doKriging, bool doCoMD, FluxIn * input, redisContext * headR
 			strcpy(theInput.potDir,"../pots");
 			strcpy(theInput.potName,"Cu01.eam.alloy");
 			strcpy(theInput.potType,"setfl");
-			theInput.doeam = 1; 
+			theInput.doeam = 1;
 			theInput.nx = 6;
 			theInput.ny = 6;
 			theInput.nz = 6;
 			theInput.nSteps = 1000;
-			theInput.printRate = 1; 
-			//MUST SPECIFY THE FOLLOWING               
+			theInput.printRate = 1;
+			//MUST SPECIFY THE FOLLOWING
 			theInput.dt = 10.0;
 			theInput.lat = 3.6186;
 			theInput.temperature = 0;
@@ -540,7 +544,7 @@ FluxOut fluxFn(bool doKriging, bool doCoMD, FluxIn * input, redisContext * headR
 			output.g[6] = -output.g[3]*sqrt(output.g[4]*output.g[4] + output.g[5]*output.g[5]);
 		}
 		//Put result to DB for future use: Warning, flush if we switch to comd as this is horrible
-		putData(input->fields.w, output.f, output.g, (char *)"comd", headRedis, comdDigits);		
+		putData(input->fields.w, output.f, output.g, (char *)"comd", headRedis, comdDigits);
 	}
 	return output;
 }
@@ -598,39 +602,6 @@ bool outputVTK(bool doKriging, bool doCoMD, int * dims, double * dt, double * de
 	return true;
 }
 
-bool initEverything(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma)
-{
-	return initEverything(doKriging, doCoMD, dims, dt, delta, gamma, "localhost");
-}
-int prepFirstFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep)
-{
-	return prepFirstFlux(doKriging, doCoMD, dims, dt, delta, gamma, curStep, "localhost");
-}
-int prepSecondFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep)
-{
-	return prepSecondFlux(doKriging, doCoMD, dims, dt, delta, gamma, curStep, "localhost");
-}
-int prepThirdFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep)
-{
-	return prepThirdFlux(doKriging, doCoMD, dims, dt, delta, gamma, curStep, "localhost");
-}
-int prepLastFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep)
-{
-	return prepLastFlux(doKriging, doCoMD, dims, dt, delta, gamma, curStep, "localhost");
-}
-int finishStep(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep)
-{
-	return finishStep(doKriging, doCoMD, dims, dt, delta, gamma, curStep, "localhost");
-}
-bool cloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int taskID)
-{
-	return cloudFlux(doKriging, doCoMD, curStep, phase, taskID, "localhost");
-}
-bool outputVTK(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep)
-{
-	return outputVTK(doKriging, doCoMD, dims, dt, delta, gamma, curStep, "localhost");
-}
-
 bool tryShortCircuit(int * dims, int curStep, const char * redis_host)
 {
 	//For short circuiting purposes, we do it on a per-step basis
@@ -666,8 +637,90 @@ bool tryShortCircuit(int * dims, int curStep, const char * redis_host)
 	redisFree(headRedis);
 	return retBool;
 }
+
+inline bool checkRedisHost(const char * inHost)
+{
+	//Check if we passed a path
+	//For santiy's sake
+	//	we assume all paths are either relative and start with a "."
+	//	or absolute and start with a "/"
+	if( (inHost[0] == '.') or (inHost[0] == '/') )
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+char * getRedisHost(const char * filePath)
+{
+	char * retHost = nullptr;
+	//Open file we passed in
+	std::ifstream redisFile;
+	redisFile.open(filePath);
+	if(redisFile.is_open())
+	{
+		//Get hostname of self
+		char cHost[64];
+		gethostname(cHost, 64);
+		std::string strHost(cHost);
+		bool found = false;
+		std::string line;
+		//Iterate through file we passed in
+		while( std::getline(redisFile, line) && found == true )
+		{
+			//Check if this is the line that corresponds to us
+			if(line.compare(0, strHost.length() - 1, strHost) == 0)
+			{
+				//This is it, use the host after the tab
+				std::string ourRedis = line.substr(line.find('\t')+1);
+				strcpy(cHost, ourRedis.c_str());
+				//End the loop
+				found = true;
+			}
+		}
+		//We either found it or we didn't, close the file
+		redisFile.close();
+	}
+	//Hopefully return the hostname, not nullptr
+	return retHost;
+}
+
+bool initEverything(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma)
+{
+	return initEverything(doKriging, doCoMD, dims, dt, delta, gamma, "localhost");
+}
+int prepFirstFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep)
+{
+	return prepFirstFlux(doKriging, doCoMD, dims, dt, delta, gamma, curStep, "localhost");
+}
+int prepSecondFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep)
+{
+	return prepSecondFlux(doKriging, doCoMD, dims, dt, delta, gamma, curStep, "localhost");
+}
+int prepThirdFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep)
+{
+	return prepThirdFlux(doKriging, doCoMD, dims, dt, delta, gamma, curStep, "localhost");
+}
+int prepLastFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep)
+{
+	return prepLastFlux(doKriging, doCoMD, dims, dt, delta, gamma, curStep, "localhost");
+}
+int finishStep(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep)
+{
+	return finishStep(doKriging, doCoMD, dims, dt, delta, gamma, curStep, "localhost");
+}
+bool cloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int taskID)
+{
+	return cloudFlux(doKriging, doCoMD, curStep, phase, taskID, "localhost");
+}
+bool outputVTK(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep)
+{
+	return outputVTK(doKriging, doCoMD, dims, dt, delta, gamma, curStep, "localhost");
+}
 bool tryShortCircuit(int * dims, int curStep)
 {
 	return tryShortCircuit(dims, curStep, "localhost");
 }
-
