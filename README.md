@@ -13,11 +13,17 @@ Dependencies
 
 2. [hredis](https://github.com/redis/hiredis)
 
-3. mkl or (another implementation of the cblas and lapacke interfaces)
+3. [Intel Math Kernel Library](https://software.intel.com/en-us/intel-mkl) or (another implementation of the cblas and lapacke interfaces)
 
 4. Optionally [SWIG](http://www.swig.org/) if using the [Swift/T](swift-lang.org/Swift-T/) example
 
-5. Optional [Chunks and Tasks](http://chunks-and-tasks.org)
+5. Optionally [Chunks and Tasks](http://chunks-and-tasks.org)
+
+6. Optionally [Intel Concurrent Collections](https://icnc.github.io/)
+
+7. Optionally [Libcircle](http://hpc.github.io/libcircle/)
+
+8. Optionally [Charm++](http://charm.cs.illinois.edu/research/charm)
 
 Installation
 ------------
@@ -36,22 +42,33 @@ Execution
 
 1. start redis server in background (`redis-server &`)
 
-2. run 2D_DaDTest with `./2D_dadTest <dim_x> <dim_y> <nsteps> <redis_server>`
+2. run 2D_DaDTest with `./2D_DaDTest <dim_x> <dim_y> <nsteps> <redis_server>`
 
    example command line:
 
-   `./2D_dadTest 100 100 1000 localhost 0.0001 0.0001 0`
+   `./2D_DaDTest 100 100 1000 localhost`
 
 Swift/T Example
 ---------
-To build and execute the Swift/T example, ensure that the CoHMM library has been built in a subdirectory `bld` and execute ./swiftTBuild to generate .tic files
+To build and execute the Swift/T example, ensure that the CoHMM library has been built in a subdirectory `bld` and execute `swiftTBuild` to generate .tic files
 
 Chunks and Tasks
 ---------
-If Chunks and Tasks is detected, it will be automatically built alongside the 2D_DaDTest driver
+If Chunks and Tasks is detected, it will be automatically built alongside the 2D_DaDTest driver in the `2D_ChunksAndTasks` subdirectory.
+
+Intel Concurrent Collections
+---------
+If Intel CnC is detected, it will be automatically built alongside the 2D_DaDTest driver in the `2D_CnC` subdirectory.
+
+Libcircle
+---------
+If Libcircle is detected, it will be automatically built alongside the 2D_DaDTest driver in the `2D_Libcircle` subdirectory.
+
+Charm++
+---------
+If Charm++ is detected, it will be automatically built alongside the 2D_DaDTest driver in the `2D_Charm++` subdirectory.
 
 Copyright and license
 ---------------------
 
 Los Alamos National Security, LLC (LANS) owns the copyright to CoHMM, which it identifies as LA-CC-2012-065 (ExMatEx: Scale-Bridging Materials Evaluation and Test Suite, Version 1). The license is BSD-sh with a "modifications must be indicated" clause.  See LICENSE.md for the full text.
-
