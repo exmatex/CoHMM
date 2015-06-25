@@ -29,6 +29,6 @@ bool tryShortCircuit(int * dims, int curStep);
 FluxOut fluxFn(bool doKriging, bool doCoMD, FluxIn * input, redisContext * headRedis);
 
 bool checkRedisHost(const char * inHost);
-char * getRedisHost();
+char * getRedisHost(const char * filePath);
 
 #endif

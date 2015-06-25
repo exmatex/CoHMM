@@ -15,11 +15,11 @@ extern "C"
 #include <CoMD_lib.h>
 }
 
-#include "2DKriging.hpp"
 #include "redisShmem.hpp"
+#include "2DKriging.hpp"
 #include "redisBuckets.hpp"
 #include "kriging.hpp"
-
+#include "CoHMM_DaD.hpp"
 
 
 bool backToTheFuture(Node * fields, FluxFuture * futures, int * dims, int curStep, int curPhase, redisContext * headRedis)
@@ -201,8 +201,19 @@ int prepTasks(Node * fields, FluxFuture * futures, bool doKriging, int * dims, d
 //Initialize all fields and store in database at KEY_0_0
 bool initEverything(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, const char * redis_host)
 {
+	const char * redisHostName;
+	//Check redis host
+	bool needFree = checkRedisHost(redis_host);
+	if(needFree == true)
+	{
+		redisHostName = getRedisHost(redis_host);
+	}
+	else
+	{
+		redisHostName = redis_host;
+	}
 	//Connect to redis
-	redisContext * headRedis = redisConnect(redis_host, 6379);
+	redisContext * headRedis = redisConnect(redisHostName, 6379);
 	if(headRedis == NULL || headRedis->err)
 	{
 		printf("Redis error: %s\n", headRedis->errstr);
@@ -218,6 +229,10 @@ bool initEverything(bool doKriging, bool doCoMD, int * dims, double * dt, double
 	redisFree(headRedis);
 	//Free memory
 	delete [] field;
+	if(needFree == true)
+	{
+		delete [] redisHostName;
+	}
 	//And we're done
 	return true;
 }
@@ -225,8 +240,19 @@ bool initEverything(bool doKriging, bool doCoMD, int * dims, double * dt, double
 //Essentially run through to the first flux of the first half-step
 int prepFirstFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep, const char * redis_host)
 {
+	const char * redisHostName;
+	//Check redis host
+	bool needFree = checkRedisHost(redis_host);
+	if(needFree == true)
+	{
+		redisHostName = getRedisHost(redis_host);
+	}
+	else
+	{
+		redisHostName = redis_host;
+	}
 	//Connect to redis
-	redisContext * headRedis = redisConnect(redis_host, 6379);
+	redisContext * headRedis = redisConnect(redisHostName, 6379);
 	if(headRedis == NULL || headRedis->err)
 	{
 		printf("Redis error: %s\n", headRedis->errstr);
@@ -246,14 +272,29 @@ int prepFirstFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double *
 	//Don't save fields, we didn't do anything with it
 	delete [] field;
 	delete [] futures;
+	if(needFree == true)
+	{
+		delete [] redisHostName;
+	}
 	//Return the number of tasks
 	return numTasks;
 }
 
 int prepSecondFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep, const char * redis_host)
 {
+	const char * redisHostName;
+	//Check redis host
+	bool needFree = checkRedisHost(redis_host);
+	if(needFree == true)
+	{
+		redisHostName = getRedisHost(redis_host);
+	}
+	else
+	{
+		redisHostName = redis_host;
+	}
 	//Connect to redis
-	redisContext * headRedis = redisConnect(redis_host, 6379);
+	redisContext * headRedis = redisConnect(redisHostName, 6379);
 	if(headRedis == NULL || headRedis->err)
 	{
 		printf("Redis error: %s\n", headRedis->errstr);
@@ -279,6 +320,10 @@ int prepSecondFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double 
 	//Don't save fields, we only need the original w's and the final f's and g's
 	delete [] field;
 	delete [] futures;
+	if(needFree == true)
+	{
+		delete [] redisHostName;
+	}
 	//Return the number of tasks
 	return numTasks;
 }
@@ -286,8 +331,19 @@ int prepSecondFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double 
 int prepThirdFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep, const char * redis_host)
 {
 	//Need phase 0's w's and phase 1's f's and g's
+	const char * redisHostName;
+	//Check redis host
+	bool needFree = checkRedisHost(redis_host);
+	if(needFree == true)
+	{
+		redisHostName = getRedisHost(redis_host);
+	}
+	else
+	{
+		redisHostName = redis_host;
+	}
 	//Connect to redis
-	redisContext * headRedis = redisConnect(redis_host, 6379);
+	redisContext * headRedis = redisConnect(redisHostName, 6379);
 	if(headRedis == NULL || headRedis->err)
 	{
 		printf("Redis error: %s\n", headRedis->errstr);
@@ -317,6 +373,10 @@ int prepThirdFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double *
 	delete[] aField;
 	delete[] bField;
 	delete[] futures;
+	if(needFree == true)
+	{
+		delete [] redisHostName;
+	}
 	//Return the number of tasks
 	return numTasks;
 }
@@ -326,7 +386,18 @@ int prepLastFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double * 
 	//Essentially the same as secondFlux
 	//Really should refactor
 	//Connect to redis
-	redisContext * headRedis = redisConnect(redis_host, 6379);
+	const char * redisHostName;
+	//Check redis host
+	bool needFree = checkRedisHost(redis_host);
+	if(needFree == true)
+	{
+		redisHostName = getRedisHost(redis_host);
+	}
+	else
+	{
+		redisHostName = redis_host;
+	}
+	redisContext * headRedis = redisConnect(redisHostName, 6379);
 	if(headRedis == NULL || headRedis->err)
 	{
 		printf("Redis error: %s\n", headRedis->errstr);
@@ -352,6 +423,10 @@ int prepLastFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double * 
 	//Don't save fields, we only need the original w's and the final f's and g's
 	delete [] field;
 	delete [] futures;
+	if(needFree == true)
+	{
+		delete [] redisHostName;
+	}
 	//Return the number of tasks
 	return numTasks;
 }
@@ -361,7 +436,18 @@ int finishStep(bool doKriging, bool doCoMD, int * dims, double * dt, double * de
 	//Basically phase 3, but replace the last flux call with a shiftback
 	//Need phase 2's w's and phase 3's f's and g's
 	//Connect to redis
-	redisContext * headRedis = redisConnect(redis_host, 6379);
+	const char * redisHostName;
+	//Check redis host
+	bool needFree = checkRedisHost(redis_host);
+	if(needFree == true)
+	{
+		redisHostName = getRedisHost(redis_host);
+	}
+	else
+	{
+		redisHostName = redis_host;
+	}
+	redisContext * headRedis = redisConnect(redisHostName, 6379);
 	if(headRedis == NULL || headRedis->err)
 	{
 		printf("Redis error: %s\n", headRedis->errstr);
@@ -390,6 +476,10 @@ int finishStep(bool doKriging, bool doCoMD, int * dims, double * dt, double * de
 	delete [] fieldA;
 	delete [] fieldB;
 	delete [] futures;
+	if(needFree == true)
+	{
+		delete [] redisHostName;
+	}
 	//Return the number of tasks (0)
 	return 0;
 }
@@ -555,7 +645,18 @@ bool cloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int taskID, 
 	FluxIn input;
 	FluxOut output;
 	//Connect to redis
-	redisContext * headRedis = redisConnect(redis_host, 6379);
+	const char * redisHostName;
+	//Check redis host
+	bool needFree = checkRedisHost(redis_host);
+	if(needFree == true)
+	{
+		redisHostName = getRedisHost(redis_host);
+	}
+	else
+	{
+		redisHostName = redis_host;
+	}
+	redisContext * headRedis = redisConnect(redisHostName, 6379);
 	if(headRedis == NULL || headRedis->err)
 	{
 		printf("Redis error: %s\n", headRedis->errstr);
@@ -569,13 +670,28 @@ bool cloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int taskID, 
 	putSingle<FluxOut>(&output, curStep, phase, taskID, headRedis, "RESULT");
 	//cleanup redis
 	redisFree(headRedis);
+	if(needFree == true)
+	{
+		delete [] redisHostName;
+	}
 	return true;
 }
 
 bool outputVTK(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep, const char * redis_host)
 {
 	//Connect to redis
-	redisContext * headRedis = redisConnect(redis_host, 6379);
+	const char * redisHostName;
+	//Check redis host
+	bool needFree = checkRedisHost(redis_host);
+	if(needFree == true)
+	{
+		redisHostName = getRedisHost(redis_host);
+	}
+	else
+	{
+		redisHostName = redis_host;
+	}
+	redisContext * headRedis = redisConnect(redisHostName, 6379);
 	if(headRedis == NULL || headRedis->err)
 	{
 		printf("Redis error: %s\n", headRedis->errstr);
@@ -599,6 +715,10 @@ bool outputVTK(bool doKriging, bool doCoMD, int * dims, double * dt, double * de
 	redisFree(headRedis);
 	//Don't save fields, we didn't do anything with it
 	delete [] field;
+	if(needFree == true)
+	{
+		delete [] redisHostName;
+	}
 	return true;
 }
 
@@ -608,7 +728,18 @@ bool tryShortCircuit(int * dims, int curStep, const char * redis_host)
 	//Just check for all tiles  of phase 0 of the next timestep
 	///WARNING: This could fail if the job crashes partway through a puts
 	//Connect to redis
-	redisContext * headRedis = redisConnect(redis_host, 6379);
+	const char * redisHostName;
+	//Check redis host
+	bool needFree = checkRedisHost(redis_host);
+	if(needFree == true)
+	{
+		redisHostName = getRedisHost(redis_host);
+	}
+	else
+	{
+		redisHostName = redis_host;
+	}
+	redisContext * headRedis = redisConnect(redisHostName, 6379);
 	if(headRedis == NULL || headRedis->err)
 	{
 		printf("Redis error: %s\n", headRedis->errstr);
@@ -635,6 +766,10 @@ bool tryShortCircuit(int * dims, int curStep, const char * redis_host)
 	}
 	//Kill redis
 	redisFree(headRedis);
+	if(needFree == true)
+	{
+		delete [] redisHostName;
+	}
 	return retBool;
 }
 
