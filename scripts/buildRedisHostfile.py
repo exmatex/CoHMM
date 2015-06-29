@@ -3,9 +3,9 @@ import sys
 
 def genNodeList():
     #Get environmental variable
-    #nodeString = os.environ['SLURM_JOB_NODELIST']
+    nodeString = os.environ['SLURM_JOB_NODELIST']
     #For debug/devel
-    nodeString = "cn[3-9,46,52,61,111-113,116-118]"
+    #nodeString = "cn[14,3-9,46,52,61,111-113,116-118]"
     #Remove leading 'cn'
     nodeString = nodeString.lstrip('cn')
     nodeList = []
@@ -86,15 +86,90 @@ def writeServerFile(serverList):
         sFile.write(line)
     sFile.close()
 
+def writeRedisConfigs(serverList):
+    pwd = os.getcwd()
+    master = "cn" + str(serverList[0])
+    for node in serverList:
+        nHost = "cn" + str(node)
+        #See if we need to prepare the child
+        if(nHost != master):
+            #Make child dir if needed
+            if not os.path.exists(nHost):
+                os.mkdir(nHost)
+            #Go to child dir
+            os.chdir(nHost)
+            #Write file
+            rFile = open('redis.conf', 'w')
+            rFile.write("port 6379\n")
+            rFile.write("slaveof " + master + " 6379\n")
+            rFile.write("dbfilename dump" + nHost + ".rdb\n")
+            rFile.write("slave-read-only no\n")
+            rFile.close()
+            #Return to parent dir
+            os.chdir(pwd)
+
+def which(program):
+    for path in os.environ['PATH'].split(os.pathsep):
+        path = path.strip('""')
+        binary = os.path.join(path, program)
+        if os.path.isfile(binary):
+            return binary
+
+def writeBashScripts(serverList):
+    pwd = os.getcwd()
+    master = "cn" + str(serverList[0])
+    sFile = open('startRedisServers.sh', 'w')
+    eFile = open('endRedisServers.sh', 'w')
+    #Boiler plate
+    bashLine = "#!/bin/bash\n"
+    sFile.write(bashLine)
+    eFile.write(bashLine)
+    #Do the start script commands
+    #Find redis-server
+    rServer = which('redis-server')
+    for node in serverList:
+        nHost = "cn" + str(node)
+        if(nHost != master):
+            #Go to child dir
+            os.chdir(nHost)
+            #Get child dir
+            kwd = os.getcwd()
+            #Write command line
+            cLine = "nohup ssh -n " + nHost
+            cLine += " \'cd " + kwd + "; " + rServer + " " + kwd + "/redis.conf &\' &\n"
+            sFile.write(cLine)
+            #Return to parent dir
+            os.chdir(pwd)
+        else:
+            #Master is easy. Also it is probably localhost
+            cLine = "nohup ssh -n " + nHost
+            cLine += " \'" + rServer + " &' &\n"
+            sFile.write(cLine)
+    sFile.close()
+    #Now write the end script
+    killswitch = "pkill -f \"redis-server\""
+    for node in serverList:
+        nHost = "cn" + str(node)
+        cLine = "ssh " + nHost + " \'" + killswitch + "\'\n"
+        eFile.write(cLine)
+        eFile.write(cLine)
+    eFile.close()
+
 def main():
     numServers = 1
     if(len(sys.argv) == 2):
         numServers = int(sys.argv[1])
     nodeList = genNodeList()
     (serverList, serverPairs) = assignServers(nodeList, numServers)
+    #Write LUT file for actual program to use
     writeLUTFile(serverPairs)
+    #Write nodelist and serverlist if the following scripts aren't used
     writeHostFile(nodeList)
     writeServerFile(serverList)
+    #Write redis config files and startup/shutdown scripts
+    writeRedisConfigs(serverList)
+    writeBashScripts(serverList)
+
 
 if __name__ == "__main__":
     main()
