@@ -58,11 +58,18 @@ def assignServers(nodeList, numServers):
                 serverList.append( (node, chunk[0]) )
     return serverList
 
+def writeRedisFile(serverList):
+    #Open file to write
+    sFile = open('nodeSeverFile', 'w')
+    for pair in serverList:
+        line = "cn" + str(pair[0]) + "\t" + "cn" + str(pair[1]) + "\n"
+        sFile.write(line)
+    sFile.close()
 
 def main():
     nodeList = genNodeList();
     serverList = assignServers(nodeList, 7)
-    print serverList
+    writeRedisFile(serverList)
 
 if __name__ == "__main__":
     main()
