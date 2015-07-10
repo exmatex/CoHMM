@@ -5,6 +5,21 @@
 
 #include "2D_CnC.hpp"
 
+Flux_Tag::Flux_Tag(int step, int phase, int task)
+{
+	this->step = step;
+	this->phase = phase;
+	this->task = task;
+}
+
+Flux_Tag::Flux_Tag()
+{
+	this->step = -1;
+	this->phase = -1;
+	this->task = -1;
+}
+
+
 DaDContext::DaDContext()
 	:
 	CnC::context<DaDContext>(),
@@ -25,9 +40,9 @@ int Flux_Task::execute(const Flux_Tag &tag, DaDContext &c) const
 	Flux_Item runConfig;
 	c.globalItem.get(0, runConfig);
 	//Get params
-	unsigned int step = std::get<0>(tag);
-	unsigned int phase = std::get<1>(tag);
-	unsigned int task = std::get<2>(tag);
+	unsigned int step = tag.step;
+	unsigned int phase = tag.phase;
+	unsigned int task = tag.task;
 	//Call
 	cloudFlux(runConfig.doKriging, runConfig.doCoMD, step, phase, task, runConfig.redis_host);
 	//Return
@@ -49,7 +64,7 @@ void parallelFor(unsigned int step, unsigned int phase, unsigned int nTasks, DaD
 
 int main(int argc, char ** argv)
 {
-	//dimX dimY nSteps redis_server 
+	//dimX dimY nSteps redis_server
 	if( argc != 5)
 	{
 		std::cerr <<  "./2D_DaDTest <dim_x> <dim_y> <nsteps> <redis_server>" << std::endl;
@@ -126,4 +141,3 @@ int main(int argc, char ** argv)
 
 	return 0;
 }
-

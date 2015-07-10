@@ -1,8 +1,6 @@
 #ifndef TWOD_CNC_HPP
 #define TWOD_CNC_HPP
 
-#include <tuple>
-
 #ifdef CNC_DIST
 #include <cnc/dist_cnc.h>
 #else
@@ -17,7 +15,18 @@ const unsigned int MAX_HOST_LENGTH = 64;
 struct DaDContext;
 
 //Typedef for tag (step, phase, task)
-typedef std::tuple<int, int, int> Flux_Tag; 
+struct Flux_Tag
+{
+public:
+	//Constructors
+	Flux_Tag();
+	Flux_Tag(int step, int phase, int task);
+	//Attributes
+	int step;
+	int phase;
+	int task;
+};
+CNC_BITWISE_SERIALIZABLE(Flux_Tag);
 
 //The one singleton item
 struct Flux_Item
@@ -54,4 +63,3 @@ struct DaDContext : public CnC::context<DaDContext>
 };
 
 #endif
-
