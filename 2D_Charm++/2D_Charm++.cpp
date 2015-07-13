@@ -21,7 +21,17 @@ class Flux : public CBase_Flux
 	public:
 	Flux(unsigned int step, unsigned int phase, unsigned int tid)
 	{
-		cloudFlux(gDoKriging, gDoCoMD, step, phase, tid, gRedis_host); 
+		cloudFlux(gDoKriging, gDoCoMD, step, phase, tid, gRedis_host);
+		mainProxy.countCallBacks();
+	}
+};
+
+class Retry : public CBase_Retry
+{
+	public:
+	Retry(unsigned int step, unsigned int phase, unsigned int round, unsigned int tid)
+	{
+		retryCloudFlux(gDoKriging, gDoCoMD, step, phase, tid, round, gRedis_host);
 		mainProxy.countCallBacks();
 	}
 };
@@ -32,9 +42,10 @@ class Main : public CBase_Main
 		unsigned int nTasks;
 		unsigned int curPhase;
 		unsigned int curStep;
+		int curRound;
 		unsigned int nSteps;
 
-		void spawnTasks()
+		void spawnFluxes()
 		{
 			ckout << curStep << ": Doing " << nTasks << " fluxes" << endl;
 			for(unsigned int i = 0; i < nTasks; i++)
@@ -43,11 +54,20 @@ class Main : public CBase_Main
 			}
 		}
 
+		void spawnRetries()
+		{
+			ckout << curStep << ": Redoing " << nTasks << " Tasks" << endl;
+			for(unsigned int i = 0; i < nTasks; i++)
+			{
+				CProxy_Retry::ckNew(curStep, curPhase - 1, curRound, i);
+			}
+		}
+
 	public:
 	Main(CkArgMsg * m)
 	{
 		//<dim_x> <dim_y> <nsteps> <redis_server> <database error threshold> <Kriging error threshold> <Gaussian noise strength>
-		//dimX dimY nSteps redis_server 
+		//dimX dimY nSteps redis_server
 		if( m->argc != 5)
 		{
 			std::cerr <<  "./2D_DaDTest <dim_x> <dim_y> <nsteps> <redis_server>" << endl;
@@ -75,10 +95,11 @@ class Main : public CBase_Main
 		ckout << "Initialized" << endl;
 		ckout << "Running for " << nSteps << " iterations" << endl;
 
-		//Init vars	
+		//Init vars
 		curPhase = 0;
 		nTasks = 0;
 		curStep = 0;
+		curRound = -1;
 		//Call the countCallBacks method
 		countCallBacks();
 	};
@@ -93,6 +114,7 @@ class Main : public CBase_Main
 		//See if we move on
 		if(nTasks == 0)
 		{
+
 			//Big switch
 			switch(curPhase)
 			{
@@ -122,39 +144,79 @@ class Main : public CBase_Main
 							//Spawn phase 0
 							ckout << curStep << ": First Flux" << endl;
 							nTasks = prepFirstFlux(gDoKriging, gDoCoMD, gDims, gDt, gDelta, gGamma, curStep, gRedis_host);
-							spawnTasks();
+							spawnFluxes();
 							curPhase = 1;
 						}
 					}
 					break;
 				case 1:
 					//Phase 1
-					ckout << curStep << ": Second Flux" << endl;
-					nTasks = prepSecondFlux(gDoKriging, gDoCoMD, gDims, gDt, gDelta, gGamma, curStep, gRedis_host);
-					spawnTasks();
-					curPhase = 2;
+					curRound++;
+					nTasks = checkStepForFaults(gDims, curStep, curPhase - 1, curRound, gRedis_host);
+					if(nTasks != 0)
+					{
+						spawnRetries();
+					}
+					else
+					{
+						curRound = -1;
+						ckout << curStep << ": Second Flux" << endl;
+						nTasks = prepSecondFlux(gDoKriging, gDoCoMD, gDims, gDt, gDelta, gGamma, curStep, gRedis_host);
+						spawnFluxes();
+						curPhase = 2;
+					}
 					break;
 				case 2:
 					//Phase 2
-					ckout << curStep << ": Third Flux" << endl;
-					nTasks = prepThirdFlux(gDoKriging, gDoCoMD, gDims, gDt, gDelta, gGamma, curStep, gRedis_host);
-					spawnTasks();
-					curPhase = 3;
+					curRound++;
+					nTasks = checkStepForFaults(gDims, curStep, curPhase - 1, curRound, gRedis_host);
+					if(nTasks != 0)
+					{
+						spawnRetries();
+					}
+					else
+					{
+						curRound = -1;
+						ckout << curStep << ": Third Flux" << endl;
+						nTasks = prepThirdFlux(gDoKriging, gDoCoMD, gDims, gDt, gDelta, gGamma, curStep, gRedis_host);
+						spawnFluxes();
+						curPhase = 3;
+					}
 					break;
 				case 3:
 					//Phase 3
-					ckout << curStep << ": Last Flux" << endl;
-					nTasks = prepLastFlux(gDoKriging, gDoCoMD, gDims, gDt, gDelta, gGamma, curStep, gRedis_host);
-					spawnTasks();
-					curPhase = 4;
+					curRound++;
+					nTasks = checkStepForFaults(gDims, curStep, curPhase - 1, curRound, gRedis_host);
+					if(nTasks != 0)
+					{
+						spawnRetries();
+					}
+					else
+					{
+						curRound = -1;
+						ckout << curStep << ": Last Flux" << endl;
+						nTasks = prepLastFlux(gDoKriging, gDoCoMD, gDims, gDt, gDelta, gGamma, curStep, gRedis_host);
+						spawnFluxes();
+						curPhase = 4;
+					}
 					break;
 				case 4:
-					ckout << curStep << ": Finish Step, no Fluxes" << endl;
-					finishStep(gDoKriging, gDoCoMD, gDims, gDt, gDelta, gGamma, curStep, gRedis_host);
-					//Increment step
-					curStep++;
-					//Reset phase
-					curPhase = 0;
+					curRound++;
+					nTasks = checkStepForFaults(gDims, curStep, curPhase - 1, curRound, gRedis_host);
+					if(nTasks != 0)
+					{
+						spawnRetries();
+					}
+					else
+					{
+						curRound = -1;
+						ckout << curStep << ": Finish Step, no Fluxes" << endl;
+						finishStep(gDoKriging, gDoCoMD, gDims, gDt, gDelta, gGamma, curStep, gRedis_host);
+						//Increment step
+						curStep++;
+						//Reset phase
+						curPhase = 0;
+					}
 					break;
 				default:
 					break;
@@ -170,4 +232,3 @@ class Main : public CBase_Main
 };
 
 #include "cohmm_dad.def.h"
-

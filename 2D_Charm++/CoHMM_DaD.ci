@@ -19,4 +19,8 @@ mainmodule cohmm_dad
 	{
 		entry Flux(unsigned int step, unsigned int phase, unsigned int tid);
 	};
+	chare Retry
+	{
+		entry Retry(unsigned int step, unsigned int phase, unsigned int round, unsigned int tid);
+	};
 };
