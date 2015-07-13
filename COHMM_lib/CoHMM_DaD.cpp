@@ -630,39 +630,6 @@ bool outputVTK(bool doKriging, bool doCoMD, int * dims, double * dt, double * de
 	return true;
 }
 
-bool initEverything(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma)
-{
-	return initEverything(doKriging, doCoMD, dims, dt, delta, gamma, "localhost");
-}
-int prepFirstFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep)
-{
-	return prepFirstFlux(doKriging, doCoMD, dims, dt, delta, gamma, curStep, "localhost");
-}
-int prepSecondFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep)
-{
-	return prepSecondFlux(doKriging, doCoMD, dims, dt, delta, gamma, curStep, "localhost");
-}
-int prepThirdFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep)
-{
-	return prepThirdFlux(doKriging, doCoMD, dims, dt, delta, gamma, curStep, "localhost");
-}
-int prepLastFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep)
-{
-	return prepLastFlux(doKriging, doCoMD, dims, dt, delta, gamma, curStep, "localhost");
-}
-int finishStep(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep)
-{
-	return finishStep(doKriging, doCoMD, dims, dt, delta, gamma, curStep, "localhost");
-}
-bool cloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int taskID)
-{
-	return cloudFlux(doKriging, doCoMD, curStep, phase, taskID, "localhost");
-}
-bool outputVTK(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep)
-{
-	return outputVTK(doKriging, doCoMD, dims, dt, delta, gamma, curStep, "localhost");
-}
-
 bool tryShortCircuit(int * dims, int curStep, const char * redis_host)
 {
 	//For short circuiting purposes, we do it on a per-step basis
@@ -698,10 +665,6 @@ bool tryShortCircuit(int * dims, int curStep, const char * redis_host)
 	redisFree(headRedis);
 	return retBool;
 }
-bool tryShortCircuit(int * dims, int curStep)
-{
-	return tryShortCircuit(dims, curStep, "localhost");
-}
 
 int checkStepForFaults(int * dims, int curStep, int curPhase, int curRound, const char * redis_host)
 {
@@ -735,11 +698,6 @@ int checkStepForFaults(int * dims, int curStep, int curPhase, int curRound, cons
 	return failureCount;
 }
 
-int checkStepForFaults(int * dims, int curStep, int curPhase, int curRound)
-{
-	return checkStepForFaults(dims, curPhase, curStep, curRound, "localhost");
-}
-
 bool retryCloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int taskID, int round, const char * redis_host)
 {
 	FluxIn input;
@@ -768,6 +726,46 @@ bool retryCloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int tas
 	return true;
 }
 
+bool initEverything(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma)
+{
+	return initEverything(doKriging, doCoMD, dims, dt, delta, gamma, "localhost");
+}
+int prepFirstFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep)
+{
+	return prepFirstFlux(doKriging, doCoMD, dims, dt, delta, gamma, curStep, "localhost");
+}
+int prepSecondFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep)
+{
+	return prepSecondFlux(doKriging, doCoMD, dims, dt, delta, gamma, curStep, "localhost");
+}
+int prepThirdFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep)
+{
+	return prepThirdFlux(doKriging, doCoMD, dims, dt, delta, gamma, curStep, "localhost");
+}
+int prepLastFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep)
+{
+	return prepLastFlux(doKriging, doCoMD, dims, dt, delta, gamma, curStep, "localhost");
+}
+int finishStep(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep)
+{
+	return finishStep(doKriging, doCoMD, dims, dt, delta, gamma, curStep, "localhost");
+}
+bool cloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int taskID)
+{
+	return cloudFlux(doKriging, doCoMD, curStep, phase, taskID, "localhost");
+}
+bool outputVTK(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep)
+{
+	return outputVTK(doKriging, doCoMD, dims, dt, delta, gamma, curStep, "localhost");
+}
+bool tryShortCircuit(int * dims, int curStep)
+{
+	return tryShortCircuit(dims, curStep, "localhost");
+}
+int checkStepForFaults(int * dims, int curStep, int curPhase, int curRound)
+{
+	return checkStepForFaults(dims, curPhase, curStep, curRound, "localhost");
+}
 bool retryCloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int taskID, int round)
 {
 	return retryCloudFlux(doKriging, doCoMD, curStep, phase, taskID, round, "localhost");
