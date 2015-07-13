@@ -185,7 +185,7 @@ struct FluxFuture
 	bool alreadyComputed;
 };
 
-struct RetryTask
+struct RetryRedirect
 {
 	unsigned int realTaskID;
 };

@@ -51,7 +51,7 @@ bool backToTheFuture(Node * fields, FluxFuture * futures, int * dims, int curSte
 	return true;
 }
 
-bool checkTheFuture(std::vector<RetryTask> &failures, FluxFuture * futures, int * dims, int curStep, int curPhase, redisContext * headRedis)
+bool checkTheFuture(std::vector<RetryRedirect> &failures, FluxFuture * futures, int * dims, int curStep, int curPhase, redisContext * headRedis)
 {
 	std::map<unsigned int, bool> retMap;
 	for(int i = 0; i < dims[0]*dims[1]; i++)
@@ -72,7 +72,7 @@ bool checkTheFuture(std::vector<RetryTask> &failures, FluxFuture * futures, int 
 				if(completed == false)
 				{
 					//Queue it up
-					RetryTask task;
+					RetryRedirect task;
 					task.realTaskID = taskID;
 					failures.push_back(task);
 				}
@@ -679,7 +679,7 @@ int checkStepForFaults(int * dims, int curStep, int curPhase, int curRound, cons
 	FluxFuture * futures = new FluxFuture[dims[0]*dims[1]]();
 	getBlocks<FluxFuture>(futures, dims[0], dims[1], curStep, 0, headRedis, "FUTS");
 	//Prepare a buffer for failed tasks
-	std::vector<RetryTask> failures;
+	std::vector<RetryRedirect> failures;
 	//Check to see if all the futures exist (So tasks ran and returned)
 	checkTheFuture(failures, futures, dims, curStep, 0, headRedis);
 	int failureCount = failures.size();
@@ -691,7 +691,7 @@ int checkStepForFaults(int * dims, int curStep, int curPhase, int curRound, cons
 		//It did, so push the retries
 		for(unsigned int i = 0; i < failureCount; i++)
 		{
-			putSingle<RetryTask>(&failures[i], curStep, curPhase, i, headRedis, tagBuffer);
+			putSingle<RetryRedirect>(&failures[i], curStep, curPhase, i, headRedis, tagBuffer);
 		}
 	}
 	//Return the number of failures
@@ -708,12 +708,12 @@ bool retryCloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int tas
 	{
 		printf("Redis error: %s\n", headRedis->errstr);
 	}
-	//Grab RetryTask
+	//Grab RetryRedirect
 	char tagBuffer[32];
 	sprintf(tagBuffer, "RETRY_%d", round);
-	RetryTask retryTask;
-	getSingle<RetryTask>(&retryTask, curStep, phase, taskID, headRedis, tagBuffer);
-	//Get ID out of RetryTask
+	RetryRedirect retryTask;
+	getSingle<RetryRedirect>(&retryTask, curStep, phase, taskID, headRedis, tagBuffer);
+	//Get ID out of RetryRedirect
 	unsigned int actualID = retryTask.realTaskID;
 	//Grab flux task as before
 	getSingle<FluxIn>(&input, curStep, phase, actualID, headRedis, "TASK");
