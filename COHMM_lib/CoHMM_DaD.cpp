@@ -73,7 +73,8 @@ bool checkTheFuture(std::vector<RetryTask> &failures, FluxFuture * futures, int 
 				{
 					//Queue it up
 					RetryTask task;
-					///TODO: Fill in task
+					task.realTaskID = taskID;
+					failures.push_back(task);
 				}
 			}
 		}
@@ -702,7 +703,7 @@ bool tryShortCircuit(int * dims, int curStep)
 	return tryShortCircuit(dims, curStep, "localhost");
 }
 
-int checkStepForFaults(int * dims, int curPhase, int curStep, const char * redis_host)
+int checkStepForFaults(int * dims, int curPhase, int curStep, int round, const char * redis_host)
 {
 	//Connect to redis
 	redisContext * headRedis = redisConnect(redis_host, 6379);
@@ -722,14 +723,19 @@ int checkStepForFaults(int * dims, int curPhase, int curStep, const char * redis
 	//Did anything fail?
 	if(failureCount != 0)
 	{
+		char tagBuffer[32];
+		sprintf(tagBuffer, "RETRY_%d", round);
 		//It did, so push the retries
-		///TODO: Do this
+		for(unsigned int i = 0; i < failureCount; i++)
+		{
+			putSingle<RetryTask>(&failures[i], curStep, curPhase, i, headRedis, tagBuffer);
+		}
 	}
-	//Return the result
+	//Return the number of failures
 	return failureCount;
 }
 
-int checkStepForFaults(int * dims, int curPhase, int curStep)
+int checkStepForFaults(int * dims, int curPhase, int curStep, int round)
 {
-	return checkStepForFaults(dims, curPhase, curStep, "localhost");
+	return checkStepForFaults(dims, curPhase, curStep, round, "localhost");
 }
