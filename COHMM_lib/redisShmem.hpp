@@ -38,7 +38,6 @@ template <typename T> bool putBlocks(T * field, int dimX, int dimY, int curStep,
 	unsigned int lastBlock = (dimX*dimY) % fieldBlockSize;
 	if( lastBlock == 0)
 	{
-		std::cout << "In here" << std::endl;
 		//It was, so same as above
 		//Do a redis push
 		redisReply *reply;
@@ -47,7 +46,6 @@ template <typename T> bool putBlocks(T * field, int dimX, int dimY, int curStep,
 	}
 	else
 	{
-		std::cout << "Also in here?" << std::endl;
 		//It was not, so only copy what we need
 		unsigned int lastBlock = (dimX*dimY) % fieldBlockSize;
 		//Do a redis push

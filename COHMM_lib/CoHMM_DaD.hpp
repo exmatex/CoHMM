@@ -23,10 +23,12 @@ bool cloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int taskID, 
 bool outputVTK(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep, const char * redis_host);
 bool outputVTK(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep);
 
-int checkStepForFaults(int * dims, int curPhase, int curStep, const char * redis_host);
-int checkStepForFaults(int * dims, int curPhase, int curStep);
+int checkStepForFaults(int * dims, int curPhase, int curStep, int round, const char * redis_host);
+int checkStepForFaults(int * dims, int curPhase, int curStep, int round);
 bool tryShortCircuit(int * dims, int curStep, const char * redis_host);
 bool tryShortCircuit(int * dims, int curStep);
+bool retryCloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int taskID, int round, const char * redis_host);
+bool retryCloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int taskID, int round);
 
 FluxOut fluxFn(bool doKriging, bool doCoMD, FluxIn * input, redisContext * headRedis);
 

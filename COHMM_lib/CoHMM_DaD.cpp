@@ -739,3 +739,36 @@ int checkStepForFaults(int * dims, int curPhase, int curStep, int round)
 {
 	return checkStepForFaults(dims, curPhase, curStep, round, "localhost");
 }
+
+bool retryCloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int taskID, int round, const char * redis_host)
+{
+	FluxIn input;
+	FluxOut output;
+	//Connect to redis
+	redisContext * headRedis = redisConnect(redis_host, 6379);
+	if(headRedis == NULL || headRedis->err)
+	{
+		printf("Redis error: %s\n", headRedis->errstr);
+	}
+	//Grab RetryTask
+	char tagBuffer[32];
+	sprintf(tagBuffer, "RETRY_%d", round);
+	RetryTask retryTask;
+	getSingle<RetryTask>(&retryTask, curStep, phase, taskID, headRedis, tagBuffer);
+	//Get ID out of RetryTask
+	unsigned int actualID = retryTask.realTaskID;
+	//Grab flux task as before
+	getSingle<FluxIn>(&input, curStep, phase, actualID, headRedis, "TASK");
+	//Call fluxFn with input
+	output = fluxFn(doKriging, doCoMD, &input, headRedis);
+	//Write result to DB
+	putSingle<FluxOut>(&output, curStep, phase, actualID, headRedis, "RESULT");
+	//cleanup redis
+	redisFree(headRedis);
+	return true;
+}
+
+bool retryCloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int taskID, int round)
+{
+	return retryCloudFlux(doKriging, doCoMD, curStep, phase, taskID, round, "localhost");
+}
