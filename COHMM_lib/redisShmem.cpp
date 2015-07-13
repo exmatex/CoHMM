@@ -23,6 +23,26 @@ unsigned int getNumBlocks(int dimX, int dimY)
 	{
 		numBlocks++;
 	}
-
     return numBlocks;
+}
+
+bool checkSingle(int curStep, int curPhase, int ID,  redisContext * redis, const char * tag)
+{
+	char keyBuffer[maxKeyLength];
+	//Get Key
+	buildSingleKey(keyBuffer, curStep, curPhase, ID,  tag);
+	redisReply *reply;
+	reply = (redisReply *)redisCommand(redis, "GET %s", keyBuffer);
+	bool retVal;
+	if(reply->type == REDIS_REPLY_STRING)
+	{
+		retVal = true;
+	}
+	else
+	{
+		retVal = false;
+	}
+	freeReplyObject(reply);
+	//Return status
+	return retVal;
 }

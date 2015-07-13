@@ -17,7 +17,7 @@ const double errorThresh = 0.01;
 struct Fluxes
 {
 	//use of the following notation:
-	//momentum_dens_x = w[0] //for g=0 
+	//momentum_dens_x = w[0] //for g=0
 	//momentum_dens_x = w[1] //for f=0
 	//momentum_dens_y = w[2] //for g=0
 	//momentum_dens_y = w[3] //for f=0
@@ -54,7 +54,7 @@ struct Conserved
 	}
 };
 
-/** struct containing the 2D field 
+/** struct containing the 2D field
  * **/
 struct Save_Input
 {
@@ -72,13 +72,13 @@ struct Save_Input
   double kr_threshold;
   int kriging_db;
   int gauss_noise;
-  double noise; 
+  double noise;
   double grad_threshold;
   int test_problem;
   int fault_tolerance;
 };
 
-/** struct containing the 2D field 
+/** struct containing the 2D field
  * **/
 struct Lattice : public Save_Input
 {
@@ -116,7 +116,7 @@ struct Values
 	double rho;
 };
 
-/** struct containing the counts 
+/** struct containing the counts
  * **/
 struct Calls
 {
@@ -129,7 +129,7 @@ struct Calls
 	int kFail;
 };
 
-/** struct containing the timer 
+/** struct containing the timer
  * **/
 struct Tms
 {
@@ -185,6 +185,11 @@ struct FluxFuture
 	bool alreadyComputed;
 };
 
+struct RetryTask
+{
+	unsigned int realTaskID;
+};
+
 void init_conserved_fields(Node* node_a, int * dims, int grid_size);
 void shift_back(Node* node_b, int grid_size, int * dims, Node* node_a);
 double min_mod(double w_plus, double w, double w_minus);
@@ -205,4 +210,3 @@ template <class C> void freeClear( C & cntr )
 }
 
 #endif
-

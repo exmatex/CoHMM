@@ -51,6 +51,37 @@ bool backToTheFuture(Node * fields, FluxFuture * futures, int * dims, int curSte
 	return true;
 }
 
+bool checkTheFuture(std::vector<RetryTask> &failures, FluxFuture * futures, int * dims, int curStep, int curPhase, redisContext * headRedis)
+{
+	std::map<unsigned int, bool> retMap;
+	for(int i = 0; i < dims[0]*dims[1]; i++)
+	{
+		//Did we compute the results
+		if(futures[i].alreadyComputed == false)
+		{
+			//We did
+			unsigned int taskID = futures[i].taskID;
+			//Check if we already fetched this output
+			if(retMap.find(taskID) == retMap.end())
+			{
+				//We did not, so fetch it
+				FluxOut res;
+				bool completed = checkSingle(curStep, curPhase, taskID, headRedis, "RESULT");
+				retMap[taskID] = true;
+				//Did it fail?
+				if(completed == false)
+				{
+					//Queue it up
+					RetryTask task;
+					///TODO: Fill in task
+				}
+			}
+		}
+	}
+	return true;
+}
+
+
 int prepTasks(Node * fields, FluxFuture * futures, bool doKriging, int * dims, double * dt, double * delta,  int curStep, int curPhase, redisContext * headRedis)
 {
 	//Task map
@@ -68,7 +99,7 @@ int prepTasks(Node * fields, FluxFuture * futures, bool doKriging, int * dims, d
 			std::vector<double *> fVec;
 			std::vector<double *> gVec;
 			getSortedSubBucketNearZero(fields[x + dims[0]*y].w.w, (char *)"comd", headRedis, comdDigits, 2, &wVec, &fVec, &gVec, zeroThresh);
-			
+
 			//Check for exact value
 			bool useDB = ifConservedFieldsMatch(fields[x+dims[0]*y].w.w, &wVec, dbT);
 			//We actually found it
@@ -473,13 +504,13 @@ FluxOut fluxFn(bool doKriging, bool doCoMD, FluxIn * input, redisContext * headR
 			strcpy(theInput.potDir,"../pots");
 			strcpy(theInput.potName,"Cu01.eam.alloy");
 			strcpy(theInput.potType,"setfl");
-			theInput.doeam = 1; 
+			theInput.doeam = 1;
 			theInput.nx = 6;
 			theInput.ny = 6;
 			theInput.nz = 6;
 			theInput.nSteps = 1000;
-			theInput.printRate = 1; 
-			//MUST SPECIFY THE FOLLOWING               
+			theInput.printRate = 1;
+			//MUST SPECIFY THE FOLLOWING
 			theInput.dt = 10.0;
 			theInput.lat = 3.6186;
 			theInput.temperature = 0;
@@ -540,7 +571,7 @@ FluxOut fluxFn(bool doKriging, bool doCoMD, FluxIn * input, redisContext * headR
 			output.g[6] = -output.g[3]*sqrt(output.g[4]*output.g[4] + output.g[5]*output.g[5]);
 		}
 		//Put result to DB for future use: Warning, flush if we switch to comd as this is horrible
-		putData(input->fields.w, output.f, output.g, (char *)"comd", headRedis, comdDigits);		
+		putData(input->fields.w, output.f, output.g, (char *)"comd", headRedis, comdDigits);
 	}
 	return output;
 }
@@ -671,3 +702,34 @@ bool tryShortCircuit(int * dims, int curStep)
 	return tryShortCircuit(dims, curStep, "localhost");
 }
 
+int checkStepForFaults(int * dims, int curPhase, int curStep, const char * redis_host)
+{
+	//Connect to redis
+	redisContext * headRedis = redisConnect(redis_host, 6379);
+	if(headRedis == NULL || headRedis->err)
+	{
+		printf("Redis error: %s\n", headRedis->errstr);
+		return false;
+	}
+	//Get futures from previous step
+	FluxFuture * futures = new FluxFuture[dims[0]*dims[1]]();
+	getBlocks<FluxFuture>(futures, dims[0], dims[1], curStep, 0, headRedis, "FUTS");
+	//Prepare a buffer for failed tasks
+	std::vector<RetryTask> failures;
+	//Check to see if all the futures exist (So tasks ran and returned)
+	checkTheFuture(failures, futures, dims, curStep, 0, headRedis);
+	int failureCount = failures.size();
+	//Did anything fail?
+	if(failureCount != 0)
+	{
+		//It did, so push the retries
+		///TODO: Do this
+	}
+	//Return the result
+	return failureCount;
+}
+
+int checkStepForFaults(int * dims, int curPhase, int curStep)
+{
+	return checkStepForFaults(dims, curPhase, curStep, "localhost");
+}

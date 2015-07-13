@@ -122,4 +122,6 @@ template <typename T> bool getSingle(T * item, int curStep, int curPhase, int ID
 	return true;
 }
 
+bool checkSingle(int curStep, int curPhase, int ID,  redisContext * redis, const char * tag);
+
 #endif
