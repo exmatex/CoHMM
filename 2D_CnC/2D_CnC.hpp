@@ -28,6 +28,20 @@ public:
 };
 CNC_BITWISE_SERIALIZABLE(Flux_Tag);
 
+struct Retry_Tag
+{
+public:
+	//Constructors
+	Retry_Tag();
+	Retry_Tag(int step, int phase, int task, int round);
+	//Attributes
+	int step;
+	int phase;
+	int task;
+	int round;
+};
+CNC_BITWISE_SERIALIZABLE(Retry_Tag);
+
 //The one singleton item
 struct Flux_Item
 {
@@ -37,10 +51,16 @@ struct Flux_Item
 };
 CNC_BITWISE_SERIALIZABLE(Flux_Item);
 
+
 //Functors to act as steps
 struct Flux_Task
 {
 	int execute(const Flux_Tag &tag, DaDContext &c) const;
+};
+
+struct Retry_Task
+{
+	int execute(const Retry_Tag &tag, DaDContext &c) const;
 };
 
 //Tuners for garbage collection
@@ -51,9 +71,11 @@ struct DaDContext : public CnC::context<DaDContext>
 {
 	//Flux Tags
 	CnC::tag_collection<Flux_Tag> fluxTags;
+	CnC::tag_collection<Retry_Tag> retryTags;
 
 	//Step
 	CnC::step_collection<Flux_Task> fluxTask;
+	CnC::step_collection<Retry_Task> retryTask;
 
 	//The loneliest item
 	CnC::item_collection<int, Flux_Item> globalItem;

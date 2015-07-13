@@ -19,19 +19,38 @@ Flux_Tag::Flux_Tag()
 	this->task = -1;
 }
 
+Retry_Tag::Retry_Tag(int step, int phase, int task, int round)
+{
+	this->step = step;
+	this->phase = phase;
+	this->task = task;
+	this->round = round;
+}
+
+Retry_Tag::Retry_Tag()
+{
+	this->step = -1;
+	this->phase = -1;
+	this->task = -1;
+	this->round = -1;
+}
 
 DaDContext::DaDContext()
 	:
 	CnC::context<DaDContext>(),
 	fluxTags(*this, "fluxTags"),
+	retryTags(*this, "retryTags"),
 	fluxTask(*this, "fluxTasks"),
+	retryTask(*this, "retryTasks"),
 	globalItem(*this, "globalItem")
 {
 	//Indicate which tags correspond to which steps
 	fluxTags.prescribes(fluxTask, *this);
+	retryTags.prescribes(retryTask, *this);
 
 	//Indicate which step consumes which item (ha ha)
 	fluxTask.consumes(globalItem);
+	retryTask.consumes(globalItem);
 }
 
 int Flux_Task::execute(const Flux_Tag &tag, DaDContext &c) const
@@ -49,6 +68,22 @@ int Flux_Task::execute(const Flux_Tag &tag, DaDContext &c) const
 	return CnC::CNC_Success;
 }
 
+int Retry_Task::execute(const Retry_Tag &tag, DaDContext &c) const
+{
+	//Get The Item
+	Flux_Item runConfig;
+	c.globalItem.get(0, runConfig);
+	//Get params
+	unsigned int step = tag.step;
+	unsigned int phase = tag.phase;
+	unsigned int task = tag.task;
+	unsigned int curRound = tag.round;
+	//Call
+	retryCloudFlux(runConfig.doKriging, runConfig.doCoMD, step, phase, task, curRound, runConfig.redis_host);
+	//Return
+	return CnC::CNC_Success;
+}
+
 void parallelFor(unsigned int step, unsigned int phase, unsigned int nTasks, DaDContext &ctxt)
 {
 	for(unsigned int i = 0; i < nTasks; i++)
@@ -60,6 +95,27 @@ void parallelFor(unsigned int step, unsigned int phase, unsigned int nTasks, DaD
 	}
 	ctxt.wait();
 	return;
+}
+
+void iterativeRetry(int * dims, unsigned int step, unsigned int phase, char * redis_host, DaDContext &ctxt)
+{
+	int curRound = 0;
+	int nTasks = checkStepForFaults(dims, step, phase, curRound, redis_host);
+	while(nTasks != 0)
+	{
+		std::cout << step << ": Redoing " << nTasks << " Tasks" << std::endl;
+		for(unsigned int i = 0; i < nTasks; i++)
+		{
+			//Make tag
+			Retry_Tag tag(step, phase, i, curRound);
+			//Put tag
+			ctxt.retryTags.put(tag);
+		}
+		ctxt.wait();
+		//See if we are done
+		curRound++;
+		nTasks = checkStepForFaults(dims, step, phase, curRound, redis_host);
+	}
 }
 
 int main(int argc, char ** argv)
@@ -118,18 +174,26 @@ int main(int argc, char ** argv)
 			nTasks = prepFirstFlux(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
 			std::cout << t << ": Doing " << nTasks << " fluxes" << std::endl;
 			parallelFor(t, 0, nTasks, ctxt);
+			std::cout << t << ": Checking First Flux" << std::endl;
+			iterativeRetry(dims, t, 0, argv[4], ctxt);
 			std::cout << t << ": Second Flux" << std::endl;
 			nTasks = prepSecondFlux(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
 			std::cout << t << ": Doing " << nTasks << " fluxes" << std::endl;
 			parallelFor(t, 1, nTasks, ctxt);
+			std::cout << t << ": Checking Second Flux" << std::endl;
+			iterativeRetry(dims, t, 1, argv[4], ctxt);
 			std::cout << t << ": Third Flux" << std::endl;
 			nTasks = prepThirdFlux(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
 			std::cout << t << ": Doing " << nTasks << " fluxes" << std::endl;
 			parallelFor(t, 2, nTasks, ctxt);
+			std::cout << t << ": Checking Third Flux" << std::endl;
+			iterativeRetry(dims, t, 2, argv[4], ctxt);
 			std::cout << t << ": Last Flux" << std::endl;
 			nTasks = prepLastFlux(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
 			std::cout << t << ": Doing " << nTasks << " fluxes" << std::endl;
 			parallelFor(t, 3, nTasks, ctxt);
+			std::cout << t << ": Checking Last Flux" << std::endl;
+			iterativeRetry(dims, t, 3, argv[4], ctxt);
 			std::cout << t << ": Finish Step, no Fluxes" << std::endl;
 			finishStep(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
 		}
