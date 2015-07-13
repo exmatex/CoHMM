@@ -55,7 +55,7 @@ int main(int argc, char ** argv)
 			}
 			std::cout << t << ": Checking First Flux" << std::endl;
 			round = 0;
-			nTasks = checkStepForFaults(dims, 0, t, round, argv[4]);
+			nTasks = checkStepForFaults(dims, t, 0, round, argv[4]);
 			while(nTasks != 0)
 			{
 				std::cout << t << ": Redoing " << nTasks << " Tasks" << std::endl;
@@ -66,7 +66,7 @@ int main(int argc, char ** argv)
 				}
 				//See if we are done
 				round++;
-				nTasks = checkStepForFaults(dims, 0, t, round, argv[4]);
+				nTasks = checkStepForFaults(dims, t, 0, round, argv[4]);
 			}
 			std::cout << t << ": Second Flux" << std::endl;
 			nTasks = prepSecondFlux(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
@@ -78,7 +78,7 @@ int main(int argc, char ** argv)
 			}
 			std::cout << t << ": Checking Second Flux" << std::endl;
 			round = 0;
-			nTasks = checkStepForFaults(dims, 1, t, round, argv[4]);
+			nTasks = checkStepForFaults(dims, t, 1, round, argv[4]);
 			while(nTasks != 0)
 			{
 				std::cout << t << ": Redoing " << nTasks << " Tasks" << std::endl;
@@ -89,7 +89,7 @@ int main(int argc, char ** argv)
 				}
 				//See if we are done
 				round++;
-				nTasks = checkStepForFaults(dims, 1, t, round, argv[4]);
+				nTasks = checkStepForFaults(dims, t, 1, round, argv[4]);
 			}
 			std::cout << t << ": Third Flux" << std::endl;
 			nTasks = prepThirdFlux(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
@@ -101,7 +101,7 @@ int main(int argc, char ** argv)
 			}
 			std::cout << t << ": Checking Third Flux" << std::endl;
 			round = 0;
-			nTasks = checkStepForFaults(dims, 2, t, round, argv[4]);
+			nTasks = checkStepForFaults(dims, t, 2, round, argv[4]);
 			while(nTasks != 0)
 			{
 				std::cout << t << ": Redoing " << nTasks << " Tasks" << std::endl;
@@ -112,7 +112,7 @@ int main(int argc, char ** argv)
 				}
 				//See if we are done
 				round++;
-				nTasks = checkStepForFaults(dims, 2, t, round, argv[4]);
+				nTasks = checkStepForFaults(dims, t, 2, round, argv[4]);
 			}
 			std::cout << t << ": Last Flux" << std::endl;
 			nTasks = prepLastFlux(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
@@ -124,7 +124,7 @@ int main(int argc, char ** argv)
 			}
 			std::cout << t << ": Checking Last Flux" << std::endl;
 			round = 0;
-			nTasks = checkStepForFaults(dims, 3, t, round, argv[4]);
+			nTasks = checkStepForFaults(dims, t, 3, round, argv[4]);
 			while(nTasks != 0)
 			{
 				std::cout << t << ": Redoing " << nTasks << " Tasks" << std::endl;
@@ -135,7 +135,7 @@ int main(int argc, char ** argv)
 				}
 				//See if we are done
 				round++;
-				nTasks = checkStepForFaults(dims, 3, t, round, argv[4]);
+				nTasks = checkStepForFaults(dims, t, 3, round, argv[4]);
 			}
 			std::cout << t << ": Finish Step, no Fluxes" << std::endl;
 			finishStep(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);

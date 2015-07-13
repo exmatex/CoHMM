@@ -703,7 +703,7 @@ bool tryShortCircuit(int * dims, int curStep)
 	return tryShortCircuit(dims, curStep, "localhost");
 }
 
-int checkStepForFaults(int * dims, int curPhase, int curStep, int round, const char * redis_host)
+int checkStepForFaults(int * dims, int curStep, int curPhase, int curRound, const char * redis_host)
 {
 	//Connect to redis
 	redisContext * headRedis = redisConnect(redis_host, 6379);
@@ -724,7 +724,7 @@ int checkStepForFaults(int * dims, int curPhase, int curStep, int round, const c
 	if(failureCount != 0)
 	{
 		char tagBuffer[32];
-		sprintf(tagBuffer, "RETRY_%d", round);
+		sprintf(tagBuffer, "RETRY_%d", curRound);
 		//It did, so push the retries
 		for(unsigned int i = 0; i < failureCount; i++)
 		{
@@ -735,9 +735,9 @@ int checkStepForFaults(int * dims, int curPhase, int curStep, int round, const c
 	return failureCount;
 }
 
-int checkStepForFaults(int * dims, int curPhase, int curStep, int round)
+int checkStepForFaults(int * dims, int curStep, int curPhase, int curRound)
 {
-	return checkStepForFaults(dims, curPhase, curStep, round, "localhost");
+	return checkStepForFaults(dims, curPhase, curStep, curRound, "localhost");
 }
 
 bool retryCloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int taskID, int round, const char * redis_host)

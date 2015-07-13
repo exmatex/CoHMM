@@ -14,7 +14,7 @@ extern bool outputVTK(bool doKriging, bool doCoMD, int * dims, double * dt, doub
 
 extern bool tryShortCircuit(int * dims, int curStep);
 
-extern int checkStepForFaults(int * dims, int curPhase, int curStep);
+extern int checkStepForFaults(int * dims, int curStep, int curPhase, int curRound);
 extern bool retryCloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int taskID, int round);
 %}
 
@@ -32,5 +32,5 @@ extern bool outputVTK(bool doKriging, bool doCoMD, int * dims, double * dt, doub
 
 extern bool tryShortCircuit(int * dims, int curStep);
 
-extern int checkStepForFaults(int * dims, int curPhase, int curStep);
+extern int checkStepForFaults(int * dims, int curStep, int curPhase, int curRound);
 extern bool retryCloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int taskID, int round);
