@@ -42,8 +42,12 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++11 -fPIC")
 ########################################################################
 option(BUILD_SHARED_LIBS "Build shared libs" OFF)
 
-#TODO: Make this an option
-add_definitions(-DSAFE_PSEUDOFAULTS)
+option(SAFE_FAULT_INJECTION "Artificially Inject Faults CoHMM" OFF)
+
+if(SAFE_FAULT_INJECTION)
+    add_definitions(-DSAFE_PSEUDOFAULTS)
+endif()
+
 
 ########################################################################
 #Find external packages
