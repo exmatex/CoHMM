@@ -42,6 +42,9 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++11 -fPIC")
 ########################################################################
 option(BUILD_SHARED_LIBS "Build shared libs" OFF)
 
+#TODO: Make this an option
+add_definitions(-DSAFE_PSEUDOFAULTS)
+
 ########################################################################
 #Find external packages
 ########################################################################
@@ -114,7 +117,7 @@ endforeach(FUNC)
 # actual targets                     #
 ######################################
 add_custom_command(
-  OUTPUT CoMD_info.h 
+  OUTPUT CoMD_info.h
   COMMAND "${CMAKE_SOURCE_DIR}/COMD_lib/generate_info_header" "${CMAKE_C_COMPILER}"
   "${CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE}}"
   "${CMAKE_EXE_LINKER_FLAGS_${CMAKE_BUILD_TYPE}}"

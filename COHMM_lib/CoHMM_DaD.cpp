@@ -582,6 +582,14 @@ bool cloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int taskID, 
 {
 	FluxIn input;
 	FluxOut output;
+	#ifdef SAFE_PSEUDOFAULTS
+		//If we enable Safe PseudoFaults, we want tasks to fail.
+		if(taskID % 4 == 1)
+		{
+			//Roughly 25% failure rate
+			return true;
+		}
+	#endif
 	//Connect to redis
 	redisContext * headRedis = redisConnect(redis_host, 6379);
 	if(headRedis == NULL || headRedis->err)
@@ -592,7 +600,6 @@ bool cloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int taskID, 
 	getSingle<FluxIn>(&input, curStep, phase, taskID, headRedis, "TASK");
 	//Call fluxFn with input
 	output = fluxFn(doKriging, doCoMD, &input, headRedis);
-
 	//Write result to DB
 	putSingle<FluxOut>(&output, curStep, phase, taskID, headRedis, "RESULT");
 	//cleanup redis
@@ -677,11 +684,11 @@ int checkStepForFaults(int * dims, int curStep, int curPhase, int curRound, cons
 	}
 	//Get futures from previous step
 	FluxFuture * futures = new FluxFuture[dims[0]*dims[1]]();
-	getBlocks<FluxFuture>(futures, dims[0], dims[1], curStep, 0, headRedis, "FUTS");
+	getBlocks<FluxFuture>(futures, dims[0], dims[1], curStep, curPhase, headRedis, "FUTS");
 	//Prepare a buffer for failed tasks
 	std::vector<RetryRedirect> failures;
 	//Check to see if all the futures exist (So tasks ran and returned)
-	checkTheFuture(failures, futures, dims, curStep, 0, headRedis);
+	checkTheFuture(failures, futures, dims, curStep, curPhase, headRedis);
 	int failureCount = failures.size();
 	//Did anything fail?
 	if(failureCount != 0)
