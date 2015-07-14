@@ -9,7 +9,7 @@ int main(int argc, char ** argv)
 	//dimX dimY nSteps redis_server
 	if( argc != 5)
 	{
-		std::cerr <<  "./2D_DaDTest <dim_x> <dim_y> <nsteps> <redis_server>" << std::endl;
+		std::cerr <<  "./2D_OMP <dim_x> <dim_y> <nsteps> <redis_server>" << std::endl;
 		return 1;
 	}
 	//Set up parameters
