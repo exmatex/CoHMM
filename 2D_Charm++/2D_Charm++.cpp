@@ -44,6 +44,7 @@ class Main : public CBase_Main
 		unsigned int curStep;
 		int curRound;
 		unsigned int nSteps;
+		const bool fineGrainFT = false;
 
 		void spawnFluxes()
 		{
@@ -152,7 +153,10 @@ class Main : public CBase_Main
 				case 1:
 					//Phase 1
 					curRound++;
-					nTasks = checkStepForFaults(gDims, curStep, curPhase - 1, curRound, gRedis_host);
+					if(fineGrainFT == true)
+					{
+						nTasks = checkStepForFaults(gDims, curStep, curPhase - 1, curRound, gRedis_host);
+					}
 					if(nTasks != 0)
 					{
 						ckout << curStep << ": Redoing " << nTasks << " Tasks" << endl;
@@ -170,7 +174,10 @@ class Main : public CBase_Main
 				case 2:
 					//Phase 2
 					curRound++;
-					nTasks = checkStepForFaults(gDims, curStep, curPhase - 1, curRound, gRedis_host);
+					if(fineGrainFT == true)
+					{
+						nTasks = checkStepForFaults(gDims, curStep, curPhase - 1, curRound, gRedis_host);
+					}
 					if(nTasks != 0)
 					{
 						ckout << curStep << ": Redoing " << nTasks << " Tasks" << endl;
@@ -188,7 +195,10 @@ class Main : public CBase_Main
 				case 3:
 					//Phase 3
 					curRound++;
-					nTasks = checkStepForFaults(gDims, curStep, curPhase - 1, curRound, gRedis_host);
+					if(fineGrainFT == true)
+					{
+						nTasks = checkStepForFaults(gDims, curStep, curPhase - 1, curRound, gRedis_host);
+					}
 					if(nTasks != 0)
 					{
 						ckout << curStep << ": Redoing " << nTasks << " Tasks" << endl;
@@ -205,7 +215,10 @@ class Main : public CBase_Main
 					break;
 				case 4:
 					curRound++;
-					nTasks = checkStepForFaults(gDims, curStep, curPhase - 1, curRound, gRedis_host);
+					if(fineGrainFT == true)
+					{
+						nTasks = checkStepForFaults(gDims, curStep, curPhase - 1, curRound, gRedis_host);
+					}
 					if(nTasks != 0)
 					{
 						ckout << curStep << ": Redoing " << nTasks << " Tasks" << endl;

@@ -114,8 +114,9 @@ int main(int argc, char ** argv)
 	cht::extras::setNWorkers(atoi(argv[5]));
 	std::cout << "Succeeded to start CHT" << std::endl;
 	//Set up parameters
-	bool doKriging = true;
-	bool doCoMD = false;
+	const bool doKriging = true;
+	const bool doCoMD = false;
+	const bool fineGrainFT = false;
 	int dims[2] = {atoi(argv[1]), atoi(argv[2])};
 	double dt[2] = {0.1, 0.1};
 	double delta[2] = {1.0, 1.0};
@@ -149,26 +150,38 @@ int main(int argc, char ** argv)
 			nTasks = prepFirstFlux(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
 			std::cout << t << ": Doing " << nTasks << " fluxes" << std::endl;
 			fluxParallelFor(doKriging, doCoMD, t, 0, nTasks, argv[4]);
-			std::cout << t << ": Checking First Flux" << std::endl;
-			iterativeRetry(dims, doKriging, doCoMD, t, 0, argv[4]);
+			if(fineGrainFT == true)
+			{
+				std::cout << t << ": Checking First Flux" << std::endl;
+				iterativeRetry(dims, doKriging, doCoMD, t, 0, argv[4]);
+			}
 			std::cout << t << ": Second Flux" << std::endl;
 			nTasks = prepSecondFlux(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
 			std::cout << t << ": Doing " << nTasks << " fluxes" << std::endl;
 			fluxParallelFor(doKriging, doCoMD, t, 1, nTasks, argv[4]);
-			std::cout << t << ": Checking Second Flux" << std::endl;
-			iterativeRetry(dims, doKriging, doCoMD, t, 1, argv[4]);
+			if(fineGrainFT == true)
+			{
+				std::cout << t << ": Checking Second Flux" << std::endl;
+				iterativeRetry(dims, doKriging, doCoMD, t, 1, argv[4]);
+			}
 			std::cout << t << ": Third Flux" << std::endl;
 			nTasks = prepThirdFlux(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
 			std::cout << t << ": Doing " << nTasks << " fluxes" << std::endl;
 			fluxParallelFor(doKriging, doCoMD, t, 2, nTasks, argv[4]);
-			std::cout << t << ": Checking Third Flux" << std::endl;
-			iterativeRetry(dims, doKriging, doCoMD, t, 2, argv[4]);
+			if(fineGrainFT == true)
+			{
+				std::cout << t << ": Checking Third Flux" << std::endl;
+				iterativeRetry(dims, doKriging, doCoMD, t, 2, argv[4]);
+			}
 			std::cout << t << ": Last Flux" << std::endl;
 			nTasks = prepLastFlux(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
 			std::cout << t << ": Doing " << nTasks << " fluxes" << std::endl;
 			fluxParallelFor(doKriging, doCoMD, t, 3, nTasks, argv[4]);
-			std::cout << t << ": Checking Last Flux" << std::endl;
-			iterativeRetry(dims, doKriging, doCoMD, t, 3, argv[4]);
+			if(fineGrainFT == true)
+			{
+				std::cout << t << ": Checking Last Flux" << std::endl;
+				iterativeRetry(dims, doKriging, doCoMD, t, 3, argv[4]);
+			}
 			std::cout << t << ": Finish Step, no Fluxes" << std::endl;
 			finishStep(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
 		}

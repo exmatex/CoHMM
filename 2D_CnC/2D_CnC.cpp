@@ -132,8 +132,9 @@ int main(int argc, char ** argv)
 #endif
 	DaDContext ctxt;
 	//Set up parameters
-	bool doKriging = true;
-	bool doCoMD = false;
+	const bool fineGrainFT = false;
+	const bool doKriging = true;
+	const bool doCoMD = false;
 	int dims[2] = {atoi(argv[1]), atoi(argv[2])};
 	double dt[2] = {0.1, 0.1};
 	double delta[2] = {1.0, 1.0};
@@ -175,25 +176,37 @@ int main(int argc, char ** argv)
 			std::cout << t << ": Doing " << nTasks << " fluxes" << std::endl;
 			parallelFor(t, 0, nTasks, ctxt);
 			std::cout << t << ": Checking First Flux" << std::endl;
-			iterativeRetry(dims, t, 0, argv[4], ctxt);
+			if(fineGrainFT == true)
+			{
+				iterativeRetry(dims, t, 0, argv[4], ctxt);
+			}
 			std::cout << t << ": Second Flux" << std::endl;
 			nTasks = prepSecondFlux(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
 			std::cout << t << ": Doing " << nTasks << " fluxes" << std::endl;
 			parallelFor(t, 1, nTasks, ctxt);
 			std::cout << t << ": Checking Second Flux" << std::endl;
-			iterativeRetry(dims, t, 1, argv[4], ctxt);
+			if(fineGrainFT == true)
+			{
+				iterativeRetry(dims, t, 1, argv[4], ctxt);
+			}
 			std::cout << t << ": Third Flux" << std::endl;
 			nTasks = prepThirdFlux(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
 			std::cout << t << ": Doing " << nTasks << " fluxes" << std::endl;
 			parallelFor(t, 2, nTasks, ctxt);
 			std::cout << t << ": Checking Third Flux" << std::endl;
-			iterativeRetry(dims, t, 2, argv[4], ctxt);
+			if(fineGrainFT == true)
+			{
+				iterativeRetry(dims, t, 2, argv[4], ctxt);
+			}
 			std::cout << t << ": Last Flux" << std::endl;
 			nTasks = prepLastFlux(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
 			std::cout << t << ": Doing " << nTasks << " fluxes" << std::endl;
 			parallelFor(t, 3, nTasks, ctxt);
 			std::cout << t << ": Checking Last Flux" << std::endl;
-			iterativeRetry(dims, t, 3, argv[4], ctxt);
+			if(fineGrainFT == true)
+			{
+				iterativeRetry(dims, t, 3, argv[4], ctxt);
+			}
 			std::cout << t << ": Finish Step, no Fluxes" << std::endl;
 			finishStep(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
 		}
