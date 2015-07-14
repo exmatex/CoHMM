@@ -155,6 +155,7 @@ class Main : public CBase_Main
 					nTasks = checkStepForFaults(gDims, curStep, curPhase - 1, curRound, gRedis_host);
 					if(nTasks != 0)
 					{
+						ckout << curStep << ": Redoing " << nTasks << " Tasks" << endl;
 						spawnRetries();
 					}
 					else
@@ -172,6 +173,7 @@ class Main : public CBase_Main
 					nTasks = checkStepForFaults(gDims, curStep, curPhase - 1, curRound, gRedis_host);
 					if(nTasks != 0)
 					{
+						ckout << curStep << ": Redoing " << nTasks << " Tasks" << endl;
 						spawnRetries();
 					}
 					else
@@ -189,6 +191,7 @@ class Main : public CBase_Main
 					nTasks = checkStepForFaults(gDims, curStep, curPhase - 1, curRound, gRedis_host);
 					if(nTasks != 0)
 					{
+						ckout << curStep << ": Redoing " << nTasks << " Tasks" << endl;
 						spawnRetries();
 					}
 					else
@@ -205,6 +208,7 @@ class Main : public CBase_Main
 					nTasks = checkStepForFaults(gDims, curStep, curPhase - 1, curRound, gRedis_host);
 					if(nTasks != 0)
 					{
+						ckout << curStep << ": Redoing " << nTasks << " Tasks" << endl;
 						spawnRetries();
 					}
 					else
@@ -224,7 +228,8 @@ class Main : public CBase_Main
 			//Are we waiting for any tasks?
 			if(nTasks == 0)
 			{
-				//Nope
+				//Nope, so recursively call
+				///WARNING: THis could be bad for the stack if we are recovering from a fault after a lot of timesteps
 				countCallBacks();
 			}
 		}
