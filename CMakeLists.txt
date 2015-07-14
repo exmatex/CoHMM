@@ -45,6 +45,7 @@ option(BUILD_SHARED_LIBS "Build shared libs" OFF)
 option(SAFE_FAULT_INJECTION "Artificially Inject Faults CoHMM" OFF)
 
 if(SAFE_FAULT_INJECTION)
+	message(STATUS "Safe Fault Injection Enabled")
     add_definitions(-DSAFE_PSEUDOFAULTS)
 endif()
 

@@ -13,8 +13,9 @@ int main(int argc, char ** argv)
 		return 1;
 	}
 	//Set up parameters
-	bool doKriging = true;
-	bool doCoMD = false;
+	const bool fineGrainFT = false;
+	const bool doKriging = true;
+	const bool doCoMD = false;
 	int dims[2] = {atoi(argv[1]), atoi(argv[2])};
 	double dt[2] = {0.1, 0.1};
 	double delta[2] = {1.0, 1.0};
@@ -53,20 +54,23 @@ int main(int argc, char ** argv)
 			{
 				cloudFlux(doKriging, doCoMD, t, 0, i, argv[4]);
 			}
-			std::cout << t << ": Checking First Flux" << std::endl;
-			curRound = 0;
-			nTasks = checkStepForFaults(dims, t, 0, curRound, argv[4]);
-			while(nTasks != 0)
+			if(fineGrainFT == true)
 			{
-				std::cout << t << ": Redoing " << nTasks << " Tasks" << std::endl;
-				#pragma omp parallel
-				for (unsigned int i = 0; i < nTasks; i++)
-		 		{
-					retryCloudFlux(doKriging, doCoMD, t, 0, i, curRound, argv[4]);
-				}
-				//See if we are done
-				curRound++;
+				std::cout << t << ": Checking First Flux" << std::endl;
+				curRound = 0;
 				nTasks = checkStepForFaults(dims, t, 0, curRound, argv[4]);
+				while(nTasks != 0)
+				{
+					std::cout << t << ": Redoing " << nTasks << " Tasks" << std::endl;
+					#pragma omp parallel
+					for (unsigned int i = 0; i < nTasks; i++)
+			 		{
+						retryCloudFlux(doKriging, doCoMD, t, 0, i, curRound, argv[4]);
+					}
+					//See if we are done
+					curRound++;
+					nTasks = checkStepForFaults(dims, t, 0, curRound, argv[4]);
+				}
 			}
 			std::cout << t << ": Second Flux" << std::endl;
 			nTasks = prepSecondFlux(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
@@ -76,20 +80,23 @@ int main(int argc, char ** argv)
 			{
 				cloudFlux(doKriging, doCoMD, t, 1, i, argv[4]);
 			}
-			std::cout << t << ": Checking Second Flux" << std::endl;
-			curRound = 0;
-			nTasks = checkStepForFaults(dims, t, 1, curRound, argv[4]);
-			while(nTasks != 0)
+			if(fineGrainFT == true)
 			{
-				std::cout << t << ": Redoing " << nTasks << " Tasks" << std::endl;
-				#pragma omp parallel
-				for (unsigned int i = 0; i < nTasks; i++)
-		 		{
-					retryCloudFlux(doKriging, doCoMD, t, 1, i, curRound, argv[4]);
-				}
-				//See if we are done
-				curRound++;
+				std::cout << t << ": Checking Second Flux" << std::endl;
+				curRound = 0;
 				nTasks = checkStepForFaults(dims, t, 1, curRound, argv[4]);
+				while(nTasks != 0)
+				{
+					std::cout << t << ": Redoing " << nTasks << " Tasks" << std::endl;
+					#pragma omp parallel
+					for (unsigned int i = 0; i < nTasks; i++)
+			 		{
+						retryCloudFlux(doKriging, doCoMD, t, 1, i, curRound, argv[4]);
+					}
+					//See if we are done
+					curRound++;
+					nTasks = checkStepForFaults(dims, t, 1, curRound, argv[4]);
+				}
 			}
 			std::cout << t << ": Third Flux" << std::endl;
 			nTasks = prepThirdFlux(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
@@ -99,20 +106,23 @@ int main(int argc, char ** argv)
 			{
 				cloudFlux(doKriging, doCoMD, t, 2, i, argv[4]);
 			}
-			std::cout << t << ": Checking Third Flux" << std::endl;
-			curRound = 0;
-			nTasks = checkStepForFaults(dims, t, 2, curRound, argv[4]);
-			while(nTasks != 0)
+			if(fineGrainFT == true)
 			{
-				std::cout << t << ": Redoing " << nTasks << " Tasks" << std::endl;
-				#pragma omp parallel
-				for (unsigned int i = 0; i < nTasks; i++)
-		 		{
-					retryCloudFlux(doKriging, doCoMD, t, 2, i, curRound, argv[4]);
-				}
-				//See if we are done
-				curRound++;
+				std::cout << t << ": Checking Third Flux" << std::endl;
+				curRound = 0;
 				nTasks = checkStepForFaults(dims, t, 2, curRound, argv[4]);
+				while(nTasks != 0)
+				{
+					std::cout << t << ": Redoing " << nTasks << " Tasks" << std::endl;
+					#pragma omp parallel
+					for (unsigned int i = 0; i < nTasks; i++)
+			 		{
+						retryCloudFlux(doKriging, doCoMD, t, 2, i, curRound, argv[4]);
+					}
+					//See if we are done
+					curRound++;
+					nTasks = checkStepForFaults(dims, t, 2, curRound, argv[4]);
+				}
 			}
 			std::cout << t << ": Last Flux" << std::endl;
 			nTasks = prepLastFlux(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
@@ -122,20 +132,23 @@ int main(int argc, char ** argv)
 			{
 				cloudFlux(doKriging, doCoMD, t, 3, i, argv[4]);
 			}
-			std::cout << t << ": Checking Last Flux" << std::endl;
-			curRound = 0;
-			nTasks = checkStepForFaults(dims, t, 3, curRound, argv[4]);
-			while(nTasks != 0)
+			if(fineGrainFT == true)
 			{
-				std::cout << t << ": Redoing " << nTasks << " Tasks" << std::endl;
-				#pragma omp parallel
-				for (unsigned int i = 0; i < nTasks; i++)
-		 		{
-					retryCloudFlux(doKriging, doCoMD, t, 3, i, curRound, argv[4]);
-				}
-				//See if we are done
-				curRound++;
+				std::cout << t << ": Checking Last Flux" << std::endl;
+				curRound = 0;
 				nTasks = checkStepForFaults(dims, t, 3, curRound, argv[4]);
+				while(nTasks != 0)
+				{
+					std::cout << t << ": Redoing " << nTasks << " Tasks" << std::endl;
+					#pragma omp parallel
+					for (unsigned int i = 0; i < nTasks; i++)
+			 		{
+						retryCloudFlux(doKriging, doCoMD, t, 3, i, curRound, argv[4]);
+					}
+					//See if we are done
+					curRound++;
+					nTasks = checkStepForFaults(dims, t, 3, curRound, argv[4]);
+				}
 			}
 			std::cout << t << ": Finish Step, no Fluxes" << std::endl;
 			finishStep(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
