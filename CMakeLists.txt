@@ -175,5 +175,10 @@ if(LIBCIRCLE_FOUND)
 	add_subdirectory(2D_Libcircle)
 endif()
 
+if(MPI_CXX_FOUND)
+	message(STATUS "Naive MPI Driver Enabled")
+    add_subdirectory(2D_MPI)
+endif()
+
 #Either way, build the test driver
 add_subdirectory(2D_OMP)
