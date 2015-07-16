@@ -190,6 +190,12 @@ struct RetryRedirect
 	unsigned int realTaskID;
 };
 
+enum InitialConditions_e
+{
+	LINE, CENTRALIZED, X
+};
+
+void init_conserved_fields(Node* node_a, int * dims, int grid_size, InitialConditions_e prob_type);
 void init_conserved_fields(Node* node_a, int * dims, int grid_size);
 void shift_back(Node* node_b, int grid_size, int * dims, Node* node_a);
 double min_mod(double w_plus, double w, double w_minus);
