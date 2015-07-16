@@ -207,7 +207,7 @@ void wNSqrt(Node * field, int * dims, double *dt, double * delta)
 
 void init_conserved_fields(Node* node_a, int * dims, int grid_size)
 {
-	return init_conserved_fields(node_a, dims, grid_size, InitialConditions_e::CENTRALIZED);
+	return init_conserved_fields(node_a, dims, grid_size, InitialConditions_e::X);
 }
 
 
@@ -253,8 +253,16 @@ void init_conserved_fields(Node* node_a, int * dims, int grid_size, InitialCondi
 					}
 				break;
 				case InitialConditions_e::X:
-					std::cerr << "ERROR: Not implemented as Xes are hard" << std::endl;
-					///TODO: Just do a plus?
+					//Just doing a plus as they are close enough
+					if(
+						( x < (dimX/2 + dimX/10) )  and ( x >= (dimX/2 - dimX/10) )
+							or
+						( y < (dimY/2 + dimY/10) )  and ( y >= (dimY/2 - dimY/10) )
+					)
+					{
+						node_a[i].w.w[0] = 1.04;
+						node_a[i].w.w[6] = -0.295;
+					}
 				break;
 				default:
 					//No initial conditions, so no stimulus
