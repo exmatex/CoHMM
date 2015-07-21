@@ -113,7 +113,7 @@ void doLibcircleTasks()
 int main(int argc, char ** argv)
 {
 	//<dim_x> <dim_y> <nsteps> <redis_server> <database error threshold> <Kriging error threshold> <Gaussian noise strength>
-	//dimX dimY nSteps redis_server 
+	//dimX dimY nSteps redis_server
 	if( argc != 5)
 	{
 		std::cerr <<  "./2D_DaDTest <dim_x> <dim_y> <nsteps> <redis_server>" << std::endl;
@@ -169,7 +169,7 @@ int main(int argc, char ** argv)
 	freeReplyObject(reply);
 	//Initialize
 	std::cout << "Initializing " << dims[0] << " by " << dims[1] << " grid" << std::endl;
-	initEverything(doKriging, doCoMD, dims, dt, delta, gamma);
+	initEverything(doKriging, doCoMD, dims, dt, delta, gamma, argv[4]);
 	std::cout << "Initialized" << std::endl;
 	//Loop
 	std::cout << "Running for " << numSteps << " iterations" << std::endl;
@@ -228,4 +228,3 @@ int main(int argc, char ** argv)
 	CIRCLE_finalize();
 	return 0;
 }
-
