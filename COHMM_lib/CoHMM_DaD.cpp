@@ -865,7 +865,18 @@ char * getRedisHost(const char * filePath)
 int checkStepForFaults(int * dims, int curStep, int curPhase, int curRound, const char * redis_host)
 {
 	//Connect to redis
-	redisContext * headRedis = redisConnect(redis_host, 6379);
+	const char * redisHostName;
+	//Check redis host
+	bool needFree = checkRedisHost(redis_host);
+	if(needFree == true)
+	{
+		redisHostName = getRedisHost(redis_host);
+	}
+	else
+	{
+		redisHostName = redis_host;
+	}
+	redisContext * headRedis = redisConnect(redisHostName, 6379);
 	if(headRedis == NULL || headRedis->err)
 	{
 		printf("Redis error: %s\n", headRedis->errstr);
@@ -890,6 +901,12 @@ int checkStepForFaults(int * dims, int curStep, int curPhase, int curRound, cons
 			putSingle<RetryRedirect>(&failures[i], curStep, curPhase, i, headRedis, tagBuffer);
 		}
 	}
+	//cleanup redis
+	redisFree(headRedis);
+	if(needFree == true)
+	{
+		delete [] redisHostName;
+	}
 	//Return the number of failures
 	return failureCount;
 }
@@ -899,7 +916,18 @@ bool retryCloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int tas
 	FluxIn input;
 	FluxOut output;
 	//Connect to redis
-	redisContext * headRedis = redisConnect(redis_host, 6379);
+	const char * redisHostName;
+	//Check redis host
+	bool needFree = checkRedisHost(redis_host);
+	if(needFree == true)
+	{
+		redisHostName = getRedisHost(redis_host);
+	}
+	else
+	{
+		redisHostName = redis_host;
+	}
+	redisContext * headRedis = redisConnect(redisHostName, 6379);
 	if(headRedis == NULL || headRedis->err)
 	{
 		printf("Redis error: %s\n", headRedis->errstr);
@@ -919,6 +947,10 @@ bool retryCloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int tas
 	putSingle<FluxOut>(&output, curStep, phase, actualID, headRedis, "RESULT");
 	//cleanup redis
 	redisFree(headRedis);
+	if(needFree == true)
+	{
+		delete [] redisHostName;
+	}
 	return true;
 }
 
