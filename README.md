@@ -25,6 +25,8 @@ Dependencies
 
 8. Optionally [Charm++](http://charm.cs.illinois.edu/research/charm)
 
+9. Optionally [twemproxy](https://github.com/twitter/twemproxy)
+
 Installation
 ------------
 
@@ -67,6 +69,10 @@ If Libcircle is detected, it will be automatically built alongside the 2D_DaDTes
 Charm++
 ---------
 If Charm++ is detected, it will be automatically built alongside the 2D_DaDTest driver in the `2D_Charm++` subdirectory.
+
+Distributed Redis
+---------
+To run with the redis database distributed across multiple nodes of a cluster, twemproxy is required. From the driver's directory, use python to execute the `buildRedisHostfile.py` file in the `scripts` subdirectory with a command line parameter of the desired number of redis servers. Then source the `startRedisServers.sh` file in the working subdirectory and run the driver with the path to the created `lutFile` in place of the `<redis_server>` parameter. When done, source the `endRedisServers.sh` file.
 
 Copyright and license
 ---------------------
