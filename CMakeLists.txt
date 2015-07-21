@@ -42,6 +42,14 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++11 -fPIC")
 ########################################################################
 option(BUILD_SHARED_LIBS "Build shared libs" OFF)
 
+option(SAFE_FAULT_INJECTION "Artificially Inject Faults CoHMM" OFF)
+
+if(SAFE_FAULT_INJECTION)
+	message(STATUS "Safe Fault Injection Enabled")
+    add_definitions(-DSAFE_PSEUDOFAULTS)
+endif()
+
+
 ########################################################################
 #Find external packages
 ########################################################################
@@ -114,7 +122,7 @@ endforeach(FUNC)
 # actual targets                     #
 ######################################
 add_custom_command(
-  OUTPUT CoMD_info.h 
+  OUTPUT CoMD_info.h
   COMMAND "${CMAKE_SOURCE_DIR}/COMD_lib/generate_info_header" "${CMAKE_C_COMPILER}"
   "${CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE}}"
   "${CMAKE_EXE_LINKER_FLAGS_${CMAKE_BUILD_TYPE}}"
@@ -167,6 +175,10 @@ if(LIBCIRCLE_FOUND)
 	add_subdirectory(2D_Libcircle)
 endif()
 
+if(MPI_CXX_FOUND)
+	message(STATUS "Naive MPI Driver Enabled")
+    add_subdirectory(2D_MPI)
+endif()
+
 #Either way, build the test driver
-add_executable(2D_DaDTest 2D_DaDTest.cpp)
-target_link_libraries(2D_DaDTest cohmm comd ${LINALG_LIBRARIES} ${HIREDIS_LIBRARIES} -lrt)
+add_subdirectory(2D_OMP)

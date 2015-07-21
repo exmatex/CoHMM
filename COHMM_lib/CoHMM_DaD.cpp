@@ -55,6 +55,38 @@ bool backToTheFuture(Node * fields, FluxFuture * futures, int * dims, int curSte
 	return true;
 }
 
+bool checkTheFuture(std::vector<RetryRedirect> &failures, FluxFuture * futures, int * dims, int curStep, int curPhase, redisContext * headRedis)
+{
+	std::map<unsigned int, bool> retMap;
+	for(int i = 0; i < dims[0]*dims[1]; i++)
+	{
+		//Did we compute the results
+		if(futures[i].alreadyComputed == false)
+		{
+			//We did
+			unsigned int taskID = futures[i].taskID;
+			//Check if we already fetched this output
+			if(retMap.find(taskID) == retMap.end())
+			{
+				//We did not, so fetch it
+				FluxOut res;
+				bool completed = checkSingle(curStep, curPhase, taskID, headRedis, "RESULT");
+				retMap[taskID] = true;
+				//Did it fail?
+				if(completed == false)
+				{
+					//Queue it up
+					RetryRedirect task;
+					task.realTaskID = taskID;
+					failures.push_back(task);
+				}
+			}
+		}
+	}
+	return true;
+}
+
+
 int prepTasks(Node * fields, FluxFuture * futures, bool doKriging, int * dims, double * dt, double * delta,  int curStep, int curPhase, redisContext * headRedis)
 {
 	//Task map
@@ -644,6 +676,14 @@ bool cloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int taskID, 
 {
 	FluxIn input;
 	FluxOut output;
+	#ifdef SAFE_PSEUDOFAULTS
+		//If we enable Safe PseudoFaults, we want tasks to fail.
+		if(taskID % 4 == 1)
+		{
+			//Roughly 25% failure rate
+			return true;
+		}
+	#endif
 	//Connect to redis
 	const char * redisHostName;
 	//Check redis host
@@ -665,7 +705,6 @@ bool cloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int taskID, 
 	getSingle<FluxIn>(&input, curStep, phase, taskID, headRedis, "TASK");
 	//Call fluxFn with input
 	output = fluxFn(doKriging, doCoMD, &input, headRedis);
-
 	//Write result to DB
 	putSingle<FluxOut>(&output, curStep, phase, taskID, headRedis, "RESULT");
 	//cleanup redis
@@ -823,6 +862,66 @@ char * getRedisHost(const char * filePath)
 	return retHost;
 }
 
+int checkStepForFaults(int * dims, int curStep, int curPhase, int curRound, const char * redis_host)
+{
+	//Connect to redis
+	redisContext * headRedis = redisConnect(redis_host, 6379);
+	if(headRedis == NULL || headRedis->err)
+	{
+		printf("Redis error: %s\n", headRedis->errstr);
+		return false;
+	}
+	//Get futures from previous step
+	FluxFuture * futures = new FluxFuture[dims[0]*dims[1]]();
+	getBlocks<FluxFuture>(futures, dims[0], dims[1], curStep, curPhase, headRedis, "FUTS");
+	//Prepare a buffer for failed tasks
+	std::vector<RetryRedirect> failures;
+	//Check to see if all the futures exist (So tasks ran and returned)
+	checkTheFuture(failures, futures, dims, curStep, curPhase, headRedis);
+	int failureCount = failures.size();
+	//Did anything fail?
+	if(failureCount != 0)
+	{
+		char tagBuffer[32];
+		sprintf(tagBuffer, "RETRY_%d", curRound);
+		//It did, so push the retries
+		for(unsigned int i = 0; i < failureCount; i++)
+		{
+			putSingle<RetryRedirect>(&failures[i], curStep, curPhase, i, headRedis, tagBuffer);
+		}
+	}
+	//Return the number of failures
+	return failureCount;
+}
+
+bool retryCloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int taskID, int round, const char * redis_host)
+{
+	FluxIn input;
+	FluxOut output;
+	//Connect to redis
+	redisContext * headRedis = redisConnect(redis_host, 6379);
+	if(headRedis == NULL || headRedis->err)
+	{
+		printf("Redis error: %s\n", headRedis->errstr);
+	}
+	//Grab RetryRedirect
+	char tagBuffer[32];
+	sprintf(tagBuffer, "RETRY_%d", round);
+	RetryRedirect retryTask;
+	getSingle<RetryRedirect>(&retryTask, curStep, phase, taskID, headRedis, tagBuffer);
+	//Get ID out of RetryRedirect
+	unsigned int actualID = retryTask.realTaskID;
+	//Grab flux task as before
+	getSingle<FluxIn>(&input, curStep, phase, actualID, headRedis, "TASK");
+	//Call fluxFn with input
+	output = fluxFn(doKriging, doCoMD, &input, headRedis);
+	//Write result to DB
+	putSingle<FluxOut>(&output, curStep, phase, actualID, headRedis, "RESULT");
+	//cleanup redis
+	redisFree(headRedis);
+	return true;
+}
+
 bool initEverything(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma)
 {
 	return initEverything(doKriging, doCoMD, dims, dt, delta, gamma, "localhost");
@@ -858,4 +957,12 @@ bool outputVTK(bool doKriging, bool doCoMD, int * dims, double * dt, double * de
 bool tryShortCircuit(int * dims, int curStep)
 {
 	return tryShortCircuit(dims, curStep, "localhost");
+}
+int checkStepForFaults(int * dims, int curStep, int curPhase, int curRound)
+{
+	return checkStepForFaults(dims, curPhase, curStep, curRound, "localhost");
+}
+bool retryCloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int taskID, int round)
+{
+	return retryCloudFlux(doKriging, doCoMD, curStep, phase, taskID, round, "localhost");
 }

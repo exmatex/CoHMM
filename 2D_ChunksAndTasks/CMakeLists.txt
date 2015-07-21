@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 2.6)
 
 include_directories(${CHUNKSANDTASKS_INCLUDE_DIRS})
-add_executable(2D_ChunksAndTasks 2D_ChunksAndTasks.cpp CppBoolChunk.cpp FluxChunk.cpp FluxTask.cpp)
-add_executable(cht_worker CppBoolChunk.cpp FluxChunk.cpp FluxTask.cpp)
+add_executable(2D_ChunksAndTasks 2D_ChunksAndTasks.cpp CppBoolChunk.cpp FluxChunk.cpp FluxTask.cpp RetryChunk.cpp RetryTask.cpp)
+add_executable(cht_worker CppBoolChunk.cpp FluxChunk.cpp FluxTask.cpp RetryChunk.cpp RetryTask.cpp)
 target_link_libraries(2D_ChunksAndTasks cohmm comd ${CHUNKSANDTASKS_LIBRARY} ${MPI_CXX_LIBRARIES} ${LINALG_LIBRARIES} ${HIREDIS_LIBRARIES} -lrt)
 target_link_libraries(cht_worker cohmm comd ${CHUNKSANDTASKS_LIBRARY} ${MPI_CXX_LIBRARIES} ${LINALG_LIBRARIES} ${HIREDIS_LIBRARIES} -lrt)
 if(MPI_CXX_COMPILE_FLAGS)
@@ -13,4 +13,3 @@ if(MPI_CXX_LINK_FLAGS)
 	set_target_properties(2D_ChunksAndTasks PROPERTIES LINK_FLAGS "${MPI_CXX_LINK_FLAGS}")
 	set_target_properties(cht_worker PROPERTIES LINK_FLAGS "${MPI_CXX_LINK_FLAGS}")
 endif()
-
