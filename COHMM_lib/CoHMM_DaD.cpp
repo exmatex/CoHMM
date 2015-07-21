@@ -837,21 +837,28 @@ char * getRedisHost(const char * filePath)
 	if(redisFile.is_open())
 	{
 		//Get hostname of self
-		char cHost[64];
-		gethostname(cHost, 64);
-		std::string strHost(cHost);
+		char selfHost[64];
+		gethostname(selfHost, 64);
+		std::string strHost(selfHost);
 		bool found = false;
 		std::string line;
 		//Iterate through file we passed in
-		while( std::getline(redisFile, line) && found == true )
+		while( std::getline(redisFile, line) && found == false )
 		{
 			//Check if this is the line that corresponds to us
-			if(line.compare(0, strHost.length() - 1, strHost) == 0)
+			char * cLine = (char *)line.c_str();
+			char * tok = strtok(cLine, "\t");
+			std::string sTok(tok);
+			if(sTok.compare(strHost) == 0)
 			{
 				//This is it, use the host after the tab
-				std::string ourRedis = line.substr(line.find('\t')+1);
-				strcpy(cHost, ourRedis.c_str());
+				tok = strtok(nullptr, "\t");
+				std::string ourRedis(tok);
+				char * retBuff = new char[64]();
+				strcpy(retBuff, ourRedis.c_str());
+				retHost = retBuff;
 				//End the loop
+				std::cout << strHost << " goes to " << ourRedis << std::endl;
 				found = true;
 			}
 		}

@@ -37,7 +37,7 @@ int main(int argc, char ** argv)
 	if(pid == 0)
 	{
 		std::cout << "Initializing " << dims[0] << " by " << dims[1] << " grid" << std::endl;
-		initEverything(doKriging, doCoMD, dims, dt, delta, gamma);
+		initEverything(doKriging, doCoMD, dims, dt, delta, gamma, argv[4]);
 		std::cout << "Initialized" << std::endl;
 		//Loop
 		std::cout << "Running for " << numSteps << " iterations" << std::endl;
