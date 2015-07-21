@@ -858,7 +858,6 @@ char * getRedisHost(const char * filePath)
 				strcpy(retBuff, ourRedis.c_str());
 				retHost = retBuff;
 				//End the loop
-				std::cout << strHost << " goes to " << ourRedis << std::endl;
 				found = true;
 			}
 		}
