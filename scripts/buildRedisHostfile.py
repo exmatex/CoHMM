@@ -92,18 +92,51 @@ def writeServerFile(serverList):
     sFile.close()
 
 
+def writeNutcrackerConfig(serverList):
+    pwd = os.getcwd()
+    for node in serverList:
+        nHost = "cn" + str(node)
+        nPath = os.path.join(pwd, nHost)
+        if not os.path.exists(nPath):
+            os.mkdir(nPath)
+        # Make config path
+        confPath = os.path.join(nPath, "conf")
+        if not os.path.exists(confPath):
+            os.mkdir(confPath)
+        # Go to dir
+        os.chdir(confPath)
+        # Write nutcracker/twemproxy config
+        cFile = open('nutcracker.yml', 'w')
+        cFile.write(nHost + "_nut:\n")
+        cFile.write("  listen: " + nHost + ":22121\n")
+        cFile.write("  hash: fnv1a_64\n")
+        cFile.write("  distribution: ketama\n")
+        cFile.write("  auto_eject_hosts: true\n")
+        cFile.write("  redis: true\n")
+        cFile.write("  server_retry_timeout: 2000\n")
+        cFile.write("  server_failure_limit: 1\n")
+        cFile.write("  servers:\n")
+        for rServer in serverList:
+            rHost = "cn" + str(rServer) + ":6379:1"
+            cFile.write("   - " + rHost + "\n")
+        cFile.write("\n")
+        cFile.close()
+        os.chdir(pwd)
+
+
 def writeRedisConfigs(serverList):
     pwd = os.getcwd()
     master = "cn" + str(serverList[0])
     for node in serverList:
         nHost = "cn" + str(node)
+        nPath = os.path.join(pwd, nHost)
         # See if we need to prepare the child
         if(nHost != master):
             # Make child dir if needed
-            if not os.path.exists(nHost):
-                os.mkdir(nHost)
+            if not os.path.exists(nPath):
+                os.mkdir(nPath)
             # Go to child dir
-            os.chdir(nHost)
+            os.chdir(nPath)
             # Write file
             rFile = open('redis.conf', 'w')
             rFile.write("port 6379\n")
@@ -113,6 +146,7 @@ def writeRedisConfigs(serverList):
             rFile.close()
             # Return to parent dir
             os.chdir(pwd)
+        # Should master have had a config?
 
 
 def which(program):
@@ -121,6 +155,8 @@ def which(program):
         binary = os.path.join(path, program)
         if os.path.isfile(binary):
             return binary
+    # Still here, so return a dummy
+    return "ERROR: Not Found"
 
 
 def writeBashScripts(serverList):
@@ -135,31 +171,46 @@ def writeBashScripts(serverList):
     # Do the start script commands
     # Find redis-server
     rServer = which('redis-server')
+    # Find nutcracker
+    nutCracker = which('nutcracker')
+    # Start redis
     for node in serverList:
         nHost = "cn" + str(node)
-        if(nHost != master):
-            # Go to child dir
-            os.chdir(nHost)
-            # Get child dir
-            kwd = os.getcwd()
-            # Write command line
-            cLine = "nohup ssh -n " + nHost
-            cLine += " \'cd " + kwd + "; " + rServer + " " + kwd
-            cLine += "/redis.conf &\' &\n"
-            sFile.write(cLine)
-            # Return to parent dir
-            os.chdir(pwd)
-        else:
-            # Master is easy. Also it is probably localhost
-            cLine = "nohup ssh -n " + nHost
-            cLine += " \'" + rServer + " &' &\n"
-            sFile.write(cLine)
+        nPath = os.path.join(pwd, nHost)
+        # Go to child dir
+        os.chdir(nPath)
+        # Get child dir
+        kwd = os.getcwd()
+        # Write command line: No need for a config
+        cLine = "nohup ssh -n " + nHost
+        cLine += " \'cd " + kwd + "; " + rServer + "&'\n"
+        sFile.write(cLine)
+        # Return to parent dir
+        os.chdir(pwd)
+    # Start nutcrackers
+    for node in serverList:
+        nHost = "cn" + str(node)
+        nPath = os.path.join(pwd, nHost)
+        # Go to child dir
+        os.chdir(nPath)
+        # Get child dir
+        kwd = os.getcwd()
+        # Write command line: No need for a config
+        cLine = "nohup ssh -n " + nHost
+        cLine += " \'cd " + kwd + "; " + nutCracker + "&'\n"
+        sFile.write(cLine)
+        # Return to parent dir
+        os.chdir(pwd)
     sFile.close()
     # Now write the end script
-    killswitch = "pkill -f \"redis-server\""
+    killswitchR = "pkill -f \"redis-server\""
+    killswitchN = "pkill -f \"nutcracker\""
     for node in serverList:
         nHost = "cn" + str(node)
-        cLine = "ssh " + nHost + " \'" + killswitch + "\'\n"
+        cLine = "ssh " + nHost + " \'" + killswitchR + "\'\n"
+        eFile.write(cLine)
+        eFile.write(cLine)
+        cLine = "ssh " + nHost + " \'" + killswitchN + "\'\n"
         eFile.write(cLine)
         eFile.write(cLine)
     eFile.close()
@@ -177,8 +228,8 @@ def main():
     # Write nodelist and serverlist if the following scripts aren't used
     writeHostFile(nodeList)
     writeServerFile(serverList)
-    # Write redis config files and startup/shutdown scripts
-    writeRedisConfigs(serverList)
+    # Write nutcracker config files and startup/shutdown scripts
+    writeNutcrackerConfig(serverList)
     writeBashScripts(serverList)
 
 
