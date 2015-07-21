@@ -108,7 +108,7 @@ def writeNutcrackerConfig(serverList):
         # Write nutcracker/twemproxy config
         cFile = open('nutcracker.yml', 'w')
         cFile.write(nHost + "_nut:\n")
-        cFile.write("  listen: " + nHost + ":22121\n")
+        cFile.write("  listen: " + nHost + ":6379\n")
         cFile.write("  hash: fnv1a_64\n")
         cFile.write("  distribution: ketama\n")
         cFile.write("  auto_eject_hosts: true\n")
@@ -117,7 +117,7 @@ def writeNutcrackerConfig(serverList):
         cFile.write("  server_failure_limit: 1\n")
         cFile.write("  servers:\n")
         for rServer in serverList:
-            rHost = "cn" + str(rServer) + ":6379:1"
+            rHost = "cn" + str(rServer) + ":6380:1"
             cFile.write("   - " + rHost + "\n")
         cFile.write("\n")
         cFile.close()
@@ -130,23 +130,17 @@ def writeRedisConfigs(serverList):
     for node in serverList:
         nHost = "cn" + str(node)
         nPath = os.path.join(pwd, nHost)
-        # See if we need to prepare the child
-        if(nHost != master):
-            # Make child dir if needed
-            if not os.path.exists(nPath):
-                os.mkdir(nPath)
-            # Go to child dir
-            os.chdir(nPath)
-            # Write file
-            rFile = open('redis.conf', 'w')
-            rFile.write("port 6379\n")
-            rFile.write("slaveof " + master + " 6379\n")
-            rFile.write("dbfilename dump" + nHost + ".rdb\n")
-            rFile.write("slave-read-only no\n")
-            rFile.close()
-            # Return to parent dir
-            os.chdir(pwd)
-        # Should master have had a config?
+        # Make child dir if needed
+        if not os.path.exists(nPath):
+            os.mkdir(nPath)
+        # Go to child dir
+        os.chdir(nPath)
+        # Write file
+        rFile = open('redis.conf', 'w')
+        rFile.write("port 6380\n")
+        rFile.close()
+        # Return to parent dir
+        os.chdir(pwd)
 
 
 def which(program):
@@ -183,7 +177,7 @@ def writeBashScripts(serverList):
         kwd = os.getcwd()
         # Write command line: No need for a config
         cLine = "nohup ssh -n " + nHost
-        cLine += " \'cd " + kwd + "; " + rServer + "&'\n"
+        cLine += " \'cd " + kwd + "; " + rServer + " --port 6380 &\' &\n"
         sFile.write(cLine)
         # Return to parent dir
         os.chdir(pwd)
@@ -197,7 +191,7 @@ def writeBashScripts(serverList):
         kwd = os.getcwd()
         # Write command line: No need for a config
         cLine = "nohup ssh -n " + nHost
-        cLine += " \'cd " + kwd + "; " + nutCracker + "&'\n"
+        cLine += " \'cd " + kwd + "; " + nutCracker + "&\' &\n"
         sFile.write(cLine)
         # Return to parent dir
         os.chdir(pwd)
@@ -228,8 +222,11 @@ def main():
     # Write nodelist and serverlist if the following scripts aren't used
     writeHostFile(nodeList)
     writeServerFile(serverList)
-    # Write nutcracker config files and startup/shutdown scripts
+    # Write redis config files
+    writeRedisConfigs(serverList)
+    # Write nutcracker config files
     writeNutcrackerConfig(serverList)
+    # Write startup/shutdown scripts
     writeBashScripts(serverList)
 
 
