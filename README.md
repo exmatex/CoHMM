@@ -82,6 +82,10 @@ Distributed Redis
 ---------
 To run with the redis database distributed across multiple nodes of a cluster, twemproxy is required. From the driver's directory, use python to execute the `buildRedisHostfile.py` file in the `scripts` subdirectory with a command line parameter of the desired number of redis servers. Then source the `startRedisServers.sh` file in the working subdirectory and run the driver with the path to the created `lutFile` in place of the `<redis_server>` parameter. When done, source the `endRedisServers.sh` file to remotely kill the instances of `redis-server` and `nutcracker`.
 
+Finer-Grain Fault Tolerance
+---------
+By default, CoHMM-DaD provides fault tolerance at the granularity of a timestep. If the simulation fails, CoHMM-DaD will be able to resume from the last complete timestep. If this is not sufficient, the `FINER_GRAIN_FT` flag may be enabled during CMake configuration and each Flux task will be verified and re-executed until it has been successfully completed or the simulation fails at the runtime level.
+
 Copyright and license
 ---------------------
 

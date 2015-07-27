@@ -44,7 +44,11 @@ class Main : public CBase_Main
 		unsigned int curStep;
 		int curRound;
 		unsigned int nSteps;
-		const bool fineGrainFT = false;
+		#ifdef FINERFT
+			const bool fineGrainFT = true;
+		#else
+			const bool fineGrainFT = false;
+		#endif
 
 		void spawnFluxes()
 		{

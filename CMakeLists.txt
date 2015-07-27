@@ -49,6 +49,13 @@ if(SAFE_FAULT_INJECTION)
     add_definitions(-DSAFE_PSEUDOFAULTS)
 endif()
 
+option(FINER_GRAIN_FT "Finer Grain Fault Tolerance" OFF)
+
+if(FINER_GRAIN_FT)
+    message(STATUS "Finer Grain Fault Tolerance Enabled")
+    add_definitions(-DFINERFT)
+endif()
+
 
 ########################################################################
 #Find external packages

@@ -20,7 +20,11 @@ int main(int argc, char ** argv)
 		return 1;
 	}
 	//Set up parameters
-	const bool fineGrainFT = true;
+	#ifdef FINERFT
+		const bool fineGrainFT = true;
+	#else
+		const bool fineGrainFT = false;
+	#endif
 	const bool doKriging = true;
 	const bool doCoMD = false;
 	int dims[2] = {atoi(argv[1]), atoi(argv[2])};

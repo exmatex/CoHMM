@@ -116,7 +116,11 @@ int main(int argc, char ** argv)
 	//Set up parameters
 	const bool doKriging = true;
 	const bool doCoMD = false;
-	const bool fineGrainFT = false;
+	#ifdef FINERFT
+		const bool fineGrainFT = true;
+	#else
+		const bool fineGrainFT = false;
+	#endif
 	int dims[2] = {atoi(argv[1]), atoi(argv[2])};
 	double dt[2] = {0.1, 0.1};
 	double delta[2] = {1.0, 1.0};
