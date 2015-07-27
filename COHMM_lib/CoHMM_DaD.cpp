@@ -2,20 +2,24 @@
 #include <vector>
 #include <string>
 #include <cassert>
+#include <cstring>
+#include <fstream>
 
 #include <hiredis.h>
+
+///TODO: Find a more OS neutral way to do this
+#include <unistd.h>
 
 extern "C"
 {
 #include <CoMD_lib.h>
 }
 
-#include "2DKriging.hpp"
 #include "redisShmem.hpp"
+#include "2DKriging.hpp"
 #include "redisBuckets.hpp"
 #include "kriging.hpp"
-
-#include <iostream>
+#include "CoHMM_DaD.hpp"
 
 
 bool backToTheFuture(Node * fields, FluxFuture * futures, int * dims, int curStep, int curPhase, redisContext * headRedis)
@@ -51,6 +55,38 @@ bool backToTheFuture(Node * fields, FluxFuture * futures, int * dims, int curSte
 	return true;
 }
 
+bool checkTheFuture(std::vector<RetryRedirect> &failures, FluxFuture * futures, int * dims, int curStep, int curPhase, redisContext * headRedis)
+{
+	std::map<unsigned int, bool> retMap;
+	for(int i = 0; i < dims[0]*dims[1]; i++)
+	{
+		//Did we compute the results
+		if(futures[i].alreadyComputed == false)
+		{
+			//We did
+			unsigned int taskID = futures[i].taskID;
+			//Check if we already fetched this output
+			if(retMap.find(taskID) == retMap.end())
+			{
+				//We did not, so fetch it
+				FluxOut res;
+				bool completed = checkSingle(curStep, curPhase, taskID, headRedis, "RESULT");
+				retMap[taskID] = true;
+				//Did it fail?
+				if(completed == false)
+				{
+					//Queue it up
+					RetryRedirect task;
+					task.realTaskID = taskID;
+					failures.push_back(task);
+				}
+			}
+		}
+	}
+	return true;
+}
+
+
 int prepTasks(Node * fields, FluxFuture * futures, bool doKriging, int * dims, double * dt, double * delta,  int curStep, int curPhase, redisContext * headRedis)
 {
 	//Task map
@@ -68,7 +104,7 @@ int prepTasks(Node * fields, FluxFuture * futures, bool doKriging, int * dims, d
 			std::vector<double *> fVec;
 			std::vector<double *> gVec;
 			getSortedSubBucketNearZero(fields[x + dims[0]*y].w.w, (char *)"comd", headRedis, comdDigits, 2, &wVec, &fVec, &gVec, zeroThresh);
-			
+
 			//Check for exact value
 			bool useDB = ifConservedFieldsMatch(fields[x+dims[0]*y].w.w, &wVec, dbT);
 			//We actually found it
@@ -197,8 +233,19 @@ int prepTasks(Node * fields, FluxFuture * futures, bool doKriging, int * dims, d
 //Initialize all fields and store in database at KEY_0_0
 bool initEverything(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, const char * redis_host)
 {
+	const char * redisHostName;
+	//Check redis host
+	bool needFree = checkRedisHost(redis_host);
+	if(needFree == true)
+	{
+		redisHostName = getRedisHost(redis_host);
+	}
+	else
+	{
+		redisHostName = redis_host;
+	}
 	//Connect to redis
-	redisContext * headRedis = redisConnect(redis_host, 6379);
+	redisContext * headRedis = redisConnect(redisHostName, 6379);
 	if(headRedis == NULL || headRedis->err)
 	{
 		printf("Redis error: %s\n", headRedis->errstr);
@@ -214,6 +261,10 @@ bool initEverything(bool doKriging, bool doCoMD, int * dims, double * dt, double
 	redisFree(headRedis);
 	//Free memory
 	delete [] field;
+	if(needFree == true)
+	{
+		delete [] redisHostName;
+	}
 	//And we're done
 	return true;
 }
@@ -221,8 +272,19 @@ bool initEverything(bool doKriging, bool doCoMD, int * dims, double * dt, double
 //Essentially run through to the first flux of the first half-step
 int prepFirstFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep, const char * redis_host)
 {
+	const char * redisHostName;
+	//Check redis host
+	bool needFree = checkRedisHost(redis_host);
+	if(needFree == true)
+	{
+		redisHostName = getRedisHost(redis_host);
+	}
+	else
+	{
+		redisHostName = redis_host;
+	}
 	//Connect to redis
-	redisContext * headRedis = redisConnect(redis_host, 6379);
+	redisContext * headRedis = redisConnect(redisHostName, 6379);
 	if(headRedis == NULL || headRedis->err)
 	{
 		printf("Redis error: %s\n", headRedis->errstr);
@@ -242,14 +304,29 @@ int prepFirstFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double *
 	//Don't save fields, we didn't do anything with it
 	delete [] field;
 	delete [] futures;
+	if(needFree == true)
+	{
+		delete [] redisHostName;
+	}
 	//Return the number of tasks
 	return numTasks;
 }
 
 int prepSecondFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep, const char * redis_host)
 {
+	const char * redisHostName;
+	//Check redis host
+	bool needFree = checkRedisHost(redis_host);
+	if(needFree == true)
+	{
+		redisHostName = getRedisHost(redis_host);
+	}
+	else
+	{
+		redisHostName = redis_host;
+	}
 	//Connect to redis
-	redisContext * headRedis = redisConnect(redis_host, 6379);
+	redisContext * headRedis = redisConnect(redisHostName, 6379);
 	if(headRedis == NULL || headRedis->err)
 	{
 		printf("Redis error: %s\n", headRedis->errstr);
@@ -275,6 +352,10 @@ int prepSecondFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double 
 	//Don't save fields, we only need the original w's and the final f's and g's
 	delete [] field;
 	delete [] futures;
+	if(needFree == true)
+	{
+		delete [] redisHostName;
+	}
 	//Return the number of tasks
 	return numTasks;
 }
@@ -282,8 +363,19 @@ int prepSecondFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double 
 int prepThirdFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep, const char * redis_host)
 {
 	//Need phase 0's w's and phase 1's f's and g's
+	const char * redisHostName;
+	//Check redis host
+	bool needFree = checkRedisHost(redis_host);
+	if(needFree == true)
+	{
+		redisHostName = getRedisHost(redis_host);
+	}
+	else
+	{
+		redisHostName = redis_host;
+	}
 	//Connect to redis
-	redisContext * headRedis = redisConnect(redis_host, 6379);
+	redisContext * headRedis = redisConnect(redisHostName, 6379);
 	if(headRedis == NULL || headRedis->err)
 	{
 		printf("Redis error: %s\n", headRedis->errstr);
@@ -313,6 +405,10 @@ int prepThirdFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double *
 	delete[] aField;
 	delete[] bField;
 	delete[] futures;
+	if(needFree == true)
+	{
+		delete [] redisHostName;
+	}
 	//Return the number of tasks
 	return numTasks;
 }
@@ -322,7 +418,18 @@ int prepLastFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double * 
 	//Essentially the same as secondFlux
 	//Really should refactor
 	//Connect to redis
-	redisContext * headRedis = redisConnect(redis_host, 6379);
+	const char * redisHostName;
+	//Check redis host
+	bool needFree = checkRedisHost(redis_host);
+	if(needFree == true)
+	{
+		redisHostName = getRedisHost(redis_host);
+	}
+	else
+	{
+		redisHostName = redis_host;
+	}
+	redisContext * headRedis = redisConnect(redisHostName, 6379);
 	if(headRedis == NULL || headRedis->err)
 	{
 		printf("Redis error: %s\n", headRedis->errstr);
@@ -348,6 +455,10 @@ int prepLastFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double * 
 	//Don't save fields, we only need the original w's and the final f's and g's
 	delete [] field;
 	delete [] futures;
+	if(needFree == true)
+	{
+		delete [] redisHostName;
+	}
 	//Return the number of tasks
 	return numTasks;
 }
@@ -357,7 +468,18 @@ int finishStep(bool doKriging, bool doCoMD, int * dims, double * dt, double * de
 	//Basically phase 3, but replace the last flux call with a shiftback
 	//Need phase 2's w's and phase 3's f's and g's
 	//Connect to redis
-	redisContext * headRedis = redisConnect(redis_host, 6379);
+	const char * redisHostName;
+	//Check redis host
+	bool needFree = checkRedisHost(redis_host);
+	if(needFree == true)
+	{
+		redisHostName = getRedisHost(redis_host);
+	}
+	else
+	{
+		redisHostName = redis_host;
+	}
+	redisContext * headRedis = redisConnect(redisHostName, 6379);
 	if(headRedis == NULL || headRedis->err)
 	{
 		printf("Redis error: %s\n", headRedis->errstr);
@@ -386,6 +508,10 @@ int finishStep(bool doKriging, bool doCoMD, int * dims, double * dt, double * de
 	delete [] fieldA;
 	delete [] fieldB;
 	delete [] futures;
+	if(needFree == true)
+	{
+		delete [] redisHostName;
+	}
 	//Return the number of tasks (0)
 	return 0;
 }
@@ -473,13 +599,13 @@ FluxOut fluxFn(bool doKriging, bool doCoMD, FluxIn * input, redisContext * headR
 			strcpy(theInput.potDir,"../pots");
 			strcpy(theInput.potName,"Cu01.eam.alloy");
 			strcpy(theInput.potType,"setfl");
-			theInput.doeam = 1; 
+			theInput.doeam = 1;
 			theInput.nx = 6;
 			theInput.ny = 6;
 			theInput.nz = 6;
 			theInput.nSteps = 1000;
-			theInput.printRate = 1; 
-			//MUST SPECIFY THE FOLLOWING               
+			theInput.printRate = 1;
+			//MUST SPECIFY THE FOLLOWING
 			theInput.dt = 10.0;
 			theInput.lat = 3.6186;
 			theInput.temperature = 0;
@@ -540,7 +666,7 @@ FluxOut fluxFn(bool doKriging, bool doCoMD, FluxIn * input, redisContext * headR
 			output.g[6] = -output.g[3]*sqrt(output.g[4]*output.g[4] + output.g[5]*output.g[5]);
 		}
 		//Put result to DB for future use: Warning, flush if we switch to comd as this is horrible
-		putData(input->fields.w, output.f, output.g, (char *)"comd", headRedis, comdDigits);		
+		putData(input->fields.w, output.f, output.g, (char *)"comd", headRedis, comdDigits);
 	}
 	return output;
 }
@@ -550,8 +676,27 @@ bool cloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int taskID, 
 {
 	FluxIn input;
 	FluxOut output;
+	#ifdef SAFE_PSEUDOFAULTS
+		//If we enable Safe PseudoFaults, we want tasks to fail.
+		if(taskID % 4 == 1)
+		{
+			//Roughly 25% failure rate
+			return true;
+		}
+	#endif
 	//Connect to redis
-	redisContext * headRedis = redisConnect(redis_host, 6379);
+	const char * redisHostName;
+	//Check redis host
+	bool needFree = checkRedisHost(redis_host);
+	if(needFree == true)
+	{
+		redisHostName = getRedisHost(redis_host);
+	}
+	else
+	{
+		redisHostName = redis_host;
+	}
+	redisContext * headRedis = redisConnect(redisHostName, 6379);
 	if(headRedis == NULL || headRedis->err)
 	{
 		printf("Redis error: %s\n", headRedis->errstr);
@@ -560,18 +705,32 @@ bool cloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int taskID, 
 	getSingle<FluxIn>(&input, curStep, phase, taskID, headRedis, "TASK");
 	//Call fluxFn with input
 	output = fluxFn(doKriging, doCoMD, &input, headRedis);
-
 	//Write result to DB
 	putSingle<FluxOut>(&output, curStep, phase, taskID, headRedis, "RESULT");
 	//cleanup redis
 	redisFree(headRedis);
+	if(needFree == true)
+	{
+		delete [] redisHostName;
+	}
 	return true;
 }
 
 bool outputVTK(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep, const char * redis_host)
 {
 	//Connect to redis
-	redisContext * headRedis = redisConnect(redis_host, 6379);
+	const char * redisHostName;
+	//Check redis host
+	bool needFree = checkRedisHost(redis_host);
+	if(needFree == true)
+	{
+		redisHostName = getRedisHost(redis_host);
+	}
+	else
+	{
+		redisHostName = redis_host;
+	}
+	redisContext * headRedis = redisConnect(redisHostName, 6379);
 	if(headRedis == NULL || headRedis->err)
 	{
 		printf("Redis error: %s\n", headRedis->errstr);
@@ -595,6 +754,209 @@ bool outputVTK(bool doKriging, bool doCoMD, int * dims, double * dt, double * de
 	redisFree(headRedis);
 	//Don't save fields, we didn't do anything with it
 	delete [] field;
+	if(needFree == true)
+	{
+		delete [] redisHostName;
+	}
+	return true;
+}
+
+bool tryShortCircuit(int * dims, int curStep, const char * redis_host)
+{
+	//For short circuiting purposes, we do it on a per-step basis
+	//Just check for all tiles  of phase 0 of the next timestep
+	///WARNING: This could fail if the job crashes partway through a puts
+	//Connect to redis
+	const char * redisHostName;
+	//Check redis host
+	bool needFree = checkRedisHost(redis_host);
+	if(needFree == true)
+	{
+		redisHostName = getRedisHost(redis_host);
+	}
+	else
+	{
+		redisHostName = redis_host;
+	}
+	redisContext * headRedis = redisConnect(redisHostName, 6379);
+	if(headRedis == NULL || headRedis->err)
+	{
+		printf("Redis error: %s\n", headRedis->errstr);
+		return false;
+	}
+	//Check each tile
+	bool retBool = true;
+	unsigned int nTiles = getNumBlocks(dims[0], dims[1]);
+	for(unsigned int i = 0; i < nTiles; i++)
+	{
+		//Build Key
+		char keyBuffer[maxKeyLength];
+		buildBlockKey(keyBuffer, curStep+1, 0, i, dims[0], dims[1], "FIELD");
+		//Use Key to check for existence
+		redisReply * reply;
+		reply = (redisReply *) redisCommand(headRedis, "EXISTS %s", keyBuffer);
+		assert(reply->type == REDIS_REPLY_INTEGER);
+		if(reply->integer == 0)
+		{
+			retBool = false;
+			i = nTiles + 1;
+		}
+		freeReplyObject(reply);
+	}
+	//Kill redis
+	redisFree(headRedis);
+	if(needFree == true)
+	{
+		delete [] redisHostName;
+	}
+	return retBool;
+}
+
+inline bool checkRedisHost(const char * inHost)
+{
+	//Check if we passed a path
+	//For santiy's sake
+	//	we assume all paths are either relative and start with a "."
+	//	or absolute and start with a "/"
+	if( (inHost[0] == '.') or (inHost[0] == '/') )
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+char * getRedisHost(const char * filePath)
+{
+	char * retHost = nullptr;
+	//Open file we passed in
+	std::ifstream redisFile;
+	redisFile.open(filePath);
+	if(redisFile.is_open())
+	{
+		//Get hostname of self
+		char selfHost[64];
+		gethostname(selfHost, 64);
+		std::string strHost(selfHost);
+		bool found = false;
+		std::string line;
+		//Iterate through file we passed in
+		while( std::getline(redisFile, line) && found == false )
+		{
+			//Check if this is the line that corresponds to us
+			char * cLine = (char *)line.c_str();
+			char * tok = strtok(cLine, "\t");
+			std::string sTok(tok);
+			if(sTok.compare(strHost) == 0)
+			{
+				//This is it, use the host after the tab
+				tok = strtok(nullptr, "\t");
+				std::string ourRedis(tok);
+				char * retBuff = new char[64]();
+				strcpy(retBuff, ourRedis.c_str());
+				retHost = retBuff;
+				//End the loop
+				found = true;
+			}
+		}
+		//We either found it or we didn't, close the file
+		redisFile.close();
+	}
+	//Hopefully return the hostname, not nullptr
+	return retHost;
+}
+
+int checkStepForFaults(int * dims, int curStep, int curPhase, int curRound, const char * redis_host)
+{
+	//Connect to redis
+	const char * redisHostName;
+	//Check redis host
+	bool needFree = checkRedisHost(redis_host);
+	if(needFree == true)
+	{
+		redisHostName = getRedisHost(redis_host);
+	}
+	else
+	{
+		redisHostName = redis_host;
+	}
+	redisContext * headRedis = redisConnect(redisHostName, 6379);
+	if(headRedis == NULL || headRedis->err)
+	{
+		printf("Redis error: %s\n", headRedis->errstr);
+		return false;
+	}
+	//Get futures from previous step
+	FluxFuture * futures = new FluxFuture[dims[0]*dims[1]]();
+	getBlocks<FluxFuture>(futures, dims[0], dims[1], curStep, curPhase, headRedis, "FUTS");
+	//Prepare a buffer for failed tasks
+	std::vector<RetryRedirect> failures;
+	//Check to see if all the futures exist (So tasks ran and returned)
+	checkTheFuture(failures, futures, dims, curStep, curPhase, headRedis);
+	int failureCount = failures.size();
+	//Did anything fail?
+	if(failureCount != 0)
+	{
+		char tagBuffer[32];
+		sprintf(tagBuffer, "RETRY_%d", curRound);
+		//It did, so push the retries
+		for(unsigned int i = 0; i < failureCount; i++)
+		{
+			putSingle<RetryRedirect>(&failures[i], curStep, curPhase, i, headRedis, tagBuffer);
+		}
+	}
+	//cleanup redis
+	redisFree(headRedis);
+	if(needFree == true)
+	{
+		delete [] redisHostName;
+	}
+	//Return the number of failures
+	return failureCount;
+}
+
+bool retryCloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int taskID, int round, const char * redis_host)
+{
+	FluxIn input;
+	FluxOut output;
+	//Connect to redis
+	const char * redisHostName;
+	//Check redis host
+	bool needFree = checkRedisHost(redis_host);
+	if(needFree == true)
+	{
+		redisHostName = getRedisHost(redis_host);
+	}
+	else
+	{
+		redisHostName = redis_host;
+	}
+	redisContext * headRedis = redisConnect(redisHostName, 6379);
+	if(headRedis == NULL || headRedis->err)
+	{
+		printf("Redis error: %s\n", headRedis->errstr);
+	}
+	//Grab RetryRedirect
+	char tagBuffer[32];
+	sprintf(tagBuffer, "RETRY_%d", round);
+	RetryRedirect retryTask;
+	getSingle<RetryRedirect>(&retryTask, curStep, phase, taskID, headRedis, tagBuffer);
+	//Get ID out of RetryRedirect
+	unsigned int actualID = retryTask.realTaskID;
+	//Grab flux task as before
+	getSingle<FluxIn>(&input, curStep, phase, actualID, headRedis, "TASK");
+	//Call fluxFn with input
+	output = fluxFn(doKriging, doCoMD, &input, headRedis);
+	//Write result to DB
+	putSingle<FluxOut>(&output, curStep, phase, actualID, headRedis, "RESULT");
+	//cleanup redis
+	redisFree(headRedis);
+	if(needFree == true)
+	{
+		delete [] redisHostName;
+	}
 	return true;
 }
 
@@ -630,5 +992,15 @@ bool outputVTK(bool doKriging, bool doCoMD, int * dims, double * dt, double * de
 {
 	return outputVTK(doKriging, doCoMD, dims, dt, delta, gamma, curStep, "localhost");
 }
-
-
+bool tryShortCircuit(int * dims, int curStep)
+{
+	return tryShortCircuit(dims, curStep, "localhost");
+}
+int checkStepForFaults(int * dims, int curStep, int curPhase, int curRound)
+{
+	return checkStepForFaults(dims, curPhase, curStep, curRound, "localhost");
+}
+bool retryCloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int taskID, int round)
+{
+	return retryCloudFlux(doKriging, doCoMD, curStep, phase, taskID, round, "localhost");
+}

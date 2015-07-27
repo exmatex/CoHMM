@@ -10,11 +10,13 @@
 #include <cmath>
 #include <vector>
 
+#include <iostream>
+
 #include "2DKriging.hpp"
 
 
 
-/** checks if database values are within a certain threshold or exact 
+/** checks if database values are within a certain threshold or exact
  * @param *w0         field that needs to be computed
  * @param *wVec       field which is available from the database
  * @param dbThresh    threshold for the check
@@ -52,10 +54,10 @@ bool ifConservedFieldsMatch(double * w0, std::vector<double *> * wVec, double db
 
 /** min_mod function to compute the discrete slopes, without using jacobian etc.
  * Jiang&Tadmor equ. (3.1'), (3.1`) and def. one on page 1901
- * @param w_plus   conserved or flux of node+1 (inpout) 
- * @param w        conserved or flux of node (inpout) 
- * @param w_minus  conserved or flux of node-1 (inpout) 
- * @param mm       result (spacial derivative of input) (output) 
+ * @param w_plus   conserved or flux of node+1 (inpout)
+ * @param w        conserved or flux of node (inpout)
+ * @param w_minus  conserved or flux of node-1 (inpout)
+ * @param mm       result (spacial derivative of input) (output)
  * **/
 double min_mod(double w_plus, double w, double w_minus){
 
@@ -82,7 +84,7 @@ double min_mod(double w_plus, double w, double w_minus){
   return mm;
 }
 
-/** checks the gradient of the fields (used to decide whether trying kriging or not) 
+/** checks the gradient of the fields (used to decide whether trying kriging or not)
  * @param *fields     fields on specific node (input)
  * @param l           lattice information (input)
  * **/
@@ -141,7 +143,7 @@ void wSummation(Node * node_a, Node * node_b, int * dims, double * dt, double * 
 		{
 			int i = x + dim_x * y;
 			int xmo = ((x-1+dim_x)%dim_x) + dim_x*y;
-			int xpo = ((x+1)%dim_x) + dim_x*y; 
+			int xpo = ((x+1)%dim_x) + dim_x*y;
 			int ymo = x + dim_x*((y-1+dim_y)%dim_y);
 			int ypo = x + dim_x*((y+1)%dim_y);
 			int xpoypo = (x+1)%dim_x + dim_x*((y+1)%dim_y);
@@ -203,11 +205,17 @@ void wNSqrt(Node * field, int * dims, double *dt, double * delta)
 	}
 }
 
+void init_conserved_fields(Node* node_a, int * dims, int grid_size)
+{
+	return init_conserved_fields(node_a, dims, grid_size, InitialConditions_e::X);
+}
+
+
 /** set intial values for strain, momentum- and energy density on grid nodes
  * @param node       grid_node containing the conserved and the fluxes (output)
  * @param grid_size  number of grid nodes (input)
  * **/
-void init_conserved_fields(Node* node_a, int * dims, int grid_size)
+void init_conserved_fields(Node* node_a, int * dims, int grid_size, InitialConditions_e prob_type)
 {
 	int dimX = dims[0];
 	int dimY = dims[1];
@@ -223,19 +231,51 @@ void init_conserved_fields(Node* node_a, int * dims, int grid_size)
 			node_a[i].w.w[4] = 0.0;
 			node_a[i].w.w[5] = 0.0;
 			node_a[i].w.w[6] = -0.295;
-			if( ( x < (dimX/2 + dimX/10) )  && ( x >= (dimX/2 - dimX/10) ) )
+			//Initial stimulus
+			switch(prob_type)
 			{
-				node_a[i].w.w[0] = 1.04;
-				node_a[i].w.w[6] = -0.295;
+				case InitialConditions_e::LINE:
+					if( ( x < (dimX/2 + dimX/10) )  and ( x >= (dimX/2 - dimX/10) ) )
+					{
+						node_a[i].w.w[0] = 1.04;
+						node_a[i].w.w[6] = -0.295;
+					}
+				break;
+				case InitialConditions_e::CENTRALIZED:
+					if(
+						( x < (dimX/2 + dimX/10) )  and ( x >= (dimX/2 - dimX/10) )
+							and
+						( y < (dimY/2 + dimY/10) )  and ( y >= (dimY/2 - dimY/10) )
+					)
+					{
+						node_a[i].w.w[0] = 1.04;
+						node_a[i].w.w[6] = -0.295;
+					}
+				break;
+				case InitialConditions_e::X:
+					//Just doing a plus as they are close enough
+					if(
+						( x < (dimX/2 + dimX/10) )  and ( x >= (dimX/2 - dimX/10) )
+							or
+						( y < (dimY/2 + dimY/10) )  and ( y >= (dimY/2 - dimY/10) )
+					)
+					{
+						node_a[i].w.w[0] = 1.04;
+						node_a[i].w.w[6] = -0.295;
+					}
+				break;
+				default:
+					//No initial conditions, so no stimulus
+				break;
 			}
 		}
 	}
 }
 
 /** print the output in vtk format
- * @param i         number of output file (input)         
+ * @param i         number of output file (input)
  * @param node      grid_node containing the conserved and the fluxes (input)
- * @param l         lattice parameters (input)         
+ * @param l         lattice parameters (input)
  * @param grid_size  number of grid nodes (input)
  * **/
 void printf_fields_vtk(int i, Node* node_a, Lattice l, int grid_size)
@@ -284,12 +324,12 @@ void printf_fields_vtk(int i, Node* node_a, Lattice l, int grid_size)
 		printf("Error writing file< %s >!\n", file_name6);
 	}
 
-	fprintf(fn, "# vtk DataFile Version 2.0\nstrain\nASCII\nDATASET STRUCTURED_POINTS\nDIMENSIONS %i %i 1\nORIGIN 0.0 0.0 0.0\nSPACING %lf %lf 1.0\nPOINT_DATA %i\nSCALARS OutArray floats 4\nLOOKUP_TABLE default\n", l.dim_x, l.dim_y, l.dx, l.dy, grid_size); 
-	fprintf(fn2, "# vtk DataFile Version 2.0\nmom\nASCII\nDATASET STRUCTURED_POINTS\nDIMENSIONS %i %i 1\nORIGIN 0.0 0.0 0.0\nSPACING %lf %lf 1.0\nPOINT_DATA %i\nSCALARS OutArray floats 2\nLOOKUP_TABLE default\n", l.dim_x, l.dim_y, l.dx, l.dy, grid_size); 
-	fprintf(fn3, "# vtk DataFile Version 2.0\nenergy\nASCII\nDATASET STRUCTURED_POINTS\nDIMENSIONS %i %i 1\nORIGIN 0.0 0.0 0.0\nSPACING %lf %lf 1.0\nPOINT_DATA %i\nSCALARS OutArray floats 1\nLOOKUP_TABLE default\n", l.dim_x, l.dim_y, l.dx, l.dy, grid_size); 
-	fprintf(fn4, "# vtk DataFile Version 2.0\nmom_flux\nASCII\nDATASET STRUCTURED_POINTS\nDIMENSIONS %i %i 1\nORIGIN 0.5 0.5 0.5\nSPACING %lf %lf 1.0\nPOINT_DATA %i\nSCALARS OutArray floats 2\nLOOKUP_TABLE default\n", l.dim_x, l.dim_y, l.dx, l.dy, grid_size); 
-	fprintf(fn5, "# vtk DataFile Version 2.0\nflux\nASCII\nDATASET STRUCTURED_POINTS\nDIMENSIONS %i %i 1\nORIGIN 0.5 0.5 0.5\nSPACING %lf %lf 1.0\nPOINT_DATA %i\nSCALARS OutArray floats 4\nLOOKUP_TABLE default\n", l.dim_x, l.dim_y, l.dx, l.dy, grid_size); 
-	fprintf(fn6, "# vtk DataFile Version 2.0\nenergy_flux\nASCII\nDATASET STRUCTURED_POINTS\nDIMENSIONS %i %i 1\nORIGIN 0.5 0.5 0.5\nSPACING %lf %lf 1.0\nPOINT_DATA %i\nSCALARS OutArray floats 2\nLOOKUP_TABLE default\n", l.dim_x, l.dim_y, l.dx, l.dy, grid_size); 
+	fprintf(fn, "# vtk DataFile Version 2.0\nstrain\nASCII\nDATASET STRUCTURED_POINTS\nDIMENSIONS %i %i 1\nORIGIN 0.0 0.0 0.0\nSPACING %lf %lf 1.0\nPOINT_DATA %i\nSCALARS OutArray floats 4\nLOOKUP_TABLE default\n", l.dim_x, l.dim_y, l.dx, l.dy, grid_size);
+	fprintf(fn2, "# vtk DataFile Version 2.0\nmom\nASCII\nDATASET STRUCTURED_POINTS\nDIMENSIONS %i %i 1\nORIGIN 0.0 0.0 0.0\nSPACING %lf %lf 1.0\nPOINT_DATA %i\nSCALARS OutArray floats 2\nLOOKUP_TABLE default\n", l.dim_x, l.dim_y, l.dx, l.dy, grid_size);
+	fprintf(fn3, "# vtk DataFile Version 2.0\nenergy\nASCII\nDATASET STRUCTURED_POINTS\nDIMENSIONS %i %i 1\nORIGIN 0.0 0.0 0.0\nSPACING %lf %lf 1.0\nPOINT_DATA %i\nSCALARS OutArray floats 1\nLOOKUP_TABLE default\n", l.dim_x, l.dim_y, l.dx, l.dy, grid_size);
+	fprintf(fn4, "# vtk DataFile Version 2.0\nmom_flux\nASCII\nDATASET STRUCTURED_POINTS\nDIMENSIONS %i %i 1\nORIGIN 0.5 0.5 0.5\nSPACING %lf %lf 1.0\nPOINT_DATA %i\nSCALARS OutArray floats 2\nLOOKUP_TABLE default\n", l.dim_x, l.dim_y, l.dx, l.dy, grid_size);
+	fprintf(fn5, "# vtk DataFile Version 2.0\nflux\nASCII\nDATASET STRUCTURED_POINTS\nDIMENSIONS %i %i 1\nORIGIN 0.5 0.5 0.5\nSPACING %lf %lf 1.0\nPOINT_DATA %i\nSCALARS OutArray floats 4\nLOOKUP_TABLE default\n", l.dim_x, l.dim_y, l.dx, l.dy, grid_size);
+	fprintf(fn6, "# vtk DataFile Version 2.0\nenergy_flux\nASCII\nDATASET STRUCTURED_POINTS\nDIMENSIONS %i %i 1\nORIGIN 0.5 0.5 0.5\nSPACING %lf %lf 1.0\nPOINT_DATA %i\nSCALARS OutArray floats 2\nLOOKUP_TABLE default\n", l.dim_x, l.dim_y, l.dx, l.dy, grid_size);
 	for(int index=0; index<grid_size; ++index)
 	{
 		fprintf(fn, "%f %f %f %f\n", node_a[index].w.w[0]-1, node_a[index].w.w[1], node_a[index].w.w[2], node_a[index].w.w[3]-1);
@@ -324,4 +364,3 @@ void shift_back(Node* node_b, int grid_size, int * dims, Node* node_a)
 		memcpy(&node_b[i].w,& node_a[xpoypo].w, sizeof(Conserved));
 	}
 }
-
