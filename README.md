@@ -44,11 +44,11 @@ Execution
 
 1. start redis server in background (`redis-server &`)
 
-2. run 2D_DaDTest with `./2D_DaDTest <dim_x> <dim_y> <nsteps> <redis_server>`
+2. run benchmark with arguments `<dim_x> <dim_y> <nsteps> <redis_server>`
 
-   example command line:
+   example command line with OpenMP driver:
 
-   `./2D_DaDTest 100 100 1000 localhost`
+   `./2D_OMP 100 100 1000 localhost`
 
 Swift/T Example
 ---------
@@ -56,23 +56,31 @@ To build and execute the Swift/T example, ensure that the CoHMM library has been
 
 Chunks and Tasks
 ---------
-If Chunks and Tasks is detected, it will be automatically built alongside the 2D_DaDTest driver in the `2D_ChunksAndTasks` subdirectory.
+If Chunks and Tasks is detected, a driver will be automatically built in the `2D_ChunksAndTasks` subdirectory.
 
 Intel Concurrent Collections
 ---------
-If Intel CnC is detected, it will be automatically built alongside the 2D_DaDTest driver in the `2D_CnC` subdirectory.
+If Intel CnC is detected, a driver will be automatically built in the `2D_CnC` subdirectory.
 
 Libcircle
 ---------
-If Libcircle is detected, it will be automatically built alongside the 2D_DaDTest driver in the `2D_Libcircle` subdirectory.
+If Libcircle is detected, a driver will be automatically built in the `2D_Libcircle` subdirectory.
 
 Charm++
 ---------
-If Charm++ is detected, it will be automatically built alongside the 2D_DaDTest driver in the `2D_Charm++` subdirectory.
+If Charm++ is detected, a driver will be automatically built in the `2D_Charm++` subdirectory.
+
+OpenMP
+---------
+If OpenMP is detected, a driver will be automatically built in the `2D_OMP` subdirectory.
+
+MPI
+---------
+If MPI is detected, a driver will be automatically built in the `2D_MPI` subdirectory.
 
 Distributed Redis
 ---------
-To run with the redis database distributed across multiple nodes of a cluster, twemproxy is required. From the driver's directory, use python to execute the `buildRedisHostfile.py` file in the `scripts` subdirectory with a command line parameter of the desired number of redis servers. Then source the `startRedisServers.sh` file in the working subdirectory and run the driver with the path to the created `lutFile` in place of the `<redis_server>` parameter. When done, source the `endRedisServers.sh` file.
+To run with the redis database distributed across multiple nodes of a cluster, twemproxy is required. From the driver's directory, use python to execute the `buildRedisHostfile.py` file in the `scripts` subdirectory with a command line parameter of the desired number of redis servers. Then source the `startRedisServers.sh` file in the working subdirectory and run the driver with the path to the created `lutFile` in place of the `<redis_server>` parameter. When done, source the `endRedisServers.sh` file to remotely kill the instances of `redis-server` and `nutcracker`.
 
 Copyright and license
 ---------------------

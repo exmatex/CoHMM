@@ -121,7 +121,7 @@ class Main : public CBase_Main
 			{
 				case 0:
 					//Visualize Step
-					ckout << nSteps << ": Vising to Verifying" << endl;
+					ckout << curStep << ": Vising to Verifying" << endl;
 					outputVTK(gDoKriging, gDoCoMD, gDims, gDt, gDelta, gGamma, curStep, gRedis_host);
 					//Check timestep
 					if(curStep == nSteps)
