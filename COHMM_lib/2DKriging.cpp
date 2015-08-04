@@ -207,7 +207,7 @@ void wNSqrt(Node * field, int * dims, double *dt, double * delta)
 
 void init_conserved_fields(Node* node_a, int * dims, int grid_size)
 {
-	return init_conserved_fields(node_a, dims, grid_size, InitialConditions_e::X);
+	return init_conserved_fields(node_a, dims, grid_size, InitialConditions_e::LINE);
 }
 
 

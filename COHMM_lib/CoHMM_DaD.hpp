@@ -31,6 +31,7 @@ bool retryCloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int tas
 bool retryCloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int taskID, int round);
 
 FluxOut fluxFn(bool doKriging, bool doCoMD, FluxIn * input, redisContext * headRedis);
+FluxOut randomCoMDImbalance(FluxIn * input);
 
 bool checkRedisHost(const char * inHost);
 char * getRedisHost(const char * filePath);

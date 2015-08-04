@@ -4,6 +4,8 @@
 #include <cassert>
 #include <cstring>
 #include <fstream>
+#include <cstdlib>
+#include <ctime>
 
 #include <hiredis.h>
 
@@ -516,7 +518,74 @@ int finishStep(bool doKriging, bool doCoMD, int * dims, double * dt, double * de
 	return 0;
 }
 
-FluxOut fluxFn(bool doKriging, bool doCoMD, FluxIn * input, redisContext * headRedis)
+FluxOut randomCoMDImbalance(FluxIn * input)
+{
+	//Do a dummy comd call
+	//This always does comd because we want Imbalance
+	//4 strains
+	double strain_xx = input->fields.w[0];
+	double strain_xy = input->fields.w[1];
+	double strain_yx = input->fields.w[2];
+	double strain_yy = input->fields.w[3];
+	//2 momentum_fluxes
+	double momentum_x = input->fields.w[4];
+	double momentum_y = input->fields.w[5];
+	//enery_flux
+	double energy = input->fields.w[6];
+	CoMD_input theInput;
+	///FIXME: Fix potdir
+	strcpy(theInput.potDir,"../pots");
+	strcpy(theInput.potName,"Cu01.eam.alloy");
+	strcpy(theInput.potType,"setfl");
+	theInput.doeam = 1;
+	theInput.nx = 6;
+	theInput.ny = 6;
+	theInput.nz = 6;
+	srand(time(nullptr));
+	theInput.nSteps = rand() % 1000;
+	theInput.printRate = 1;
+	//MUST SPECIFY THE FOLLOWING
+	theInput.dt = 10.0;
+	theInput.lat = 3.6186;
+	theInput.temperature = 0;
+	theInput.initialDelta = 0.0;
+	theInput.defGrad[0] = strain_xx;
+	theInput.defGrad[1] = strain_xy;
+	theInput.defGrad[2] = strain_yx;
+	theInput.defGrad[3] = strain_yy;
+	theInput.enDens = energy;
+	theInput.momDens[0] = momentum_x;
+	theInput.momDens[1] = momentum_y;
+	theInput.momDens[2] = 0.0;
+	//theInput.rank = rank;
+	//theInput.calls = calls;
+	theInput.rank = 0;
+	theInput.calls = 0;
+	//Call it
+	CoMD_return theRet = CoMD_lib(&theInput);
+	//4 stresses
+	double rho = 1.0;
+	FluxOut output;
+	output.f[0] = momentum_x/rho;
+	output.f[1] = momentum_y/rho;
+	output.f[2] = 0.0;
+	output.f[3] = 0.0;
+	output.f[4] = theRet.stressXX;
+	output.f[5] = theRet.stressXY;
+	output.g[0] = 0.0;
+	output.g[1] = 0.0;
+	output.g[2] = momentum_x/rho;
+	output.g[3] = momentum_y/rho;
+	output.g[4] = theRet.stressYX;
+	output.g[5] = theRet.stressYY;
+	output.f[6] = -theRet.energyDensX;
+	output.g[6] = -theRet.energyDensY;
+
+	//We return just to guarantee there is no optimization
+	return output;
+}
+
+FluxOut fluxFn(bool doKriging, bool doCoMD, FluxIn * input, redisContext * headRedis, int tid)
 {
 	FluxOut output;
 
@@ -573,6 +642,14 @@ FluxOut fluxFn(bool doKriging, bool doCoMD, FluxIn * input, redisContext * headR
 		}
 		else
 		{
+			#ifdef EXTRA_IMBALANCE
+				//If we enable Extra Imbalance, we want some tasks to run again
+				if(tid % 10 == 1)
+				{
+					//Roughly 10% chance to do the special run
+					randomCoMDImbalance(input);
+				}
+			#endif
 			//It was not, so put it to the kriging db
 			putData(input->fields.w, output.f, output.g, (char *)"krig", headRedis, krigDigits);
 		}
@@ -665,6 +742,14 @@ FluxOut fluxFn(bool doKriging, bool doCoMD, FluxIn * input, redisContext * headR
 			output.f[6] = -output.f[0]*sqrt(output.f[4]*output.f[4] + output.f[5]*output.f[5]);
 			output.g[6] = -output.g[3]*sqrt(output.g[4]*output.g[4] + output.g[5]*output.g[5]);
 		}
+		#ifdef EXTRA_IMBALANCE
+			//If we enable Extra Imbalance, we want some tasks to run again
+			if(tid % 10 == 1)
+			{
+				//Roughly 10% chance to do the special run
+				randomCoMDImbalance(input);
+			}
+		#endif
 		//Put result to DB for future use: Warning, flush if we switch to comd as this is horrible
 		putData(input->fields.w, output.f, output.g, (char *)"comd", headRedis, comdDigits);
 	}
@@ -704,7 +789,7 @@ bool cloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int taskID, 
 	//Grab task
 	getSingle<FluxIn>(&input, curStep, phase, taskID, headRedis, "TASK");
 	//Call fluxFn with input
-	output = fluxFn(doKriging, doCoMD, &input, headRedis);
+	output = fluxFn(doKriging, doCoMD, &input, headRedis, taskID);
 	//Write result to DB
 	putSingle<FluxOut>(&output, curStep, phase, taskID, headRedis, "RESULT");
 	//cleanup redis
@@ -948,7 +1033,7 @@ bool retryCloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int tas
 	//Grab flux task as before
 	getSingle<FluxIn>(&input, curStep, phase, actualID, headRedis, "TASK");
 	//Call fluxFn with input
-	output = fluxFn(doKriging, doCoMD, &input, headRedis);
+	output = fluxFn(doKriging, doCoMD, &input, headRedis, taskID);
 	//Write result to DB
 	putSingle<FluxOut>(&output, curStep, phase, actualID, headRedis, "RESULT");
 	//cleanup redis

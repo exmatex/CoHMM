@@ -57,6 +57,13 @@ if(FINER_GRAIN_FT)
 endif()
 
 
+option(EXTRA_LOAD_IMBALANCE "Artificially Increased Load Imbalance" OFF)
+
+if(EXTRA_LOAD_IMBALANCE)
+	message(STATUS "Artificially Increased Load Imbalance")
+    add_definitions(-DEXTRA_IMBALANCE)
+endif()
+
 ########################################################################
 #Find external packages
 ########################################################################
