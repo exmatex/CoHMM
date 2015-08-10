@@ -16,9 +16,6 @@ int finishStep(bool doKriging, bool doCoMD, int * dims, double * dt, double * de
 bool cloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int taskID, const char * redis_host, CnCaDContext &ctxt);
 bool outputVTK(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep, const char * redis_host, CnCaDContext &ctxt);
 
-int checkStepForFaults(int * dims, int curStep, int curPhase, int curRound, const char * redis_host, CnCaDContext &ctxt);
-bool tryShortCircuit(int * dims, int curStep, const char * redis_host, CnCaDContext &ctxt);
-bool retryCloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int taskID, int round, const char * redis_host, CnCaDContext &ctxt);
 
 FluxOut fluxFn(bool doKriging, bool doCoMD, FluxIn * input, redisContext * headRedis, CnCaDContext &ctxt);
 FluxOut randomCoMDImbalance(FluxIn * input);

@@ -12,7 +12,8 @@ CnCaDContext::CnCaDContext()
 	globalItem(*this, "globalItem"),
 	blockItems(*this, "blockItems"),
 	taskItems(*this, "taskItems"),
-	futureItems(*this, "futureItems")
+	futureItems(*this, "futureItems"),
+	resultItems(*this, "resultItems")
 {
 	//Indicate which tags correspond to which steps
 	fluxTags.prescribes(fluxTask, *this);

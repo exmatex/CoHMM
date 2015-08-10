@@ -191,6 +191,11 @@ struct FluxFuture
 	bool alreadyComputed;
 };
 
+struct FutureBlock
+{
+	FluxFuture block[fieldBlockSize];
+};
+
 struct RetryRedirect
 {
 	unsigned int realTaskID;

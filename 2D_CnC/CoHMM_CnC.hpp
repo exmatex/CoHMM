@@ -45,7 +45,7 @@ typedef FluxOut Result_Item;
 CNC_BITWISE_SERIALIZABLE(Result_Item);
 
 //The future item
-typedef FluxFuture Future_Item;
+typedef FutureBlock Future_Item;
 CNC_BITWISE_SERIALIZABLE(Future_Item);
 
 //The actual task item
@@ -77,8 +77,11 @@ struct CnCaDContext : public CnC::context<CnCaDContext>
 	//Task DB
 	CnC::item_collection<Redis_Tag, Task_Item> taskItems;
 
-	//Future Items
+	//Future blocks
 	CnC::item_collection<Redis_Tag, Future_Item> futureItems;
+
+	//Result Items
+	CnC::item_collection<Redis_Tag, Result_Item> resultItems;
 
 	//No-arg constructor
 	CnCaDContext();
