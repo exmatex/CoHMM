@@ -140,13 +140,7 @@ file(GLOB COMD_SOURCES COMD_lib/*.c)
 add_library(comd ${COMD_SOURCES})
 add_dependencies(comd comd_header)
 
-file(GLOB COHMM_SOURCES COHMM_lib/*.cpp)
 include_directories(COMD_lib)
-
-add_library(cohmm ${COHMM_SOURCES})
-target_link_libraries(cohmm comd ${LINALG_LIBRARIES} ${HIREDIS_LIBRARIES} -lrt)
-
-include_directories(COHMM_lib)
 
 #If (Intel) CnC found, build CnC based driver
 if(INTELCNC_FOUND)
