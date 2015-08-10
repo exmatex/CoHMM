@@ -33,7 +33,7 @@ int Flux_Task::execute(const Flux_Tag &tag, CnCaDContext &c) const
 	unsigned int phase = tag.first.second;
 	unsigned int task = tag.second;
 	//Call
-	cloudFlux(runConfig.doKriging, runConfig.doCoMD, step, phase, task, runConfig.redis_host);
+	cloudFlux(runConfig.doKriging, runConfig.doCoMD, step, phase, task, runConfig.redis_host, c);
 	//Return
 	return CnC::CNC_Success;
 }
@@ -69,7 +69,7 @@ int main(int argc, char ** argv)
 	CnCaDContext ctxt;
 
 	//Set up parameters
-	const bool doKriging = true;
+	const bool doKriging = false;
 	const bool doCoMD = false;
 	int dims[2] = {atoi(argv[1]), atoi(argv[2])};
 	double dt[2] = {0.1, 0.1};
@@ -90,7 +90,7 @@ int main(int argc, char ** argv)
 
 	//Initialize
 	std::cout << "Initializing " << dims[0] << " by " << dims[1] << " grid" << std::endl;
-	initEverything(doKriging, doCoMD, dims, dt, delta, gamma, argv[4]);
+	initEverything(doKriging, doCoMD, dims, dt, delta, gamma, argv[4], ctxt);
 	std::cout << "Initialized" << std::endl;
 	//Loop
 	std::cout << "Running for " << numSteps << " iterations" << std::endl;
@@ -98,32 +98,32 @@ int main(int argc, char ** argv)
 	{
 		int nTasks;
 		std::cout << t << ": Vising to Verifying" << std::endl;
-		outputVTK(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
+		outputVTK(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4], ctxt);
 		//Do a short circuit test
 		{
 			std::cout << t << ": First Flux" << std::endl;
-			nTasks = prepFirstFlux(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
+			nTasks = prepFirstFlux(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4], ctxt);
 			std::cout << t << ": Doing " << nTasks << " fluxes" << std::endl;
 			parallelFor(t, 0, nTasks, ctxt);
 			std::cout << t << ": Second Flux" << std::endl;
-			nTasks = prepSecondFlux(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
+			nTasks = prepSecondFlux(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4], ctxt);
 			std::cout << t << ": Doing " << nTasks << " fluxes" << std::endl;
 			parallelFor(t, 1, nTasks, ctxt);
 			std::cout << t << ": Third Flux" << std::endl;
-			nTasks = prepThirdFlux(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
+			nTasks = prepThirdFlux(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4], ctxt);
 			std::cout << t << ": Doing " << nTasks << " fluxes" << std::endl;
 			parallelFor(t, 2, nTasks, ctxt);
 			std::cout << t << ": Last Flux" << std::endl;
-			nTasks = prepLastFlux(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
+			nTasks = prepLastFlux(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4], ctxt);
 			std::cout << t << ": Doing " << nTasks << " fluxes" << std::endl;
 			parallelFor(t, 3, nTasks, ctxt);
 			std::cout << t << ": Finish Step, no Fluxes" << std::endl;
-			finishStep(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4]);
+			finishStep(doKriging, doCoMD, dims, dt, delta, gamma, t, argv[4], ctxt);
 		}
 	}
 	//Final vis
 	std::cout << numSteps << ": Vising to Verifying" << std::endl;
-	outputVTK(doKriging, doCoMD, dims, dt, delta, gamma, numSteps, argv[4]);
+	outputVTK(doKriging, doCoMD, dims, dt, delta, gamma, numSteps, argv[4], ctxt);
 	std::cout << "Ran for " << numSteps << " iterations" << std::endl;
 
 	return 0;

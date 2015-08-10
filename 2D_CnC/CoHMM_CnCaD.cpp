@@ -233,7 +233,7 @@ int prepTasks(Node * fields, FluxFuture * futures, bool doKriging, int * dims, d
 }
 
 //Initialize all fields and store in database at KEY_0_0
-bool initEverything(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, const char * redis_host)
+bool initEverything(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, const char * redis_host, CnCaDContext &ctxt)
 {
 	const char * redisHostName;
 	//Check redis host
@@ -272,7 +272,7 @@ bool initEverything(bool doKriging, bool doCoMD, int * dims, double * dt, double
 }
 
 //Essentially run through to the first flux of the first half-step
-int prepFirstFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep, const char * redis_host)
+int prepFirstFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep, const char * redis_host, CnCaDContext &ctxt)
 {
 	const char * redisHostName;
 	//Check redis host
@@ -314,7 +314,7 @@ int prepFirstFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double *
 	return numTasks;
 }
 
-int prepSecondFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep, const char * redis_host)
+int prepSecondFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep, const char * redis_host, CnCaDContext &ctxt)
 {
 	const char * redisHostName;
 	//Check redis host
@@ -362,7 +362,7 @@ int prepSecondFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double 
 	return numTasks;
 }
 
-int prepThirdFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep, const char * redis_host)
+int prepThirdFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep, const char * redis_host, CnCaDContext &ctxt)
 {
 	//Need phase 0's w's and phase 1's f's and g's
 	const char * redisHostName;
@@ -415,7 +415,7 @@ int prepThirdFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double *
 	return numTasks;
 }
 
-int prepLastFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep, const char * redis_host)
+int prepLastFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep, const char * redis_host, CnCaDContext &ctxt)
 {
 	//Essentially the same as secondFlux
 	//Really should refactor
@@ -465,7 +465,7 @@ int prepLastFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double * 
 	return numTasks;
 }
 
-int finishStep(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep, const char * redis_host)
+int finishStep(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep, const char * redis_host, CnCaDContext &ctxt)
 {
 	//Basically phase 3, but replace the last flux call with a shiftback
 	//Need phase 2's w's and phase 3's f's and g's
@@ -757,7 +757,7 @@ FluxOut fluxFn(bool doKriging, bool doCoMD, FluxIn * input, redisContext * headR
 }
 
 //Searches for FluxInput at KEY_curStep_phase_taskID
-bool cloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int taskID, const char * redis_host)
+bool cloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int taskID, const char * redis_host, CnCaDContext &ctxt)
 {
 	FluxIn input;
 	FluxOut output;
@@ -801,7 +801,7 @@ bool cloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int taskID, 
 	return true;
 }
 
-bool outputVTK(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep, const char * redis_host)
+bool outputVTK(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep, const char * redis_host, CnCaDContext &ctxt)
 {
 	//Connect to redis
 	const char * redisHostName;
@@ -846,7 +846,7 @@ bool outputVTK(bool doKriging, bool doCoMD, int * dims, double * dt, double * de
 	return true;
 }
 
-bool tryShortCircuit(int * dims, int curStep, const char * redis_host)
+bool tryShortCircuit(int * dims, int curStep, const char * redis_host, CnCaDContext &ctxt)
 {
 	//For short circuiting purposes, we do it on a per-step basis
 	//Just check for all tiles  of phase 0 of the next timestep
@@ -953,7 +953,7 @@ char * getRedisHost(const char * filePath)
 	return retHost;
 }
 
-int checkStepForFaults(int * dims, int curStep, int curPhase, int curRound, const char * redis_host)
+int checkStepForFaults(int * dims, int curStep, int curPhase, int curRound, const char * redis_host, CnCaDContext &ctxt)
 {
 	//Connect to redis
 	const char * redisHostName;
@@ -1002,7 +1002,7 @@ int checkStepForFaults(int * dims, int curStep, int curPhase, int curRound, cons
 	return failureCount;
 }
 
-bool retryCloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int taskID, int round, const char * redis_host)
+bool retryCloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int taskID, int round, const char * redis_host, CnCaDContext &ctxt)
 {
 	FluxIn input;
 	FluxOut output;
@@ -1043,49 +1043,4 @@ bool retryCloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int tas
 		delete [] redisHostName;
 	}
 	return true;
-}
-
-bool initEverything(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma)
-{
-	return initEverything(doKriging, doCoMD, dims, dt, delta, gamma, "localhost");
-}
-int prepFirstFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep)
-{
-	return prepFirstFlux(doKriging, doCoMD, dims, dt, delta, gamma, curStep, "localhost");
-}
-int prepSecondFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep)
-{
-	return prepSecondFlux(doKriging, doCoMD, dims, dt, delta, gamma, curStep, "localhost");
-}
-int prepThirdFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep)
-{
-	return prepThirdFlux(doKriging, doCoMD, dims, dt, delta, gamma, curStep, "localhost");
-}
-int prepLastFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep)
-{
-	return prepLastFlux(doKriging, doCoMD, dims, dt, delta, gamma, curStep, "localhost");
-}
-int finishStep(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep)
-{
-	return finishStep(doKriging, doCoMD, dims, dt, delta, gamma, curStep, "localhost");
-}
-bool cloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int taskID)
-{
-	return cloudFlux(doKriging, doCoMD, curStep, phase, taskID, "localhost");
-}
-bool outputVTK(bool doKriging, bool doCoMD, int * dims, double * dt, double * delta, double * gamma, int curStep)
-{
-	return outputVTK(doKriging, doCoMD, dims, dt, delta, gamma, curStep, "localhost");
-}
-bool tryShortCircuit(int * dims, int curStep)
-{
-	return tryShortCircuit(dims, curStep, "localhost");
-}
-int checkStepForFaults(int * dims, int curStep, int curPhase, int curRound)
-{
-	return checkStepForFaults(dims, curPhase, curStep, curRound, "localhost");
-}
-bool retryCloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int taskID, int round)
-{
-	return retryCloudFlux(doKriging, doCoMD, curStep, phase, taskID, round, "localhost");
 }
