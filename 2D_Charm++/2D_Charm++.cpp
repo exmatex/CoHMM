@@ -14,7 +14,7 @@ int gDims[2];
 double gDt[2];
 double gGamma[3];
 double gDelta[2];
-CProxy_Main mainProxy;
+CProxy_Main gMainProxy;
 
 class Flux : public CBase_Flux
 {
@@ -22,7 +22,7 @@ class Flux : public CBase_Flux
 	Flux(unsigned int step, unsigned int phase, unsigned int tid)
 	{
 		cloudFlux(gDoKriging, gDoCoMD, step, phase, tid, gRedis_host);
-		mainProxy.countCallBacks();
+		gMainProxy.fluxCallBack();
 	}
 };
 
@@ -32,12 +32,13 @@ class Retry : public CBase_Retry
 	Retry(unsigned int step, unsigned int phase, unsigned int round, unsigned int tid)
 	{
 		retryCloudFlux(gDoKriging, gDoCoMD, step, phase, tid, round, gRedis_host);
-		mainProxy.countCallBacks();
+		gMainProxy.fluxCallBack();
 	}
 };
 
 class Main : public CBase_Main
 {
+	Main_SDAG_CODE
 	private:
 		unsigned int nTasks;
 		unsigned int curPhase;
@@ -49,23 +50,57 @@ class Main : public CBase_Main
 		#else
 			const bool fineGrainFT = false;
 		#endif
+		int expectedTasks;
+		unsigned int doneTasks;
+
+		void actualCheckAndIncOrSet(int potSetVal)
+		{
+		    //Charm++ allegedly guarantees this will all be atomic if we call via checkAndIncOrSet
+		    //Did we pass in a non-negative?
+		    if(potSetVal >= 0)
+		    {
+		        //Yup, so this is the number of tasks
+		        this->expectedTasks = potSetVal;
+		    }
+		    else
+		    {
+		        //Nope, so a task just finished: Increment
+		        this->doneTasks++;
+		    }
+
+		    //See if we are done
+		    if(this->expectedTasks == this->doneTasks)
+		    {
+		       //We are, so reset the variables
+		       this->doneTasks = 0;
+		       this->expectedTasks = -1;
+		       //Then fire the callBack that returns control to the solver
+			   //Call driver with phase offset by 0
+		       this->cohmmDriver(0);
+
+		    }
+		    //We aren't, so wait for the next call
+		}
+
 
 		void spawnFluxes()
 		{
-			ckout << curStep << ": Doing " << nTasks << " fluxes" << endl;
+			//ckout << curStep << ": Doing " << nTasks << " fluxes" << endl;
 			for(unsigned int i = 0; i < nTasks; i++)
 			{
 				CProxy_Flux::ckNew(curStep, curPhase, i);
 			}
+			gMainProxy.checkAndIncOrSet(nTasks);
 		}
 
 		void spawnRetries()
 		{
-			ckout << curStep << ": Redoing " << nTasks << " Tasks" << endl;
+			//ckout << curStep << ": Redoing " << nTasks << " Tasks" << endl;
 			for(unsigned int i = 0; i < nTasks; i++)
 			{
 				CProxy_Retry::ckNew(curStep, curPhase - 1, curRound, i);
 			}
+			gMainProxy.checkAndIncOrSet(nTasks);
 		}
 
 	public:
@@ -79,7 +114,7 @@ class Main : public CBase_Main
 			CkExit();
 		}
 		//Set up parameters, mostly as globals
-		mainProxy = thisProxy;
+		gMainProxy = thisProxy;
 		gDoKriging = false;
 		gDoCoMD = false;
 		gDims[0] = atoi(m->argv[1]);
@@ -105,10 +140,84 @@ class Main : public CBase_Main
 		nTasks = 0;
 		curStep = 0;
 		curRound = -1;
+		this->doneTasks = 0;
+		this->expectedTasks = -1;
 		//Call the countCallBacks method
-		countCallBacks();
+		this->cohmmDriver(0);
 	};
 
+	void fluxCallBack()
+	{
+		gMainProxy.checkAndIncOrSet(-1);
+	}
+
+	void cohmmDriver(unsigned int phaseOffset)
+	{
+		//Are we done?
+	    if(this->curStep == this->nSteps)
+	    {
+	        //One last print
+			ckout << this->nSteps << ": Vising to Verifying" << endl;
+	        outputVTK(gDoKriging, gDoCoMD, gDims, gDt, gDelta, gGamma, curStep, gRedis_host);
+	        ckout << "Ran for " << this->nSteps << " iterations" << endl;
+	        //We are done
+	        {
+	            double endTime = CkWallTimer();
+	            FILE * eFile = fopen("etime.dat", "w");
+	            fprintf(eFile, "%f", endTime);
+	            fclose(eFile);
+	        }
+	        CkExit();
+		}
+		//Nope, so check what phase we are in
+		else
+		{
+			//At this point, any fluxes have been processed and we are ready to proceed
+			unsigned int switchPhase = this->curPhase + phaseOffset;
+			switch(switchPhase)
+			{
+				case 0:
+					ckout << this->curStep << ": Vising to Verifying" << endl;
+					outputVTK(gDoKriging, gDoCoMD, gDims, gDt, gDelta, gGamma, curStep, gRedis_host);
+					ckout << this->curStep <<  ": First Flux" << endl;
+					nTasks = prepFirstFlux(gDoKriging, gDoCoMD, gDims, gDt, gDelta, gGamma, curStep, gRedis_host);
+					ckout << this->curStep <<  ": Doing " << nTasks << " fluxes" << endl;
+					spawnFluxes();
+					curPhase = 1;
+				break;
+				case 1:
+					ckout << this->curStep <<  ": Second Flux" << endl;
+					nTasks = prepSecondFlux(gDoKriging, gDoCoMD, gDims, gDt, gDelta, gGamma, curStep, gRedis_host);
+					ckout << this->curStep <<  ": Doing " << nTasks << " fluxes" << endl;
+					spawnFluxes();
+					curPhase = 2;
+				break;
+				case 2:
+					ckout << this->curStep <<  ": Third Flux" << endl;
+					nTasks = prepThirdFlux(gDoKriging, gDoCoMD, gDims, gDt, gDelta, gGamma, curStep, gRedis_host);
+					ckout << this->curStep <<  ": Doing " << nTasks << " fluxes" << endl;
+					spawnFluxes();
+					curPhase = 3;
+				break;
+				case 3:
+					ckout << this->curStep <<  ": Last Flux" << endl;
+					nTasks = prepLastFlux(gDoKriging, gDoCoMD, gDims, gDt, gDelta, gGamma, curStep, gRedis_host);
+					ckout << this->curStep <<  ": Doing " << nTasks << " fluxes" << endl;
+					spawnFluxes();
+					curPhase = 4;
+				break;
+				case 4:
+					ckout << this->curStep <<  ": Finish Step, no Fluxes" << endl;
+					finishStep(gDoKriging, gDoCoMD, gDims, gDt, gDelta, gGamma, curStep, gRedis_host);
+					curStep++;
+					curPhase = 0;
+					//Recursivevly call again: finishStep handled phase and step
+					cohmmDriver(0);
+				break;
+			}
+		}
+	}
+/*
 	void countCallBacks()
 	{
 		//Decrrement if needed
@@ -251,6 +360,7 @@ class Main : public CBase_Main
 			}
 		}
 	}
+	*/
 };
 
 #include "cohmm_dad.def.h"
