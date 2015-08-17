@@ -24,7 +24,7 @@ extern "C"
 #include "CoHMM_DaD.hpp"
 
 
-bool backToTheFuture(Node * fields, FluxFuture * futures, int * dims, int curStep, int curPhase, redisContext * headRedis)
+bool backToTheFuture(Node * fields, FluxFuture * futures, int * dims, int curStep, int curPhase)
 {
 	std::map<unsigned int, FluxOut> retMap;
 	for(int i = 0; i < dims[0]*dims[1]; i++)
@@ -39,7 +39,7 @@ bool backToTheFuture(Node * fields, FluxFuture * futures, int * dims, int curSte
 			{
 				//We did not, so fetch it
 				FluxOut res;
-				getSingle<FluxOut>(&res, curStep, curPhase, taskID, headRedis, "RESULT");
+				getSingle<FluxOut>(&res, curStep, curPhase, taskID, "RESULT");
 				///TODO: Verify this is deep copy, but it should be
 				retMap[taskID] = res;
 			}
@@ -57,7 +57,7 @@ bool backToTheFuture(Node * fields, FluxFuture * futures, int * dims, int curSte
 	return true;
 }
 
-bool checkTheFuture(std::vector<RetryRedirect> &failures, FluxFuture * futures, int * dims, int curStep, int curPhase, redisContext * headRedis)
+bool checkTheFuture(std::vector<RetryRedirect> &failures, FluxFuture * futures, int * dims, int curStep, int curPhase)
 {
 	std::map<unsigned int, bool> retMap;
 	for(int i = 0; i < dims[0]*dims[1]; i++)
@@ -72,7 +72,7 @@ bool checkTheFuture(std::vector<RetryRedirect> &failures, FluxFuture * futures, 
 			{
 				//We did not, so fetch it
 				FluxOut res;
-				bool completed = checkSingle(curStep, curPhase, taskID, headRedis, "RESULT");
+				bool completed = checkSingle(curStep, curPhase, taskID, "RESULT");
 				retMap[taskID] = true;
 				//Did it fail?
 				if(completed == false)
@@ -89,7 +89,7 @@ bool checkTheFuture(std::vector<RetryRedirect> &failures, FluxFuture * futures, 
 }
 
 
-int prepTasks(Node * fields, FluxFuture * futures, bool doKriging, int * dims, double * dt, double * delta,  int curStep, int curPhase, redisContext * headRedis)
+int prepTasks(Node * fields, FluxFuture * futures, bool doKriging, int * dims, double * dt, double * delta,  int curStep, int curPhase)
 {
 	//Task map
 	std::map<Conserved, unsigned int> taskMap;
@@ -105,7 +105,7 @@ int prepTasks(Node * fields, FluxFuture * futures, bool doKriging, int * dims, d
 			std::vector<double *> wVec;
 			std::vector<double *> fVec;
 			std::vector<double *> gVec;
-			getSortedSubBucketNearZero(fields[x + dims[0]*y].w.w, (char *)"comd", headRedis, comdDigits, 2, &wVec, &fVec, &gVec, zeroThresh);
+			getSortedSubBucketNearZero(fields[x + dims[0]*y].w.w, (char *)"comd", comdDigits, 2, &wVec, &fVec, &gVec, zeroThresh);
 
 			//Check for exact value
 			bool useDB = ifConservedFieldsMatch(fields[x+dims[0]*y].w.w, &wVec, dbT);
@@ -138,7 +138,7 @@ int prepTasks(Node * fields, FluxFuture * futures, bool doKriging, int * dims, d
 					std::vector<double *> wVecK;
 					std::vector<double *> fVecK;
 					std::vector<double *> gVecK;
-					getSortedSubBucketNearZero(fields[x + dims[0]*y].w.w, (char *)"krig", headRedis, krigDigits, 1, &wVecK, &fVecK, &gVecK, zeroThresh);
+					getSortedSubBucketNearZero(fields[x + dims[0]*y].w.w, (char *)"krig", krigDigits, 1, &wVecK, &fVecK, &gVecK, zeroThresh);
 					bool useDB = ifConservedFieldsMatch(fields[x+dims[0]*y].w.w, &wVecK, 0.0);
 					//Did we already krig this?
 					if(useDB == true)
@@ -166,7 +166,7 @@ int prepTasks(Node * fields, FluxFuture * futures, bool doKriging, int * dims, d
 								memcpy(&actualTask.fields, &fields[x+dims[0]*y].w, sizeof(Conserved));
 								actualTask.tryKriging = true;
 								//Now enqueue it
-								putSingle<FluxIn>(&actualTask, curStep, curPhase, taskCounter, headRedis, "TASK");
+								putSingle<FluxIn>(&actualTask, curStep, curPhase, taskCounter, "TASK");
 								//Increment task counter
 								taskCounter++;
 							}
@@ -188,7 +188,7 @@ int prepTasks(Node * fields, FluxFuture * futures, bool doKriging, int * dims, d
 								memcpy(&actualTask.fields, &fields[x+dims[0]*y].w, sizeof(Conserved));
 								actualTask.tryKriging = false;
 								//Now enqueue it
-								putSingle<FluxIn>(&actualTask, curStep, curPhase, taskCounter, headRedis, "TASK");
+								putSingle<FluxIn>(&actualTask, curStep, curPhase, taskCounter, "TASK");
 								//Increment task counter
 								taskCounter++;
 							}
@@ -215,7 +215,7 @@ int prepTasks(Node * fields, FluxFuture * futures, bool doKriging, int * dims, d
 						memcpy(&actualTask.fields, &fields[x+dims[0]*y].w, sizeof(Conserved));
 						actualTask.tryKriging = false;
 						//Now enqueue it
-						putSingle<FluxIn>(&actualTask, curStep, curPhase, taskCounter, headRedis, "TASK");
+						putSingle<FluxIn>(&actualTask, curStep, curPhase, taskCounter, "TASK");
 						//Increment task counter
 						taskCounter++;
 					}
@@ -247,20 +247,13 @@ bool initEverything(bool doKriging, bool doCoMD, int * dims, double * dt, double
 		redisHostName = redis_host;
 	}
 	//Connect to redis
-	redisContext * headRedis = redisConnect(redisHostName, 6379);
-	if(headRedis == NULL || headRedis->err)
-	{
-		printf("Redis error: %s\n", headRedis->errstr);
-		return false;
-	}
+	RedisWrapper::getContext(redisHostName);
 	//Allocate fields buffer
 	Node * field = new Node[dims[0]*dims[1]]();
 	//Initialize fields
 	init_conserved_fields(field, dims, dims[0]*dims[1]);
 	//Put to DB
-	putBlocks<Node>(field, dims[0], dims[1], 0, 0, headRedis, "FIELD");
-	//cleanup redis
-	redisFree(headRedis);
+	putBlocks<Node>(field, dims[0], dims[1], 0, 0, "FIELD");
 	//Free memory
 	delete [] field;
 	if(needFree == true)
@@ -286,23 +279,16 @@ int prepFirstFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double *
 		redisHostName = redis_host;
 	}
 	//Connect to redis
-	redisContext * headRedis = redisConnect(redisHostName, 6379);
-	if(headRedis == NULL || headRedis->err)
-	{
-		printf("Redis error: %s\n", headRedis->errstr);
-		return false;
-	}
+	RedisWrapper::getContext(redisHostName);
 	//Allocate fields buffer
 	Node * field = new Node[dims[0]*dims[1]]();
 	//Get field data from previous step
-	getBlocks<Node>(field, dims[0], dims[1], curStep, 0, headRedis, "FIELD");
+	getBlocks<Node>(field, dims[0], dims[1], curStep, 0, "FIELD");
 	//Prep futures
 	FluxFuture * futures = new FluxFuture[dims[0]*dims[1]]();
-	int numTasks =  prepTasks(field, futures, doKriging , dims, dt, delta, curStep, 0, headRedis);
+	int numTasks =  prepTasks(field, futures, doKriging , dims, dt, delta, curStep, 0);
 	//Write futures
-	putBlocks<FluxFuture>(futures, dims[0], dims[1], curStep, 0, headRedis, "FUTS");
-	//cleanup redis
-	redisFree(headRedis);
+	putBlocks<FluxFuture>(futures, dims[0], dims[1], curStep, 0, "FUTS");
 	//Don't save fields, we didn't do anything with it
 	delete [] field;
 	delete [] futures;
@@ -328,29 +314,22 @@ int prepSecondFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double 
 		redisHostName = redis_host;
 	}
 	//Connect to redis
-	redisContext * headRedis = redisConnect(redisHostName, 6379);
-	if(headRedis == NULL || headRedis->err)
-	{
-		printf("Redis error: %s\n", headRedis->errstr);
-		return false;
-	}
+	RedisWrapper::getContext(redisHostName);
 	//Dependent on phase 0's w, and the output of phase 0's fluxes
 	//Allocate fields buffer
 	Node * field = new Node[dims[0]*dims[1]]();
 	//Get field data from previous step
-	getBlocks<Node>(field, dims[0], dims[1], curStep, 0, headRedis, "FIELD");
+	getBlocks<Node>(field, dims[0], dims[1], curStep, 0, "FIELD");
 	//Get futures from previous step
 	FluxFuture * futures = new FluxFuture[dims[0]*dims[1]]();
-	getBlocks<FluxFuture>(futures, dims[0], dims[1], curStep, 0, headRedis, "FUTS");
-	backToTheFuture(field, futures, dims, curStep, 0, headRedis);
+	getBlocks<FluxFuture>(futures, dims[0], dims[1], curStep, 0, "FUTS");
+	backToTheFuture(field, futures, dims, curStep, 0);
 	//Generates phase 1's w
 	wNSqrt(field, dims, dt, delta);
 	//and the phase 1 tasks that are associated with them
-	int numTasks =  prepTasks(field, futures, doKriging , dims, dt, delta, curStep, 1, headRedis);
+	int numTasks =  prepTasks(field, futures, doKriging , dims, dt, delta, curStep, 1);
 	//Write futures for phase 1
-	putBlocks<FluxFuture>(futures, dims[0], dims[1], curStep, 1, headRedis, "FUTS");
-	//cleanup redis
-	redisFree(headRedis);
+	putBlocks<FluxFuture>(futures, dims[0], dims[1], curStep, 1, "FUTS");
 	//Don't save fields, we only need the original w's and the final f's and g's
 	delete [] field;
 	delete [] futures;
@@ -377,32 +356,25 @@ int prepThirdFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double *
 		redisHostName = redis_host;
 	}
 	//Connect to redis
-	redisContext * headRedis = redisConnect(redisHostName, 6379);
-	if(headRedis == NULL || headRedis->err)
-	{
-		printf("Redis error: %s\n", headRedis->errstr);
-		return false;
-	}
+	RedisWrapper::getContext(redisHostName);
 	//Dependent on phase 0's w, and the output of phase 0's fluxes
 	//Allocate fields buffer
 	Node * aField = new Node[dims[0]*dims[1]]();
 	Node * bField = new Node[dims[0]*dims[1]]();
 	//Get field data from phase 0
-	getBlocks<Node>(aField, dims[0], dims[1], curStep, 0, headRedis, "FIELD");
+	getBlocks<Node>(aField, dims[0], dims[1], curStep, 0, "FIELD");
 	//Get futures from previous phase
 	FluxFuture * futures = new FluxFuture[dims[0]*dims[1]]();
-	getBlocks<FluxFuture>(futures, dims[0], dims[1], curStep, 1, headRedis, "FUTS");
-	backToTheFuture(bField, futures, dims, curStep, 1, headRedis);
+	getBlocks<FluxFuture>(futures, dims[0], dims[1], curStep, 1, "FUTS");
+	backToTheFuture(bField, futures, dims, curStep, 1);
 	//Now do the jiang tambor stuff
 	wSummation(aField, bField, dims, dt, delta);
 	//Now we ge to start the next half-step
-	int numTasks =  prepTasks(bField, futures, doKriging , dims, dt, delta, curStep, 2, headRedis);
+	int numTasks =  prepTasks(bField, futures, doKriging , dims, dt, delta, curStep, 2);
 	//Write futures
-	putBlocks<FluxFuture>(futures, dims[0], dims[1], curStep, 2, headRedis, "FUTS");
+	putBlocks<FluxFuture>(futures, dims[0], dims[1], curStep, 2, "FUTS");
 	//Write field for later use
-	putBlocks<Node>(bField, dims[0], dims[1], curStep, 2, headRedis, "FIELD");
-	//cleanup redis
-	redisFree(headRedis);
+	putBlocks<Node>(bField, dims[0], dims[1], curStep, 2, "FIELD");
 	//Free Memory
 	delete[] aField;
 	delete[] bField;
@@ -431,29 +403,22 @@ int prepLastFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double * 
 	{
 		redisHostName = redis_host;
 	}
-	redisContext * headRedis = redisConnect(redisHostName, 6379);
-	if(headRedis == NULL || headRedis->err)
-	{
-		printf("Redis error: %s\n", headRedis->errstr);
-		return false;
-	}
+	RedisWrapper::getContext(redisHostName);
 	//Dependent on phase 2's w, and the output of phase 2's fluxes
 	//Allocate fields buffer
 	Node * field = new Node[dims[0]*dims[1]]();
 	//Get field data from previous step
-	getBlocks<Node>(field, dims[0], dims[1], curStep, 2, headRedis, "FIELD");
+	getBlocks<Node>(field, dims[0], dims[1], curStep, 2, "FIELD");
 	//Get futures from previous step
 	FluxFuture * futures = new FluxFuture[dims[0]*dims[1]]();
-	getBlocks<FluxFuture>(futures, dims[0], dims[1], curStep, 2, headRedis, "FUTS");
-	backToTheFuture(field, futures, dims, curStep, 2, headRedis);
+	getBlocks<FluxFuture>(futures, dims[0], dims[1], curStep, 2, "FUTS");
+	backToTheFuture(field, futures, dims, curStep, 2);
 	//Generates phase 3's w
 	wNSqrt(field, dims, dt, delta);
 	//and the phase 3 tasks that are associated with them
-	int numTasks =  prepTasks(field, futures, doKriging , dims, dt, delta, curStep, 3, headRedis);
+	int numTasks =  prepTasks(field, futures, doKriging , dims, dt, delta, curStep, 3);
 	//Write futures for phase 3
-	putBlocks<FluxFuture>(futures, dims[0], dims[1], curStep, 3, headRedis, "FUTS");
-	//cleanup redis
-	redisFree(headRedis);
+	putBlocks<FluxFuture>(futures, dims[0], dims[1], curStep, 3, "FUTS");
 	//Don't save fields, we only need the original w's and the final f's and g's
 	delete [] field;
 	delete [] futures;
@@ -481,31 +446,24 @@ int finishStep(bool doKriging, bool doCoMD, int * dims, double * dt, double * de
 	{
 		redisHostName = redis_host;
 	}
-	redisContext * headRedis = redisConnect(redisHostName, 6379);
-	if(headRedis == NULL || headRedis->err)
-	{
-		printf("Redis error: %s\n", headRedis->errstr);
-		return false;
-	}
+	RedisWrapper::getContext(redisHostName);
 	//Dependent on phase 2's w, and the output of phase 3's fluxes
 	//Allocate fields buffer
 	Node * fieldA = new Node[dims[0]*dims[1]]();
 	Node * fieldB = new Node[dims[0]*dims[1]]();
 	//Get field data from phase 2
-	getBlocks<Node>(fieldA, dims[0], dims[1], curStep, 2, headRedis, "FIELD");
+	getBlocks<Node>(fieldA, dims[0], dims[1], curStep, 2, "FIELD");
 	//Get futures from previous phase
 	FluxFuture * futures = new FluxFuture[dims[0]*dims[1]]();
-	getBlocks<FluxFuture>(futures, dims[0], dims[1], curStep, 3, headRedis, "FUTS");
-	backToTheFuture(fieldB, futures, dims, curStep, 3, headRedis);
+	getBlocks<FluxFuture>(futures, dims[0], dims[1], curStep, 3, "FUTS");
+	backToTheFuture(fieldB, futures, dims, curStep, 3);
 	//Now do the jiang tambor stuff
 	wSummation(fieldA, fieldB, dims, dt, delta);
 	//Now we do a shift back
 	//COPY RIGHT TO LEFT
 	shift_back(fieldA, dims[0]*dims[1], dims, fieldB);
 	//Write field for later use
-	putBlocks<Node>(fieldA, dims[0], dims[1], curStep+1, 0, headRedis, "FIELD");
-	//cleanup redis
-	redisFree(headRedis);
+	putBlocks<Node>(fieldA, dims[0], dims[1], curStep+1, 0, "FIELD");
 	//Free Memory
 	delete [] fieldA;
 	delete [] fieldB;
@@ -585,7 +543,7 @@ FluxOut randomCoMDImbalance(FluxIn * input)
 	return output;
 }
 
-FluxOut fluxFn(bool doKriging, bool doCoMD, FluxIn * input, redisContext * headRedis, int tid)
+FluxOut fluxFn(bool doKriging, bool doCoMD, FluxIn * input, int tid)
 {
 	FluxOut output;
 
@@ -600,7 +558,7 @@ FluxOut fluxFn(bool doKriging, bool doCoMD, FluxIn * input, redisContext * headR
 		std::vector<double *> oldWs;
 		std::vector<double *> oldFs;
 		std::vector<double *> oldGs;
-		getSortedSubBucketNearZero(input->fields.w, (char *)"comd", headRedis, comdDigits, 10, &oldWs, &oldFs, &oldGs, zeroThresh);
+		getSortedSubBucketNearZero(input->fields.w, (char *)"comd", comdDigits, 10, &oldWs, &oldFs, &oldGs, zeroThresh);
 		//Call Kriging on each point
 		double resF[2];
 		double resG[2];
@@ -651,7 +609,7 @@ FluxOut fluxFn(bool doKriging, bool doCoMD, FluxIn * input, redisContext * headR
 				}
 			#endif
 			//It was not, so put it to the kriging db
-			putData(input->fields.w, output.f, output.g, (char *)"krig", headRedis, krigDigits);
+			putData(input->fields.w, output.f, output.g, (char *)"krig",  krigDigits);
 		}
 	}
 	//Either kriging failed or we never tried
@@ -751,7 +709,7 @@ FluxOut fluxFn(bool doKriging, bool doCoMD, FluxIn * input, redisContext * headR
 			}
 		#endif
 		//Put result to DB for future use: Warning, flush if we switch to comd as this is horrible
-		putData(input->fields.w, output.f, output.g, (char *)"comd", headRedis, comdDigits);
+		putData(input->fields.w, output.f, output.g, (char *)"comd",  comdDigits);
 	}
 	return output;
 }
@@ -781,19 +739,13 @@ bool cloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int taskID, 
 	{
 		redisHostName = redis_host;
 	}
-	redisContext * headRedis = redisConnect(redisHostName, 6379);
-	if(headRedis == NULL || headRedis->err)
-	{
-		printf("Redis error: %s\n", headRedis->errstr);
-	}
+	RedisWrapper::getContext(redisHostName);
 	//Grab task
-	getSingle<FluxIn>(&input, curStep, phase, taskID, headRedis, "TASK");
+	getSingle<FluxIn>(&input, curStep, phase, taskID, "TASK");
 	//Call fluxFn with input
-	output = fluxFn(doKriging, doCoMD, &input, headRedis, taskID);
+	output = fluxFn(doKriging, doCoMD, &input, taskID);
 	//Write result to DB
-	putSingle<FluxOut>(&output, curStep, phase, taskID, headRedis, "RESULT");
-	//cleanup redis
-	redisFree(headRedis);
+	putSingle<FluxOut>(&output, curStep, phase, taskID, "RESULT");
 	if(needFree == true)
 	{
 		delete [] redisHostName;
@@ -815,16 +767,11 @@ bool outputVTK(bool doKriging, bool doCoMD, int * dims, double * dt, double * de
 	{
 		redisHostName = redis_host;
 	}
-	redisContext * headRedis = redisConnect(redisHostName, 6379);
-	if(headRedis == NULL || headRedis->err)
-	{
-		printf("Redis error: %s\n", headRedis->errstr);
-		return false;
-	}
+	RedisWrapper::getContext(redisHostName);
 	//Allocate fields buffer
 	Node * field = new Node[dims[0]*dims[1]]();
 	//Get field data step
-	getBlocks<Node>(field, dims[0], dims[1], curStep, 0, headRedis, "FIELD");
+	getBlocks<Node>(field, dims[0], dims[1], curStep, 0, "FIELD");
 	//Build lattice for sanity's sake
 	Lattice l;
 	l.dim_x = dims[0];
@@ -836,7 +783,6 @@ bool outputVTK(bool doKriging, bool doCoMD, int * dims, double * dt, double * de
 	//VTK output it
 	printf_fields_vtk(curStep, field, l, dims[0]*dims[1]);
 	//cleanup redis
-	redisFree(headRedis);
 	//Don't save fields, we didn't do anything with it
 	delete [] field;
 	if(needFree == true)
@@ -863,12 +809,7 @@ bool tryShortCircuit(int * dims, int curStep, const char * redis_host)
 	{
 		redisHostName = redis_host;
 	}
-	redisContext * headRedis = redisConnect(redisHostName, 6379);
-	if(headRedis == NULL || headRedis->err)
-	{
-		printf("Redis error: %s\n", headRedis->errstr);
-		return false;
-	}
+	RedisWrapper & redis = RedisWrapper::getContext(redisHostName);
 	//Check each tile
 	bool retBool = true;
 	unsigned int nTiles = getNumBlocks(dims[0], dims[1]);
@@ -879,7 +820,7 @@ bool tryShortCircuit(int * dims, int curStep, const char * redis_host)
 		buildBlockKey(keyBuffer, curStep+1, 0, i, dims[0], dims[1], "FIELD");
 		//Use Key to check for existence
 		redisReply * reply;
-		reply = (redisReply *) redisCommand(headRedis, "EXISTS %s", keyBuffer);
+		reply = (redisReply *) redis.redisCommand("EXISTS %s", keyBuffer);
 		assert(reply->type == REDIS_REPLY_INTEGER);
 		if(reply->integer == 0)
 		{
@@ -889,7 +830,6 @@ bool tryShortCircuit(int * dims, int curStep, const char * redis_host)
 		freeReplyObject(reply);
 	}
 	//Kill redis
-	redisFree(headRedis);
 	if(needFree == true)
 	{
 		delete [] redisHostName;
@@ -967,19 +907,14 @@ int checkStepForFaults(int * dims, int curStep, int curPhase, int curRound, cons
 	{
 		redisHostName = redis_host;
 	}
-	redisContext * headRedis = redisConnect(redisHostName, 6379);
-	if(headRedis == NULL || headRedis->err)
-	{
-		printf("Redis error: %s\n", headRedis->errstr);
-		return false;
-	}
+	RedisWrapper & redis = RedisWrapper::getContext(redisHostName);
 	//Get futures from previous step
 	FluxFuture * futures = new FluxFuture[dims[0]*dims[1]]();
-	getBlocks<FluxFuture>(futures, dims[0], dims[1], curStep, curPhase, headRedis, "FUTS");
+	getBlocks<FluxFuture>(futures, dims[0], dims[1], curStep, curPhase, "FUTS");
 	//Prepare a buffer for failed tasks
 	std::vector<RetryRedirect> failures;
 	//Check to see if all the futures exist (So tasks ran and returned)
-	checkTheFuture(failures, futures, dims, curStep, curPhase, headRedis);
+	checkTheFuture(failures, futures, dims, curStep, curPhase);
 	int failureCount = failures.size();
 	//Did anything fail?
 	if(failureCount != 0)
@@ -989,11 +924,10 @@ int checkStepForFaults(int * dims, int curStep, int curPhase, int curRound, cons
 		//It did, so push the retries
 		for(unsigned int i = 0; i < failureCount; i++)
 		{
-			putSingle<RetryRedirect>(&failures[i], curStep, curPhase, i, headRedis, tagBuffer);
+			putSingle<RetryRedirect>(&failures[i], curStep, curPhase, i, tagBuffer);
 		}
 	}
 	//cleanup redis
-	redisFree(headRedis);
 	if(needFree == true)
 	{
 		delete [] redisHostName;
@@ -1018,26 +952,20 @@ bool retryCloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int tas
 	{
 		redisHostName = redis_host;
 	}
-	redisContext * headRedis = redisConnect(redisHostName, 6379);
-	if(headRedis == NULL || headRedis->err)
-	{
-		printf("Redis error: %s\n", headRedis->errstr);
-	}
+	RedisWrapper::getContext(redisHostName);
 	//Grab RetryRedirect
 	char tagBuffer[32];
 	sprintf(tagBuffer, "RETRY_%d", round);
 	RetryRedirect retryTask;
-	getSingle<RetryRedirect>(&retryTask, curStep, phase, taskID, headRedis, tagBuffer);
+	getSingle<RetryRedirect>(&retryTask, curStep, phase, taskID, tagBuffer);
 	//Get ID out of RetryRedirect
 	unsigned int actualID = retryTask.realTaskID;
 	//Grab flux task as before
-	getSingle<FluxIn>(&input, curStep, phase, actualID, headRedis, "TASK");
+	getSingle<FluxIn>(&input, curStep, phase, actualID, "TASK");
 	//Call fluxFn with input
-	output = fluxFn(doKriging, doCoMD, &input, headRedis, taskID);
+	output = fluxFn(doKriging, doCoMD, &input,  taskID);
 	//Write result to DB
-	putSingle<FluxOut>(&output, curStep, phase, actualID, headRedis, "RESULT");
-	//cleanup redis
-	redisFree(headRedis);
+	putSingle<FluxOut>(&output, curStep, phase, actualID, "RESULT");
 	if(needFree == true)
 	{
 		delete [] redisHostName;

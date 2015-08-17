@@ -1,7 +1,7 @@
 #ifndef REDISSHMEM_HPP
 #define REDISSHMEM_HPP
 
-#include <hiredis.h>
+#include "RedisWrapper.hpp"
 #include <cstring>
 
 #include "2DKriging.hpp"
@@ -17,8 +17,10 @@ void buildBlockKey(char * key, int curStep, int curPhase, int ID, int dimX, int 
 //Determine how many blocks the field has been chunked in to
 unsigned int getNumBlocks(int dimX, int dimY);
 
-template <typename T> bool putBlocks(T * field, int dimX, int dimY, int curStep, int curPhase, redisContext * redis, const char * tag)
+template <typename T> bool putBlocks(T * field, int dimX, int dimY, int curStep, int curPhase, const char * tag)
 {
+	RedisWrapper &redis = RedisWrapper::getContext();
+
 	unsigned int nBlocks = getNumBlocks(dimX, dimY);
 	char keyBuffer[maxKeyLength];
 
@@ -29,7 +31,7 @@ template <typename T> bool putBlocks(T * field, int dimX, int dimY, int curStep,
 		buildBlockKey(keyBuffer, curStep, curPhase, i, dimX, dimY, tag);
 		//Do a redis push
 		redisReply *reply;
-		reply = (redisReply *) redisCommand(redis, "SET %s %b", keyBuffer, &field[i*fieldBlockSize], sizeof(T)*fieldBlockSize);
+		reply = (redisReply *) redis.redisCommand("SET %s %b", keyBuffer, &field[i*fieldBlockSize], sizeof(T)*fieldBlockSize);
 		freeReplyObject(reply);
 	}
 	//See if last block is full
@@ -41,7 +43,7 @@ template <typename T> bool putBlocks(T * field, int dimX, int dimY, int curStep,
 		//It was, so same as above
 		//Do a redis push
 		redisReply *reply;
-		reply = (redisReply *) redisCommand(redis, "SET %s %b", keyBuffer, &field[i*fieldBlockSize], sizeof(T)*fieldBlockSize);
+		reply = (redisReply *) redis.redisCommand("SET %s %b", keyBuffer, &field[i*fieldBlockSize], sizeof(T)*fieldBlockSize);
 		freeReplyObject(reply);
 	}
 	else
@@ -50,15 +52,16 @@ template <typename T> bool putBlocks(T * field, int dimX, int dimY, int curStep,
 		unsigned int lastBlock = (dimX*dimY) % fieldBlockSize;
 		//Do a redis push
 		redisReply *reply;
-		reply = (redisReply *) redisCommand(redis, "SET %s %b", keyBuffer, &field[i*fieldBlockSize], sizeof(T)*lastBlock);
+		reply = (redisReply *) redis.redisCommand( "SET %s %b", keyBuffer, &field[i*fieldBlockSize], sizeof(T)*lastBlock);
 		freeReplyObject(reply);
 	}
 	//Success
 	return true;
 }
 
-template <typename T> bool getBlocks(T * field, int dimX, int dimY, int curStep, int curPhase, redisContext * redis, const char * tag)
+template <typename T> bool getBlocks(T * field, int dimX, int dimY, int curStep, int curPhase, const char * tag)
 {
+	RedisWrapper &redis = RedisWrapper::getContext();
 	unsigned int nBlocks = getNumBlocks(dimX, dimY);
 	char keyBuffer[maxKeyLength];
 	size_t blockSize = sizeof(T) * fieldBlockSize;
@@ -70,7 +73,7 @@ template <typename T> bool getBlocks(T * field, int dimX, int dimY, int curStep,
 		buildBlockKey(keyBuffer, curStep, curPhase, i, dimX, dimY, tag);
 		//Do a redis pull
 		redisReply *reply;
-		reply = (redisReply *) redisCommand(redis, "GET %s", keyBuffer);
+		reply = (redisReply *) redis.redisCommand( "GET %s", keyBuffer);
 		assert(reply->type == REDIS_REPLY_STRING);
 		memcpy(&field[i*fieldBlockSize], reply->str, blockSize);
 		freeReplyObject(reply);
@@ -80,7 +83,7 @@ template <typename T> bool getBlocks(T * field, int dimX, int dimY, int curStep,
 	int i = nBlocks - 1;
 	buildBlockKey(keyBuffer, curStep, curPhase, i, dimX, dimY, tag);
 	redisReply *reply;
-	reply = (redisReply *) redisCommand(redis, "GET %s", keyBuffer);
+	reply = (redisReply *) redis.redisCommand( "GET %s", keyBuffer);
 	assert(reply->type == REDIS_REPLY_STRING);
 	if((dimX*dimY) % fieldBlockSize != 0)
 	{
@@ -93,26 +96,28 @@ template <typename T> bool getBlocks(T * field, int dimX, int dimY, int curStep,
 }
 
 
-template <typename T> bool putSingle(T * item, int curStep, int curPhase, int ID,  redisContext * redis, const char * tag)
+template <typename T> bool putSingle(T * item, int curStep, int curPhase, int ID,  const char * tag)
 {
+	RedisWrapper &redis = RedisWrapper::getContext();
 	char keyBuffer[maxKeyLength];
 	//Get Key
 	buildSingleKey(keyBuffer, curStep, curPhase, ID,  tag);
 	//Do a redis push
 	redisReply *reply;
-	reply = (redisReply *) redisCommand(redis, "SET %s %b", keyBuffer, item, sizeof(T));
+	reply = (redisReply *) redis.redisCommand( "SET %s %b", keyBuffer, item, sizeof(T));
 	freeReplyObject(reply);
 	//Success
 	return true;
 }
 
-template <typename T> bool getSingle(T * item, int curStep, int curPhase, int ID,  redisContext * redis, const char * tag)
+template <typename T> bool getSingle(T * item, int curStep, int curPhase, int ID,  const char * tag)
 {
+	RedisWrapper &redis = RedisWrapper::getContext();
 	char keyBuffer[maxKeyLength];
 	//Get Key
 	buildSingleKey(keyBuffer, curStep, curPhase, ID,  tag);
 	redisReply *reply;
-	reply = (redisReply *)redisCommand(redis, "GET %s", keyBuffer);
+	reply = (redisReply *)redis.redisCommand( "GET %s", keyBuffer);
 	assert(reply->type == REDIS_REPLY_STRING);
 	memcpy(item, reply->str, sizeof(T));
 	freeReplyObject(reply);
@@ -120,6 +125,6 @@ template <typename T> bool getSingle(T * item, int curStep, int curPhase, int ID
 	return true;
 }
 
-bool checkSingle(int curStep, int curPhase, int ID,  redisContext * redis, const char * tag);
+bool checkSingle(int curStep, int curPhase, int ID,  const char * tag);
 
 #endif

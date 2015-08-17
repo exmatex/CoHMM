@@ -26,13 +26,14 @@ unsigned int getNumBlocks(int dimX, int dimY)
     return numBlocks;
 }
 
-bool checkSingle(int curStep, int curPhase, int ID,  redisContext * redis, const char * tag)
+bool checkSingle(int curStep, int curPhase, int ID,  const char * tag)
 {
+	RedisWrapper &redis = RedisWrapper::getContext();
 	char keyBuffer[maxKeyLength];
 	//Get Key
 	buildSingleKey(keyBuffer, curStep, curPhase, ID,  tag);
 	redisReply *reply;
-	reply = (redisReply *)redisCommand(redis, "GET %s", keyBuffer);
+	reply = (redisReply *)redis.redisCommand( "GET %s", keyBuffer);
 	bool retVal;
 	if(reply->type == REDIS_REPLY_STRING)
 	{

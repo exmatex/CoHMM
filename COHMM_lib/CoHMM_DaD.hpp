@@ -30,7 +30,7 @@ bool tryShortCircuit(int * dims, int curStep);
 bool retryCloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int taskID, int round, const char * redis_host);
 bool retryCloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int taskID, int round);
 
-FluxOut fluxFn(bool doKriging, bool doCoMD, FluxIn * input, redisContext * headRedis);
+FluxOut fluxFn(bool doKriging, bool doCoMD, FluxIn * input);
 FluxOut randomCoMDImbalance(FluxIn * input);
 
 bool checkRedisHost(const char * inHost);

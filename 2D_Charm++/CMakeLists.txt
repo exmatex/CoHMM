@@ -16,4 +16,4 @@ foreach(_CI ${COHMM_DAD_CHARM_MODULES})
 	add_dependencies(2D_Charm++ ${_TRUNC})
 endforeach()
 
-target_link_libraries(2D_Charm++ cohmm comd ${LINALG_LIBRARIES} ${HIREDIS_LIBRARIES} -lrt)
+target_link_libraries(2D_Charm++ cohmm comd ${LINALG_LIBRARIES} ${HIREDIS_LIBRARIES} RedisWrapper  -lrt)
