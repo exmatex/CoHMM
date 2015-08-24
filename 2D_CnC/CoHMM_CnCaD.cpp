@@ -21,10 +21,11 @@ extern "C"
 #include "2DKriging.hpp"
 #include "redisBuckets.hpp"
 #include "kriging.hpp"
+#include "RedisWrapper.hpp"
 
 #include "CoHMM_CnCaD.hpp"
 
-bool backToTheFuture(Node * fields, FluxFuture * futures, int * dims, int curStep, int curPhase, redisContext * headRedis, CnCaDContext &ctxt)
+bool backToTheFuture(Node * fields, FluxFuture * futures, int * dims, int curStep, int curPhase, CnCaDContext &ctxt)
 {
 	std::map<unsigned int, FluxOut> retMap;
 	for(int i = 0; i < dims[0]*dims[1]; i++)
@@ -57,8 +58,7 @@ bool backToTheFuture(Node * fields, FluxFuture * futures, int * dims, int curSte
 	return true;
 }
 
-
-int prepTasks(Node * fields, FluxFuture * futures, bool doKriging, int * dims, double * dt, double * delta,  int curStep, int curPhase, redisContext * headRedis, CnCaDContext &ctxt)
+int prepTasks(Node * fields, FluxFuture * futures, bool doKriging, int * dims, double * dt, double * delta,  int curStep, int curPhase, CnCaDContext &ctxt)
 {
 	//Task map
 	std::map<Conserved, unsigned int> taskMap;
@@ -74,7 +74,7 @@ int prepTasks(Node * fields, FluxFuture * futures, bool doKriging, int * dims, d
 			std::vector<double *> wVec;
 			std::vector<double *> fVec;
 			std::vector<double *> gVec;
-			getSortedSubBucketNearZero(fields[x + dims[0]*y].w.w, (char *)"comd", headRedis, comdDigits, 2, &wVec, &fVec, &gVec, zeroThresh);
+			getSortedSubBucketNearZero(fields[x + dims[0]*y].w.w, (char *)"comd", comdDigits, 2, &wVec, &fVec, &gVec, zeroThresh);
 
 			//Check for exact value
 			bool useDB = ifConservedFieldsMatch(fields[x+dims[0]*y].w.w, &wVec, dbT);
@@ -107,7 +107,7 @@ int prepTasks(Node * fields, FluxFuture * futures, bool doKriging, int * dims, d
 					std::vector<double *> wVecK;
 					std::vector<double *> fVecK;
 					std::vector<double *> gVecK;
-					getSortedSubBucketNearZero(fields[x + dims[0]*y].w.w, (char *)"krig", headRedis, krigDigits, 1, &wVecK, &fVecK, &gVecK, zeroThresh);
+					getSortedSubBucketNearZero(fields[x + dims[0]*y].w.w, (char *)"krig", krigDigits, 1, &wVecK, &fVecK, &gVecK, zeroThresh);
 					bool useDB = ifConservedFieldsMatch(fields[x+dims[0]*y].w.w, &wVecK, 0.0);
 					//Did we already krig this?
 					if(useDB == true)
@@ -216,20 +216,13 @@ bool initEverything(bool doKriging, bool doCoMD, int * dims, double * dt, double
 		redisHostName = redis_host;
 	}
 	//Connect to redis
-	redisContext * headRedis = redisConnect(redisHostName, 6379);
-	if(headRedis == NULL || headRedis->err)
-	{
-		printf("Redis error: %s\n", headRedis->errstr);
-		return false;
-	}
+	RedisWrapper::getContext(redisHostName);
 	//Allocate fields buffer
 	Node * field = new Node[dims[0]*dims[1]]();
 	//Initialize fields
 	init_conserved_fields(field, dims, dims[0]*dims[1]);
 	//Put to DB
 	putNodes(field, dims[0], dims[1], 0, 0, ctxt);
-	//cleanup redis
-	redisFree(headRedis);
 	//Free memory
 	delete [] field;
 	if(needFree == true)
@@ -255,23 +248,16 @@ int prepFirstFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double *
 		redisHostName = redis_host;
 	}
 	//Connect to redis
-	redisContext * headRedis = redisConnect(redisHostName, 6379);
-	if(headRedis == NULL || headRedis->err)
-	{
-		printf("Redis error: %s\n", headRedis->errstr);
-		return false;
-	}
+	RedisWrapper::getContext(redisHostName);
 	//Allocate fields buffer
 	Node * field = new Node[dims[0]*dims[1]]();
 	//Get field data from previous step
 	getNodes(field, dims[0], dims[1], curStep, 0, ctxt);
 	//Prep futures
 	FluxFuture * futures = new FluxFuture[dims[0]*dims[1]]();
-	int numTasks =  prepTasks(field, futures, doKriging , dims, dt, delta, curStep, 0, headRedis, ctxt);
+	int numTasks =  prepTasks(field, futures, doKriging , dims, dt, delta, curStep, 0, ctxt);
 	//Write futures
 	putFutures(futures, dims[0], dims[1], curStep, 0, ctxt);
-	//cleanup redis
-	redisFree(headRedis);
 	//Don't save fields, we didn't do anything with it
 	delete [] field;
 	delete [] futures;
@@ -297,12 +283,7 @@ int prepSecondFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double 
 		redisHostName = redis_host;
 	}
 	//Connect to redis
-	redisContext * headRedis = redisConnect(redisHostName, 6379);
-	if(headRedis == NULL || headRedis->err)
-	{
-		printf("Redis error: %s\n", headRedis->errstr);
-		return false;
-	}
+	RedisWrapper::getContext(redisHostName);
 	//Dependent on phase 0's w, and the output of phase 0's fluxes
 	//Allocate fields buffer
 	Node * field = new Node[dims[0]*dims[1]]();
@@ -311,15 +292,13 @@ int prepSecondFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double 
 	//Get futures from previous step
 	FluxFuture * futures = new FluxFuture[dims[0]*dims[1]]();
 	getFutures(futures, dims[0], dims[1], curStep, 0, ctxt);
-	backToTheFuture(field, futures, dims, curStep, 0, headRedis, ctxt);
+	backToTheFuture(field, futures, dims, curStep, 0, ctxt);
 	//Generates phase 1's w
 	wNSqrt(field, dims, dt, delta);
 	//and the phase 1 tasks that are associated with them
-	int numTasks =  prepTasks(field, futures, doKriging , dims, dt, delta, curStep, 1, headRedis, ctxt);
+	int numTasks =  prepTasks(field, futures, doKriging , dims, dt, delta, curStep, 1, ctxt);
 	//Write futures for phase 1
 	putFutures(futures, dims[0], dims[1], curStep, 1, ctxt);
-	//cleanup redis
-	redisFree(headRedis);
 	//Don't save fields, we only need the original w's and the final f's and g's
 	delete [] field;
 	delete [] futures;
@@ -346,12 +325,7 @@ int prepThirdFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double *
 		redisHostName = redis_host;
 	}
 	//Connect to redis
-	redisContext * headRedis = redisConnect(redisHostName, 6379);
-	if(headRedis == NULL || headRedis->err)
-	{
-		printf("Redis error: %s\n", headRedis->errstr);
-		return false;
-	}
+	RedisWrapper::getContext(redisHostName);
 	//Dependent on phase 0's w, and the output of phase 0's fluxes
 	//Allocate fields buffer
 	Node * aField = new Node[dims[0]*dims[1]]();
@@ -361,17 +335,15 @@ int prepThirdFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double *
 	//Get futures from previous phase
 	FluxFuture * futures = new FluxFuture[dims[0]*dims[1]]();
 	getFutures(futures, dims[0], dims[1], curStep, 1, ctxt);
-	backToTheFuture(bField, futures, dims, curStep, 1, headRedis, ctxt);
+	backToTheFuture(bField, futures, dims, curStep, 1, ctxt);
 	//Now do the jiang tambor stuff
 	wSummation(aField, bField, dims, dt, delta);
 	//Now we ge to start the next half-step
-	int numTasks =  prepTasks(bField, futures, doKriging , dims, dt, delta, curStep, 2, headRedis, ctxt);
+	int numTasks =  prepTasks(bField, futures, doKriging , dims, dt, delta, curStep, 2, ctxt);
 	//Write futures
 	putFutures(futures, dims[0], dims[1], curStep, 2, ctxt);
 	//Write field for later use
 	putNodes(bField, dims[0], dims[1], curStep, 2, ctxt);
-	//cleanup redis
-	redisFree(headRedis);
 	//Free Memory
 	delete[] aField;
 	delete[] bField;
@@ -400,12 +372,7 @@ int prepLastFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double * 
 	{
 		redisHostName = redis_host;
 	}
-	redisContext * headRedis = redisConnect(redisHostName, 6379);
-	if(headRedis == NULL || headRedis->err)
-	{
-		printf("Redis error: %s\n", headRedis->errstr);
-		return false;
-	}
+	RedisWrapper::getContext(redisHostName);
 	//Dependent on phase 2's w, and the output of phase 2's fluxes
 	//Allocate fields buffer
 	Node * field = new Node[dims[0]*dims[1]]();
@@ -414,15 +381,13 @@ int prepLastFlux(bool doKriging, bool doCoMD, int * dims, double * dt, double * 
 	//Get futures from previous step
 	FluxFuture * futures = new FluxFuture[dims[0]*dims[1]]();
 	getFutures(futures, dims[0], dims[1], curStep, 2, ctxt);
-	backToTheFuture(field, futures, dims, curStep, 2, headRedis, ctxt);
+	backToTheFuture(field, futures, dims, curStep, 2, ctxt);
 	//Generates phase 3's w
 	wNSqrt(field, dims, dt, delta);
 	//and the phase 3 tasks that are associated with them
-	int numTasks =  prepTasks(field, futures, doKriging , dims, dt, delta, curStep, 3, headRedis, ctxt);
+	int numTasks =  prepTasks(field, futures, doKriging , dims, dt, delta, curStep, 3, ctxt);
 	//Write futures for phase 3
 	putFutures(futures, dims[0], dims[1], curStep, 3, ctxt);
-	//cleanup redis
-	redisFree(headRedis);
 	//Don't save fields, we only need the original w's and the final f's and g's
 	delete [] field;
 	delete [] futures;
@@ -450,12 +415,7 @@ int finishStep(bool doKriging, bool doCoMD, int * dims, double * dt, double * de
 	{
 		redisHostName = redis_host;
 	}
-	redisContext * headRedis = redisConnect(redisHostName, 6379);
-	if(headRedis == NULL || headRedis->err)
-	{
-		printf("Redis error: %s\n", headRedis->errstr);
-		return false;
-	}
+	RedisWrapper::getContext(redisHostName);
 	//Dependent on phase 2's w, and the output of phase 3's fluxes
 	//Allocate fields buffer
 	Node * fieldA = new Node[dims[0]*dims[1]]();
@@ -465,7 +425,7 @@ int finishStep(bool doKriging, bool doCoMD, int * dims, double * dt, double * de
 	//Get futures from previous phase
 	FluxFuture * futures = new FluxFuture[dims[0]*dims[1]]();
 	getFutures(futures, dims[0], dims[1], curStep, 3, ctxt);
-	backToTheFuture(fieldB, futures, dims, curStep, 3, headRedis, ctxt);
+	backToTheFuture(fieldB, futures, dims, curStep, 3, ctxt);
 	//Now do the jiang tambor stuff
 	wSummation(fieldA, fieldB, dims, dt, delta);
 	//Now we do a shift back
@@ -473,8 +433,6 @@ int finishStep(bool doKriging, bool doCoMD, int * dims, double * dt, double * de
 	shift_back(fieldA, dims[0]*dims[1], dims, fieldB);
 	//Write field for later use
 	putNodes(fieldA, dims[0], dims[1], curStep+1, 0, ctxt);
-	//cleanup redis
-	redisFree(headRedis);
 	//Free Memory
 	delete [] fieldA;
 	delete [] fieldB;
@@ -554,7 +512,7 @@ FluxOut randomCoMDImbalance(FluxIn * input)
 	return output;
 }
 
-FluxOut fluxFn(bool doKriging, bool doCoMD, FluxIn * input, redisContext * headRedis, int tid)
+FluxOut fluxFn(bool doKriging, bool doCoMD, FluxIn * input, int tid)
 {
 	FluxOut output;
 
@@ -569,7 +527,7 @@ FluxOut fluxFn(bool doKriging, bool doCoMD, FluxIn * input, redisContext * headR
 		std::vector<double *> oldWs;
 		std::vector<double *> oldFs;
 		std::vector<double *> oldGs;
-		getSortedSubBucketNearZero(input->fields.w, (char *)"comd", headRedis, comdDigits, 10, &oldWs, &oldFs, &oldGs, zeroThresh);
+		getSortedSubBucketNearZero(input->fields.w, (char *)"comd", comdDigits, 10, &oldWs, &oldFs, &oldGs, zeroThresh);
 		//Call Kriging on each point
 		double resF[2];
 		double resG[2];
@@ -620,7 +578,7 @@ FluxOut fluxFn(bool doKriging, bool doCoMD, FluxIn * input, redisContext * headR
 				}
 			#endif
 			//It was not, so put it to the kriging db
-			putData(input->fields.w, output.f, output.g, (char *)"krig", headRedis, krigDigits);
+			putData(input->fields.w, output.f, output.g, (char *)"krig",  krigDigits);
 		}
 	}
 	//Either kriging failed or we never tried
@@ -720,7 +678,7 @@ FluxOut fluxFn(bool doKriging, bool doCoMD, FluxIn * input, redisContext * headR
 			}
 		#endif
 		//Put result to DB for future use: Warning, flush if we switch to comd as this is horrible
-		putData(input->fields.w, output.f, output.g, (char *)"comd", headRedis, comdDigits);
+		putData(input->fields.w, output.f, output.g, (char *)"comd",  comdDigits);
 	}
 	return output;
 }
@@ -750,19 +708,13 @@ bool cloudFlux(bool doKriging, bool doCoMD, int curStep, int phase, int taskID, 
 	{
 		redisHostName = redis_host;
 	}
-	redisContext * headRedis = redisConnect(redisHostName, 6379);
-	if(headRedis == NULL || headRedis->err)
-	{
-		printf("Redis error: %s\n", headRedis->errstr);
-	}
+	RedisWrapper::getContext(redisHostName);
 	//Grab task
 	getTask(&input, curStep, phase, taskID, ctxt);
 	//Call fluxFn with input
-	output = fluxFn(doKriging, doCoMD, &input, headRedis, taskID);
+	output = fluxFn(doKriging, doCoMD, &input, taskID);
 	//Write result to DB
 	putResult(&output, curStep, phase, taskID, ctxt);
-	//cleanup redis
-	redisFree(headRedis);
 	if(needFree == true)
 	{
 		delete [] redisHostName;
@@ -784,12 +736,7 @@ bool outputVTK(bool doKriging, bool doCoMD, int * dims, double * dt, double * de
 	{
 		redisHostName = redis_host;
 	}
-	redisContext * headRedis = redisConnect(redisHostName, 6379);
-	if(headRedis == NULL || headRedis->err)
-	{
-		printf("Redis error: %s\n", headRedis->errstr);
-		return false;
-	}
+	RedisWrapper::getContext(redisHostName);
 	//Allocate fields buffer
 	Node * field = new Node[dims[0]*dims[1]]();
 	//Get field data step
@@ -805,7 +752,6 @@ bool outputVTK(bool doKriging, bool doCoMD, int * dims, double * dt, double * de
 	//VTK output it
 	printf_fields_vtk(curStep, field, l, dims[0]*dims[1]);
 	//cleanup redis
-	redisFree(headRedis);
 	//Don't save fields, we didn't do anything with it
 	delete [] field;
 	if(needFree == true)

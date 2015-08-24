@@ -140,6 +140,12 @@ file(GLOB COMD_SOURCES COMD_lib/*.c)
 add_library(comd ${COMD_SOURCES})
 add_dependencies(comd comd_header)
 
+#RedisWrapper
+add_subdirectory(RedisWrapper_lib)
+#Everyone needs the RedisWrapper
+include_directories(RedisWrapper_lib)
+
+file(GLOB COHMM_SOURCES COHMM_lib/*.cpp)
 include_directories(COMD_lib)
 
 #If (Intel) CnC found, build CnC based driver
