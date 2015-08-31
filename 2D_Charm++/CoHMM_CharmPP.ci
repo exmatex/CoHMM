@@ -1,0 +1,24 @@
+mainmodule CoHMM_TBA_Charm
+{
+    readonly char gRedis_host[48];
+    readonly bool gDoKriging;
+    readonly bool gDoCoMD;
+    readonly CProxy_CoHMM_CharmPP gMainProxy;
+
+    mainchare CoHMM_CharmPP
+    {
+        entry CoHMM_CharmPP(CkArgMsg *m);
+        entry void fluxCallBack(FluxOut result, int tid);
+        entry void checkAndIncOrSet(int potSetVal)
+        {
+            serial
+            {
+                actualCheckAndIncOrSet(potSetVal);
+            }
+        };
+    };
+    chare Flux
+    {
+        entry Flux(FluxIn task, int tid);
+    };
+};
