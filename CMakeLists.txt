@@ -57,6 +57,13 @@ if(FINER_GRAIN_FT)
 endif()
 
 
+option(EXTRA_LOAD_IMBALANCE "Artificially Increased Load Imbalance" OFF)
+
+if(EXTRA_LOAD_IMBALANCE)
+	message(STATUS "Artificially Increased Load Imbalance")
+    add_definitions(-DEXTRA_IMBALANCE)
+endif()
+
 ########################################################################
 #Find external packages
 ########################################################################
@@ -142,6 +149,11 @@ file(GLOB COMD_SOURCES COMD_lib/*.c)
 add_library(comd ${COMD_SOURCES})
 add_dependencies(comd comd_header)
 
+#RedisWrapper
+add_subdirectory(RedisWrapper_lib)
+#Everyone needs the RedisWrapper
+include_directories(RedisWrapper_lib)
+
 file(GLOB COHMM_SOURCES COHMM_lib/*.cpp)
 include_directories(COMD_lib)
 
@@ -150,11 +162,11 @@ if(SWIG_FOUND)
 	message(STATUS "SWIG Library Enabled")
 	set_source_files_properties(COHMM_lib/CoHMM_SwiftWrapper.i PROPERTIES CPLUSPLUS ON)
 	swig_add_module(cohmm_swiftt tcl8 COHMM_lib/CoHMM_SwiftWrapper.i ${COHMM_SOURCES})
-	target_link_libraries(cohmm_swiftt comd ${LINALG_LIBRARIES} ${HIREDIS_LIBRARIES} -lrt)
+	target_link_libraries(cohmm_swiftt comd ${LINALG_LIBRARIES} ${HIREDIS_LIBRARIES} RedisWrapper -lrt)
 endif()
 
 add_library(cohmm ${COHMM_SOURCES})
-target_link_libraries(cohmm comd ${LINALG_LIBRARIES} ${HIREDIS_LIBRARIES} -lrt)
+target_link_libraries(cohmm comd ${LINALG_LIBRARIES} ${HIREDIS_LIBRARIES} RedisWrapper -lrt)
 
 include_directories(COHMM_lib)
 

@@ -110,8 +110,8 @@ int main(int argc, char ** argv)
 	}
 	//Start CHT
 	std::cout << "Trying to start CHT" << std::endl;
-	cht::start();
 	cht::extras::setNWorkers(atoi(argv[5]));
+	cht::start();
 	std::cout << "Succeeded to start CHT" << std::endl;
 	//Set up parameters
 	const bool doKriging = true;

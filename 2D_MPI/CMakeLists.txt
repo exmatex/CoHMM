@@ -12,4 +12,4 @@ if(MPI_LINK_FLAGS)
 endif()
 
 
-target_link_libraries(2D_MPI cohmm comd ${LINALG_LIBRARIES} ${HIREDIS_LIBRARIES} ${MPI_CXX_LIBRARIES} -lrt)
+target_link_libraries(2D_MPI cohmm comd ${LINALG_LIBRARIES} ${HIREDIS_LIBRARIES} ${MPI_CXX_LIBRARIES} RedisWrapper -lrt)

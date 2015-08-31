@@ -8,12 +8,19 @@ mainmodule cohmm_dad
 	readonly double gGamma[3];
 	readonly double gDelta[2];
 
-	readonly CProxy_Main mainProxy;
+	readonly CProxy_Main gMainProxy;
 
 	mainchare Main
 	{
 		entry Main(CkArgMsg *m);
-		entry void countCallBacks();
+		entry void fluxCallBack();
+		entry void checkAndIncOrSet(int potSetVal)
+        {
+            serial
+            {
+                actualCheckAndIncOrSet(potSetVal);
+            }
+        };
 	};
 	chare Flux
 	{

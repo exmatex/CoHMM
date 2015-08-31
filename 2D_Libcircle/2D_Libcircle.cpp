@@ -76,12 +76,9 @@ void processTasks(CIRCLE_handle *handle)
 	unsigned int i;
 	char redis[48];
 	unBuildTaskString(taskString, krig, comd, t, p, i, redis);
-	std::cout << "Unpacked " << krig << " " << comd << " " << t << " " << p << " " << i << " " << redis  << std::endl;
 	cloudFlux(krig, comd, t, p, i, redis);
-	std::cout << "Test" << std::endl;
 	//Increment redis barrier
 	redisReply * reply = (redisReply * ) redisCommand(spawnRedis, "INCR %s", redisBarString);
-	std::cout << "Incremented " << reply->integer << std::endl;
 	freeReplyObject(reply);
 	//Is libcircle okay with not having a return? Becuase we don't
 }
@@ -91,12 +88,9 @@ void buildTasks(CIRCLE_handle *handle)
 	//If this doesn't happen on rank 0, it fails horribly
 	///TODO: is it more efficient to stack allocate before or during loop?
 	char taskString[96];
-	std::cout << "nTasks: " << nTasks << std::endl;
 	for(unsigned int i = 0; i < nTasks; i++)
 	{
-		std::cout << "Push i" << std::endl;
 		buildTaskString(taskString, doKriging, doCoMD, step, phase, i, redis_host);
-		std::cout << "Packed " << doKriging << " " << doCoMD << " " << step << " " << phase << " " << i << " " << redis_host  << std::endl;
 		handle->enqueue(taskString);
 	}
 }

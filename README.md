@@ -1,8 +1,7 @@
 Database Assisted Distribution
 =========
 
-HMM code based on CoHMM-Red with the addition of a distributed shared memory implemented through the use of a database so as to facilitate fault tolerance and an alternative method of utilizing a wide range of
-distributed runtime systems.
+HMM code based on CoHMM-Red with the addition of a distributed shared memory implemented through the use of a NoSQL database so as to facilitate fault tolerance and an alternative method of utilizing a wide range of distributed runtime systems.
 
 Based on code previously developed by Dominic Roehm and the students of the 2013 Los Alamos Co-Design Summer School. CoHMM is now maintained by ExMatEx: [Exascale Co-Design Center for Materials in Extreme Environments](exmatex.org).
 
