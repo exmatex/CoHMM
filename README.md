@@ -31,6 +31,25 @@ CoHMM augmented with bold and distributed runtimes
 
 The code can be found on the `bad` branch.
 
+The source was used generate the data in the paper:
+D. G. Roehm et. al.,
+*Distributed Database Kriging for Adaptive Sampling*,
+Comp. Phys. Comm. **192**, 138 (2015)
+([link](http://dx.doi.org/10.1016/j.cpc.2015.03.006)).
+
+CoHMM augmented with Database Assisted Distribution
+---------------------------------------------------
+
+The code can be found on the `dad` branch.
+
+The source was used generate the data in the paper:
+R. S. Pavel et. al.,
+*Database Assisted Distribution to Improve Fault Tolerance for Multiphysics Applications,*
+in: Proceedings of the 2nd International Workshop on Hardware-Software Co-Design for High Performance Computing 2015 (Co-HPC '15),
+ACM, New York, NY, USA, Article **4**
+([link](http://dx.doi.org/10.1145/2834899.2834908)).
+
+
 Copyright and license
 ---------------------
 
