@@ -9,6 +9,8 @@ Original authors of the source code include the students of the 2013
 CoHMM is now maintained by ExMatEx: Exascale Co-Design Center for Materials
 in Extreme Environments ([exmatex.org](http://exmatex.org)).
 
+There are different version of CoHMM (in chronological order) `sad`, `red`, `bad`, `dad`.
+`dad` is the latest development version.
 
 CoHMM augmented with spatial adaptive sampling
 ---------------------------------------------
