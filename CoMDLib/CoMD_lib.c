@@ -25,6 +25,8 @@
 
 #include "CoMD_lib.h"
 
+FILE* stressOut;
+
 #define REDIRECT_OUTPUT 0
 #define   MIN(A,B) ((A) < (B) ? (A) : (B))
 

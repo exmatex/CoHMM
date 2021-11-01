@@ -4,7 +4,7 @@
 #include "CoMDTypes.h"
 #include "CoMD_lib.h"
 
-FILE* stressOut;
+extern FILE* stressOut;
 
 CoMD_return printTensor(int step, real_t* mat9);
 void matVec3(real_t *mat, real_t *vec);
